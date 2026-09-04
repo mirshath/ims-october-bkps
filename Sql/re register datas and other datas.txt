@@ -1,30 +1,64 @@
-batch swap ok when already batch have student that ok  - ID genaratge 
+---------------------------------------------------------------------------------------------------------------------------------------------
+TODO
+---------------------------------------------------------------------------------------------------------------------------------------------
+- new ID have wanna fetch to payment coreclty 
+- 
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+04-09-2026  
+
+---------------------------------------------------------------------------------------------------------------------------------------------
+batch swap ok when already batch have student that ok  - ID genaratge  ✅✅✅
 
 ---------------------------------------------------
-03-09-2026 nyt Data
+03-09-2026 nyt Data✅✅✅
 -----------------------------------------------------
 
 ---------------------------------------------------
-Program Progression
+Program Progression✅✅✅
 -----------------------------------------------------
 // $('#from_registration_code').val(nextRegId).prop('readonly', false);
                             $('#from_registration_code').val('').prop('readonly', true);
 
-Changed here corelcty
-
-
-
+Changed here corelcty✅✅✅
 
 ---------------------------------------------------
-Re Register
+Re Register✅✅✅
 -----------------------------------------------------
 
-re_register.php
+re_register.php✅✅✅
 
-included the status - UpdateStudentStatus.php    212 line
+included the status - UpdateStudentStatus.php    212 line✅✅✅
 
 
 -----------------------------------------------------
+✅✅✅
+
  // If status=completed, check dues using correct ids
                 if (studentStatus === 'completed') {
                     $.ajax({
@@ -37,7 +71,7 @@ included the status - UpdateStudentStatus.php    212 line
                         },
 
 
-wanan check these 
+wanan check these ✅✅✅
 -----------------------------------------------------
 
 wanna log wanans eparately store 
@@ -46,9 +80,9 @@ wanna change as same like wanna table name wnna change to   program_re_register_
 
 
 
-program_progression_table
+program_progression_table✅✅✅
 to
-program_re_register_table table created
+program_re_register_table table created✅✅✅
 
 
 
@@ -62,6 +96,6 @@ program_re_register_table table created
 
 --------------------------------------------------------------------
 
-UpdateStudentStatus.php
+UpdateStudentStatus.php✅✅✅
 
-var statuses = ['active', 'drop', 'transferred', 'completed', 'inactive', 'batchSwap', 'ReRegister', 'progressionTo'];
+var statuses = ['active', 'drop', 'transferred', 'completed', 'inactive', 'batchSwap', 'ReRegister', 'progressionTo']; ✅✅✅

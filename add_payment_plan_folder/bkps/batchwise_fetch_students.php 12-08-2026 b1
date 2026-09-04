@@ -1,0 +1,49 @@
+<?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+include '../database/connection.php';  // Ensure this path is correct
+
+header('Content-Type: application/json'); // Ensure correct JSON output
+
+if (isset($_POST['programme_id']) && isset($_POST['batch_id'])) {
+    $programme_id = $_POST['programme_id'];
+    $batch_id = $_POST['batch_id'];
+
+    // Corrected INNER JOIN query to fetch student details
+    $query = "
+        SELECT 
+            students.student_code, 
+            students.first_name, 
+            students.last_name, 
+            allocate_programme.student_registration_id
+        FROM allocate_programme
+        INNER JOIN students ON allocate_programme.student_code = students.student_code
+        WHERE allocate_programme.programme_code = ? 
+        AND allocate_programme.batch_id = ? 
+        AND allocate_programme.status = 'active'
+    ";
+
+  /** @var mysqli $conn */
+    global $conn;
+    $stmt = $conn->prepare($query);
+
+    if (!$stmt) {
+        echo json_encode(["error" => "SQL Prepare Failed: " . $conn->error]);
+        exit;
+    }
+
+    $stmt->bind_param("ii", $programme_id, $batch_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $students = [];
+    while ($row = $result->fetch_assoc()) {
+        $students[] = $row;  // Collect student details
+    }
+
+    echo json_encode($students);
+} else {
+    echo json_encode(["error" => "Invalid request. Missing parameters."]);
+}
+?>

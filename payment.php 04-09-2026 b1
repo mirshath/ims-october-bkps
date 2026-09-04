@@ -1,0 +1,2058 @@
+<?php
+session_start();
+include("database/connection.php");
+include("includes/header.php");
+
+if (!isset($_SESSION['username'])) {
+    // header("location: login.php");
+    echo '<script>window.location.href = "login";</script>';
+    // exit();
+}
+
+
+// ---------------------------- allowed Redirections ---------------------------------------------------------------- 
+// -------- Permission CHECKING TO REDIRECT TO HOME PAGE -------- 
+require_once 'PermissionChecking.php';
+// --------------------------------------------------------------------- 
+// -------------------------------------------------------------------------------------------- 
+
+// Include PHPMailer files
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+require 'vendor/autoload.php';
+
+?>
+<!-- jQuery (required for AJAX and other jQuery features) -->
+<!--<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>-->
+
+<!-- Page Wrapper -->
+<div id="wrapper">
+    <!-- Sidebar -->
+    <?php include("nav.php"); ?>
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+        <!-- Main Content -->
+        <div id="content">
+            <!-- Topbar -->
+            <?php include("includes/topnav.php"); ?>
+
+            <!-- Begin Page Content -->
+            <div class="p-3">
+
+                <!-- --------------------------------------------------------------------------------------------- -->
+                <div id="hidePaymentRecpt">
+                    <button id="payment_print" style="display: none;" class="btn btn-primary">Print Payment Receipt</button>
+
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.js"></script>
+
+                    <script>
+                        document.getElementById("payment_print").addEventListener("click", function() {
+                            var receiptContent = document.getElementById("paymentRecipet").innerHTML;
+
+                            var printWindow = window.open('', '', 'width=800,height=600');
+                            printWindow.document.write('<html><head><title>Print Receipt</title>');
+                            printWindow.document.write('<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">');
+                            printWindow.document.write('<style>' +
+                                '@media print { ' +
+                                '   @page { size: A4; margin: 15mm; }' + // Set A4 size with optimized margins
+                                '   body { font-family: Arial, sans-serif; color: #000; }' +
+                                '   .receipt-container { width: 100%; max-width: 300mm; padding: 5px; background: #fff; margin: 0 auto; }' +
+                                '   .table th, .table td { border: 1px solid #000 !important; text-align: left; padding: 6px; font-size: 12px; }' + // Adjusted padding & font size
+                                '   .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }' +
+                                '   .company-info h3 { font-size: 18px; margin-bottom: 5px; }' + // Adjusted font sizes for clarity
+                                '   .company-info p { font-size: 12px; margin: 0; }' +
+                                '   .info-line { font-size: 13px; line-height: 1.6; margin-bottom: 4px; }' + // Ensures better alignment & spacing
+                                '   .watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.1; width: 100%; text-align: center; }' + // Watermark visibility improved
+                                '   .thank-you-message { text-align: center; font-size: 14px; margin-top: 15px; font-weight: bold; }' +
+                                '} ' +
+                                '</style></head><body>');
+
+                            printWindow.document.write('<div class="receipt-container">' + receiptContent + '</div>');
+                            printWindow.document.write('</body></html>');
+
+                            printWindow.document.close();
+                            printWindow.focus();
+                            printWindow.print();
+                            printWindow.close();
+                        });
+                    </script>
+
+
+                    <div id="paymentRecipet" style="display: none;">
+
+                        <div class="container">
+                            <!DOCTYPE html>
+                            <html lang="en">
+
+                            <head>
+                                <meta charset="UTF-8">
+                                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                                <title>Official Receipt</title>
+                                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+                                <style>
+                                    #paymentRecipet body {
+                                        font-family: Arial, sans-serif;
+                                        margin: 20px;
+                                        padding: 0;
+                                        background-color: #f8f9fa;
+                                        position: relative;
+                                    }
+
+                                    #paymentRecipet .receipt-container {
+                                        max-width: 800px;
+                                        background: #fff;
+                                        padding: 20px;
+                                        border-radius: 10px;
+                                        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                                        margin: auto;
+                                        position: relative;
+                                        overflow: hidden;
+                                    }
+
+                                    #paymentRecipet .watermark {
+                                        position: absolute;
+                                        top: 50%;
+                                        left: 50%;
+                                        transform: translate(-50%, -50%);
+                                        opacity: 0.5;
+                                        /* Adjust opacity for visibility */
+                                        z-index: -1;
+                                        width: 100%;
+                                        text-align: center;
+                                    }
+
+                                    #paymentRecipet .watermark img {
+                                        width: 100%;
+                                        max-width: 600px;
+                                        /* Adjust the size of the watermark */
+                                    }
+
+                                    #paymentRecipet .header {
+                                        display: flex;
+                                        justify-content: space-between;
+                                        align-items: center;
+                                        border-bottom: 2px solid #000;
+                                        padding-bottom: 10px;
+                                        margin-bottom: 20px;
+                                    }
+
+                                    #paymentRecipet .company-info p {
+                                        margin: 0;
+                                        font-size: 14px;
+                                    }
+
+                                    #paymentRecipet .table th,
+                                    #paymentRecipet .table td {
+                                        border: 1px solid #000 !important;
+                                        text-align: left;
+                                    }
+
+                                    #paymentRecipet .total-section {
+                                        font-size: 18px;
+                                        font-weight: bold;
+                                        text-align: right;
+                                    }
+
+                                    #paymentRecipet .thank-you-message {
+                                        text-align: center;
+                                        font-size: 16px;
+                                        margin-top: 20px;
+                                        font-weight: bold;
+                                    }
+
+                                    .tcolor {
+                                        color: rgb(110, 109, 109) !important;
+                                    }
+                                </style>
+                            </head>
+
+                            <body class="tcolor" id>
+                                <div class="container receipt-container ">
+                                    <!-- Watermark -->
+                                    <div class="watermark">
+                                        <img src="img/images.png" alt="Watermark">
+                                    </div>
+
+                                    <div class="header d-flex">
+                                        <div class="">
+                                            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQA0KuPQqQv6LvMAF1A4ZmiIWrs5IRwBZV_wxhIJeAsK70HPyHIt4bGYoZALU8C43r7sHE&usqp=CAU" class="img-fluid w-50" alt="E-Receipt">
+                                        </div>
+                                        <div class="company-info">
+                                            <h3>Business Management School</h3>
+                                            <p>591 Galle Rd, Colombo 00600</p>
+                                            <p> 0112 504 757 | Email: info@bms.ac.lk</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p><strong>Student Name :</strong> <span id="rcp_student_name"></span></p>
+                                            <p><strong>Student RegID :</strong> <span id="rcp_student_regID"></span></p>
+                                            <p><strong>Program :</strong> <span id="rcp_program_batch"></span></p>
+                                            <p><strong>Payment Method :</strong> <span id="rcp_payment_method"></span></p>
+                                            <p><strong>Bank Name :</strong> <span id="rcp_payment_bank"></span></p>
+                                            <p><strong>Deposit Date :</strong> <span id="rcp_payment_dep_date"></span></p>
+                                        </div>
+                                        <div class="col-md-6 text-end" style="line-height: 10px; margin-top: 20px;">
+                                            <p><strong>Receipt Printed Date :</strong> <span id="reciept_current_date"></span></p>
+                                            <p><strong>Receipt No :</strong> <span id="reciept_No_AG">A246</span> </p>
+                                            <p><strong>Paid Date :</strong> <span id="reciept_paid_date"></span> </p>
+                                        </div>
+                                    </div>
+
+                                    <table class="table table-striped table-hover mt-3 ">
+                                        <thead class="table-light">
+                                            <tr>
+
+                                                <th class="tcolor">Type</th>
+                                                <th class="tcolor">Payment Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="receipt-details">
+                                            <!-- Dynamically inserted data will go here -->
+                                        </tbody>
+                                    </table>
+
+                                    <div class="thank-you-message">
+                                        <p>This is an electronically generated receipt. No signature is required.</p>
+                                    </div>
+                                </div>
+                            </body>
+
+                            </html>
+                        </div>
+                    </div>
+                </div>
+                <!-- --------------------------------------------------------------------------------------------- -->
+
+                <div id="student_payment_section">
+                    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                        <h4 class="h4 mb-0 text-gray-800">Student Payment</h4>
+                    </div>
+
+                    <!-- Search Form -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header d-flex align-items-center" style="height: 60px;">
+                                    <span class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                        <i class="fas fa-search"></i>
+                                    </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                                    <h6 class="mb-0 me-2">Search Student</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form class="">
+                                        <div class="mb-3 row">
+                                            <label for="student" class="col-sm-3 col-form-label">Student:</label>
+                                            <div class="col-sm-9">
+                                                <select class="form-select select2" id="student">
+                                                    <option value="">Select Student</option>
+                                                    <!-- Students will be loaded here dynamically -->
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <p id="std_status" style="font-size: 30px; font-weight: bolder; text-align: center;"></p>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0 me-2">ID Generate Automatically </h6>
+                                </div>
+                                <div class="card-body">
+                                    <form>
+                                        <div class="row mb-3 text-center">
+                                            <div class="col-md-3">
+                                                <label for="fetched_prog_code" class="form-label">Program Code</label>
+                                                <input type="text" class="form-control" id="fetched_prog_code" readonly>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="fetched_batch_no" class="form-label">Batch NO</label>
+                                                <input type="text" class="form-control" id="fetched_batch_no" readonly>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="fetched_intake_no" class="form-label">Intake NO</label>
+                                                <input type="text" class="form-control" id="fetched_intake_no" readonly>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="fetched_year" class="form-label">Year</label>
+                                                <input type="text" class="form-control" id="fetched_year" readonly>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3 row" id="last_reg_ID_row" style="color: red;">
+                                            <label for="last_student_reg_id" class="col-sm-3 col-form-label fw-bolder">Last Student Reg ID:</label>
+                                            <div class="col-sm-9">
+                                                <input type="text" style="color: red;" class="form-control" id="last_student_reg_id" readonly>
+                                            </div>
+                                        </div>
+
+                                        <!-- <p style="color: red; font-weight: bolder;" id="bms_automatic_ID">here wanna allocate the BMS Registration ID </p> -->
+                                        <div class="mb-3 row align-items-center" id="currect_reg_id_row">
+                                            <label for="specific_student_reg_id" class="col-sm-3 col-form-label">BMS Registration ID:</label>
+                                            <div class="col-sm-9">
+                                                <input type="text" class="form-control" id="specific_student_reg_id">
+                                            </div>
+                                        </div>
+
+
+                                        <!-- -----------------------------------------------------------------  -->
+                                        <!-- -----------------------------------------------------------------  -->
+
+                                        <div class="mb-3 row" id="Last_new_std_reg_id_row">
+                                            <label for="Last_new_std_reg_ids" class="col-sm-3 col-form-label" style="color: red; font-weight: bolder;">Last Entered New Student Reg ID:</label>
+                                            <div class="col-sm-9">
+                                                <input type="text" style="color: red;" class="form-control" id="Last_new_std_reg_id" readonly>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3 row" id="new_reg_id_row">
+                                            <label for="new_reg_id" class="col-sm-3 col-form-label">BMS New Registration ID:</label>
+                                            <div class="col-sm-9">
+                                                <input type="text" class="form-control" id="new_reg_id" readonly>
+                                            </div>
+                                        </div>
+
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--------------------------------- University Fee Payments --------------------------------->
+                    <div class="row">
+
+                        <div class="col-md-6">
+                            <div class="row mb-4">
+                                <div class="col-md-12">
+                                    <div class="card">
+                                        <div class="card-header d-flex align-items-center" style="height: 60px;">
+                                            <span class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                                <i class="fas fa-university"></i>
+                                            </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                                            <h6 class="mb-0 me-2">University Fee Payments</h6>
+                                        </div>
+                                        <div class="">
+                                            <table class="table table-bordered">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Currency</th>
+                                                        <th>Total</th>
+                                                        <th>Balance</th>
+                                                        <th>Pay</th>
+                                                        <th>Payment Amount</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>
+                                                            <span id="currency_LKR"></span>
+                                                            <span id="currency_GBP"></span>
+                                                            <span id="currency_USD"></span>
+                                                        </td>
+
+                                                        <td>
+                                                            <span id="total_currency_LKR"></span>
+                                                            <span id="total_currency_GBP"></span>
+                                                            <span id="total_currency_USD"></span>
+                                                        </td>
+
+                                                        <td>
+                                                            <span id="uni_fee_LKR"></span>
+                                                            <span id="uni_fee_GBP"></span>
+                                                            <span id="uni_fee_USD"></span>
+                                                        </td>
+                                                        <td><input type="checkbox" id="pay_checkbox"></td>
+                                                        <td><input type="text" class="form-control" id="payment_amount" placeholder="Amount"></td>
+                                                    </tr>
+                                                    <tr id="exchange_rate_row">
+                                                        <td colspan="4">Exchange Rate :</td>
+                                                        <td><input type="text" class="form-control" id="exchange_rate" placeholder="Exchange value"></td>
+                                                    </tr>
+
+                                                    <tr id="payment_LKR_row">
+                                                        <td colspan="4">Payment Amount LKR :</td>
+                                                        <td><input type="text" readonly class="form-control" id="payment_LKR" placeholder="Total amount"></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!----------------------------------- Initial Fee Payments ----------------------------------->
+
+                        <div class="col-md-6">
+                            <div class="row mb-4">
+                                <div class="col-md-12">
+                                    <div class="card">
+                                        <div class="card-header d-flex align-items-center" style="height: 60px;">
+                                            <span class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                                <i class="fas fa-coins"></i>
+                                            </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                                            <h6 class="mb-0 me-2">Initial Fee Payments</h6>
+                                        </div>
+                                        <div class="card-">
+                                            <table class="table table-bordered">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Currency</th>
+                                                        <th>Total</th>
+                                                        <th>Balance</th>
+                                                        <th>Pay</th>
+                                                        <th>Payment Amount</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>
+                                                            <span id="registration_currency_LKR"></span>
+                                                            <span id="registration_currency_GBP"></span>
+                                                            <span id="registration_currency_USD"></span>
+                                                        </td>
+                                                        <td>
+                                                            <span id="Total_registration_fee_LKR"></span>
+                                                            <span id="Total_registration_fee_GBP"></span>
+                                                            <span id="Total_registration_fee_USD"></span>
+                                                        </td>
+                                                        <td>
+                                                            <span id="registration_fee_LKR"></span>
+                                                            <span id="registration_fee_GBP"></span>
+                                                            <span id="registration_fee_USD"></span>
+                                                        </td>
+                                                        <td><input type="checkbox" id="payment_checkbox"></td>
+                                                        <td>
+                                                            <input type="text" class="form-control" id="payment_initial" name="payment_initial" placeholder="Enter Amount">
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-------------------------------------------- course payment  -------------------------------------------->
+
+                    <table class="table table-bordered table-hover table-striped">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Programme</th>
+                                <th>Currency</th>
+                                <th>Installment</th>
+                                <th>Due Date</th>
+                                <th>Remarks</th>
+                                <th>Balance</th>
+                                <th>Pay </th>
+                                <th>Payment Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="installment_details_table">
+
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="7" class="text-end">Total</th>
+                                <th id="total_payment">0.00</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <!-- Button on the right side -->
+                    <button type="button" id="submitPayment" class="btn btn-primary mt-3 mb-4 float-end">Submit Payment</button>
+                    <!-- <button type="button" id="printButton" class="btn btn-primary mt-3 mb-4 float-end">Print</button> -->
+
+                    <!------------------------------------- Bootstrap Modal ------------------------------------->
+                    <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+                        <div class="modal-dialog ">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <p class="modal-title" id="paymentModalLabel">PAYMENT METHOD</p>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <p>Select Pay Mode</p>
+                                        </div>
+                                        <div class="card- shadow">
+
+                                            <form id="paymentForm" style="overflow-y: auto; max-height: 4   0px;" class="p-2">
+                                                <div class="" style="line-height: 6px; display: none;">
+                                                    <p><strong>Student ID:</strong> <span id="modalStudentId"></span></p>
+                                                    <p><strong>Student Name:</strong> <span id="modalStudentName"></span></p>
+                                                    <p><strong>Program Batch:</strong> <span id="modalProgrammeBatch"></span></p>
+                                                </div>
+
+                                                <div id="initialPaymentSection" style="display: none;">
+                                                    <p><strong>Initial Payment:</strong> <span id="modalPaymentInitialValue"></span></p>
+                                                </div>
+
+                                                <ul id="modalInstallments" style="line-height: 15px; margin-top: -10px; ;"></ul> <!-- Installments will be listed here -->
+
+                                                <div id="unifeesection" style="line-height: 6px;">
+                                                    <table class="table table-borderless table-hover">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>CRC type</th>
+                                                                <th>UNI FEE</th>
+                                                                <th>EXCHANGE RATE</th>
+                                                                <th>FEE LKR</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td><span id="madal-crc-Types"></span></td>
+                                                                <td><span id="modalUnifee"></span></td>
+                                                                <td><span id="modalUnifeeexchangeRate"></span></td>
+                                                                <td><span id="modalUnifeeLKR"></span></td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+
+                                                <div id="paymentMethodSection" class="mb-4" style="margin-top: 10px;">
+
+                                                    <table class="table table-hover table-striped">
+                                                        <tbody>
+                                                            <tr>
+                                                                <td class="text-right"><strong>Paid Date &nbsp; &nbsp;:</strong></td>
+                                                                <td><input type="date" id="modalPaidDate" class="form-control"></td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td class="text-right"><strong>Total Payment &nbsp; &nbsp;:</strong></td>
+                                                                <td>Rs. <span id="modalTotalPayment">0</span></td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td class="text-right">
+                                                                    <label>Cash &nbsp; &nbsp;
+                                                                        <input type="radio" name="payment_method" value="cash" required>
+                                                                    </label>
+                                                                </td>
+                                                                <td>
+                                                                    <input type="text" id="cashAmount" placeholder="Enter Amount" disabled class="form-control">
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td class="text-right">
+                                                                    <label>Card &nbsp; &nbsp;
+                                                                        <input type="radio" name="payment_method" value="card" required>
+                                                                    </label>
+                                                                </td>
+                                                                <td>
+                                                                    <input type="text" id="cardAmount" placeholder="Enter Amount" disabled class="form-control">
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td class="text-right">
+                                                                    <label>Bank Deposit &nbsp; &nbsp;
+                                                                        <input type="radio" name="payment_method" value="bank_deposit">
+                                                                    </label>
+                                                                </td>
+                                                                <td>
+                                                                    <input type="text" id="bankDepositAmount" placeholder="Enter Amount" class="form-control">
+                                                                </td>
+                                                            </tr>
+                                                            <tr id="banks_row">
+                                                                <td class="text-right">
+                                                                    <label for="bankName"><strong>Bank Name:</strong></label>
+                                                                </td>
+                                                                <td>
+                                                                    <select id="bankName" class="form-control ">
+                                                                        <option value="">Select Bank</option>
+                                                                        <option value="boc">Bank of Ceylon</option>
+                                                                        <option value="peoples">People's Bank</option>
+                                                                        <option value="combank">Commercial Bank</option>
+                                                                        <option value="hatton">Hatton National Bank</option>
+                                                                        <option value="sampath">Sampath Bank</option>
+                                                                        <option value="nsb">National Savings Bank</option>
+                                                                        <option value="dfcc">DFCC Bank</option>
+                                                                        <option value="seylan">Seylan Bank</option>
+                                                                        <option value="nations">Nations Trust Bank</option>
+                                                                        <option value="cargills">Cargills Bank</option>
+                                                                        <option value="union">Union Bank</option>
+                                                                        <option value="hnb">HNB Finance</option>
+                                                                        <option value="panasia">Pan Asia Bank</option>
+                                                                        <option value="amana">Amana Bank</option>
+                                                                    </select>
+
+                                                                </td>
+                                                            </tr>
+                                                            <tr id="deposit_date_row">
+                                                                <td class="text-right">
+                                                                    <label for="paymentDate"><strong> Deposit Date:</strong></label>
+                                                                </td>
+                                                                <td>
+                                                                    <input type="date" id="paymentDate" class="form-control">
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    <button type="button" class="btn btn-primary" id="confirmPaymentBtn">Save Changes</button>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    $(document).ready(function() {
+        $('#banks_row').hide();
+        $('#deposit_date_row').hide();
+        $('input[name="payment_method"]').on('change', function() {
+            let selectedMethod = $(this).val();
+            let totalPayment = $('#modalTotalPayment').text().trim(); // Get Total Payment value
+
+            // Disable all fields first
+            $('#cashAmount, #cardAmount, #bankDepositAmount').prop('disabled', true).val('');
+            $('#bankName').prop('disabled', true);
+            $('#paymentDate').prop('disabled', true);
+
+            if (selectedMethod === 'cash') {
+                $('#cashAmount').prop('readonly', true).val(totalPayment);
+                $('#banks_row').hide();
+                $('#deposit_date_row').hide();
+            } else if (selectedMethod === 'card') {
+                $('#cardAmount').prop('readonly', true).val(totalPayment);
+                $('#bankName').prop('disabled', false);
+                $('#deposit_date_row').hide();
+                $('#banks_row').show();
+            } else if (selectedMethod === 'bank_deposit') {
+                $('#bankDepositAmount').prop('readonly', true).val(totalPayment);
+                $('#bankName').prop('disabled', false);
+                $('#paymentDate').prop('disabled', false);
+                $('#deposit_date_row').show();
+                $('#banks_row').show();
+            }
+        });
+    });
+</script>
+
+<script>
+    $(document).ready(function() {
+
+        $('#bms_automatic_ID').hide();
+        $('#program_code_row').hide();
+        $('#batch_no_row').hide();
+        $('#intake_no_row').hide();
+        $('#year_no_row').hide();
+        $('#last_reg_ID_row').hide();
+        // $('#currect_reg_id_row').hide();
+        $('#specific_student_reg_id').prop('readonly', true);
+
+
+        $('#Last_new_std_reg_id_row').hide();
+
+
+
+
+        // Initialize Select2 for all dropdowns
+        $('.select2').select2();
+
+        // -------------------Load students with active status from allocate_programme table-----------------------
+
+        $.ajax({
+            url: 'add_payment_plan_folder/fetch_students_for_payment.php', // PHP script to fetch students
+            method: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                // Clear previous options
+                $('#student').empty();
+
+
+                if (data.length > 0) {
+                    // Add default placeholder
+                    $('#student').append('<option value="">Select a student</option>');
+
+                    data.forEach(function(student) {
+                        // Fallbacks for missing values
+
+                        window.st = student.status || '';
+
+                        let regId = student.student_registration_id || student.student_code || '';
+                        let nic = student.nic || '';
+                        let fullName = (student.first_name || '') + ' ' + (student.last_name || '');
+                        let programmeCode = [student.program_name, student.batch_name].filter(Boolean).join(' - ') || '';
+
+                        let displayText = regId + ' | ' + nic + ' | ' + fullName + ' | ' + programmeCode + ' | ' + st;
+
+                        $('#student').append(
+                            '<option value="' + (student.student_code || '') + '"' +
+                            ' data-email="' + (student.bms_email || '') + '"' +
+                            ' data-programme-code="' + (student.programme_code || '') + '"' +
+                            ' data-program-id="' + (student.program_id || '') + '"' +
+                            ' data-batch-id="' + (student.batch_id || '') + '"' +
+                            ' data-batch-name="' + (student.batch_name || '') + '"' +
+                            ' data-program-name="' + (student.program_name || '') + '">' +
+                            displayText +
+                            '</option>'
+                        );
+                    });
+                } else {
+                    $('#student').append('<option value="">No students found</option>');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX Error:', status, error);
+                alert('Error fetching students');
+            }
+        });
+
+
+
+        $('#student').change(function() {
+            window.student_id = $(this).val();
+            window.programme_code = $(this).find('option:selected').data('programme-code');
+            window.batch_id = $(this).find('option:selected').data('batch-id'); // Assuming batch ID is stored in data attribute
+
+            console.log('Student ID:', student_id);
+
+            // $('#std_status').text('Student Status: ' + window.st);
+            // Display the programme_code somewhere in your HTML
+            $('#fetched_program_name').text(programme_code);
+
+            window.student_registration_id = $(this).find('option:selected').text().split(' | ')[0];
+            window.student_name = $(this).find('option:selected').text().split(' | ')[2];
+
+            // Get the BMS email from the data attribute
+            window.student_bms_email = $(this).find('option:selected').data('email');
+
+            // Log the values to console
+            console.log('Student Registration ID:', student_registration_id);
+            console.log('Program code:', programme_code);
+            console.log('Batch ID:', batch_id); // Log batch ID
+
+            // Reset all fields before fetching new student data
+            resetFields();
+
+            if (student_id !== '') {
+                window.prog_batch = "";
+
+                // -------------------working code 2      26.08---------------------------------- 
+                $.ajax({
+                    url: 'add_payment_plan_folder/get_program_name.php',
+                    method: 'POST',
+                    data: {
+                        program_code: programme_code
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (!response.success) {
+                            console.warn('Program not found');
+                            return;
+                        }
+
+                        window.program_name = response.program_name;
+                        $('#program_name_input').val(window.program_name);
+                        console.log('Program name Full name:', window.program_name);
+
+                        // Fetch batch name
+                        $.ajax({
+                            url: 'add_payment_plan_folder/get_batch_name.php',
+                            method: 'POST',
+                            data: {
+                                batch_id: batch_id
+                            },
+                            dataType: 'json',
+                            success: function(batchResponse) {
+                                if (!batchResponse.success) {
+                                    console.warn('Batch not found');
+                                    return;
+                                }
+
+                                window.batch_name = batchResponse.batch_name;
+                                $('#batch_name_input').val(window.batch_name);
+                                console.log('Batch name:', window.batch_name);
+
+                                window.prog_batch = window.program_name + ' - ' + window.batch_name;
+                                console.log('**************:', window.prog_batch);
+                                // --------------------------------------------------------------------------------------
+
+                                $.ajax({
+                                    url: 'add_payment_plan_folder/get_student_payment_plan.php', // PHP file to process the request
+                                    method: 'POST',
+                                    data: {
+                                        student_id: student_id,
+                                        prog_batch: window.prog_batch
+                                    },
+                                    dataType: 'json',
+                                    success: function(response) {
+                                        if (response.success) {
+
+                                            // Update values dynamically
+                                            if (response.university_fee_LKR > 0) {
+                                                $('#uni_fee_LKR').text(response.university_fee_LKR);
+                                                $('#payment_amount').val(response.university_fee_LKR);
+                                                $('#currency_LKR').text('LKR');
+                                                // Hide the "Exchange Rate" and "Payment Amount LKR" rows
+                                                $('#exchange_rate_row').hide();
+                                                $('#payment_LKR_row').hide();
+                                            }
+                                            if (response.university_fee_GBP > 0) {
+                                                $('#total_currency_GBP').text(response.Total_university_fee_GBP);
+                                                $('#uni_fee_GBP').text(response.university_fee_GBP);
+                                                $('#payment_amount').val(response.university_fee_GBP);
+                                                $('#currency_GBP').text('GBP');
+                                                $('#exchange_rate_row').show();
+                                                $('#payment_LKR_row').show();
+                                            }
+                                            if (response.university_fee_USD > 0) {
+                                                $('#total_currency_USD').text(response.Total_university_fee_USD);
+                                                $('#uni_fee_USD').text(response.university_fee_USD);
+                                                $('#payment_amount').val(response.university_fee_USD);
+                                                $('#currency_USD').text('USD');
+                                                $('#exchange_rate_row').show();
+                                                $('#payment_LKR_row').show();
+                                            }
+
+                                            // When the checkbox is clicked
+                                            $('#pay_checkbox').on('change', function() {
+                                                var paymentAmountField = $('#payment_amount');
+
+                                                // Check if the checkbox is checked
+                                                if ($(this).is(':checked')) {
+                                                    // Get the fee values
+                                                    var uniFeeLKR = parseFloat($('#uni_fee_LKR').text()) || 0;
+                                                    var uniFeeGBP = parseFloat($('#uni_fee_GBP').text()) || 0;
+                                                    var uniFeeUSD = parseFloat($('#uni_fee_USD').text()) || 0;
+
+                                                    // Combine the fee values into a single total
+                                                    var totalAmount = uniFeeLKR || uniFeeGBP || uniFeeUSD;
+
+                                                    // Set the value of the Payment Amount field
+                                                    paymentAmountField.val(totalAmount.toFixed(2)); // Format the amount to 2 decimal places
+                                                    paymentAmountField.prop('disabled', false); // Enable the field so user can edit if needed
+                                                } else {
+                                                    // If checkbox is unchecked, clear the field and disable it
+                                                    paymentAmountField.val('');
+                                                    paymentAmountField.prop('disabled', true);
+                                                }
+                                            });
+
+
+                                            // When the exchange rate is entered or changed
+                                            $('#exchange_rate').on('input', function() {
+                                                var exchangeRate = parseFloat($(this).val()) || 0;
+
+                                                // Get the payment amount entered (from the checkbox logic)
+                                                var paymentAmount = parseFloat($('#payment_amount').val()) || 0;
+
+                                                // Calculate the final amount in LKR (multiply payment amount by exchange rate)
+                                                if (exchangeRate > 0 && paymentAmount > 0) {
+                                                    var finalAmountLKR = paymentAmount * exchangeRate;
+                                                    $('#payment_LKR').val(finalAmountLKR.toFixed(2)); // Set the result in the LKR field
+                                                } else {
+                                                    $('#payment_LKR').val(''); // Clear the field if either value is invalid
+                                                }
+                                            });
+
+                                            // Initial Fee Payments section 
+                                            // Update values dynamically
+                                            if (response.registration_fee_LKR) {
+                                                $('#Total_registration_fee_LKR').text(response.Total_registration_fee_LKR);
+                                                $('#registration_fee_LKR').text(response.registration_fee_LKR);
+                                                $('#payment_initial').val(response.registration_fee_LKR);
+                                                $('#registration_currency_LKR').text('LKR');
+                                            }
+                                            if (response.registration_fee_GBP > 0) {
+                                                $('#registration_fee_GBP').text(response.registration_fee_GBP);
+                                                $('#payment_initial').val(response.registration_fee_GBP);
+                                                $('#registration_currency_GBP').text('GBP');
+                                            }
+                                            if (response.registration_fee_USD > 0) {
+                                                $('#registration_fee_USD').text(response.registration_fee_USD);
+                                                $('#payment_initial').val(response.registration_fee_USD);
+                                                $('#registration_currency_USD').text('USD');
+                                            }
+
+                                            // program name and batch name and installment type
+                                            // $('#fetched_program_name').text(response.programme_batch);
+                                            $('#fetched_program_name').text(response.programme_batch);
+
+                                            // here wanna store the programName and batchName as a new global variable  
+                                            window.programme_batch = response.programme_batch;
+
+
+                                            $('#fetched_currency').text('LKR');
+                                            // Store the value in a variable
+                                            var installmentType = response.course_fee_type_LKR || response.course_fee_type_GBP || response.course_fee_type_USD;
+                                            // Log the value to the console
+                                            console.log(installmentType);
+
+                                            // ---------------------------- fetch program code  ---------- 
+                                            // Update the text on the page
+                                            $('#fetched_installment_type').text(installmentType);
+
+                                            // if (installmentType === 'installment') {
+                                            if (installmentType === 'installment' || installmentType === 'full') {
+                                                // Fetch installment details from the database
+                                                $.ajax({
+                                                    url: 'payment_folder/fetch_installment_details.php', // PHP file to fetch data
+                                                    method: 'POST',
+                                                    data: {
+                                                        student_id: student_id,
+                                                        program_batch: window.prog_batch
+                                                    }, // Pass the student_id
+                                                    dataType: 'json',
+
+                                                    success: function(response) {
+                                                        if (response.success) {
+                                                            console.log('Installment Details:', response.installment_details);
+
+                                                            var installmentDetailsHTML = '';
+                                                            var totalPayment = 0;
+
+                                                            // Assuming "Programme" and "Currency" are the same for all installments
+                                                            var programName = programme_batch;
+                                                            var currency = 'LKR';
+
+                                                            response.installment_details.forEach(function(detail, index) {
+                                                                if (index === 0) { // Only for the first row, display Programme and Currency
+                                                                    installmentDetailsHTML += '<tr>';
+                                                                    installmentDetailsHTML += '<td rowspan="' + response.installment_details.length + '">' + programName + '</td>';
+                                                                    installmentDetailsHTML += '<td rowspan="' + response.installment_details.length + '">' + currency + '</td>';
+                                                                }
+
+                                                                installmentDetailsHTML += '<td style="display: none;">' + detail.row_id + '</td>';
+                                                                // installmentDetailsHTML += '<td>' + detail.installment_numbers + '</td>';
+
+                                                                installmentDetailsHTML += '<td>' + detail.installment_numbers.replace(/_/g, ' ') + '</td>';
+
+                                                                installmentDetailsHTML += '<td>' +
+                                                                    (parseFloat(detail.installment_amount) === 0 || parseFloat(detail.installment_amount) === 0.00 ?
+                                                                        detail.due_date + ' <span class="badge bg-info">Paid</span>' :
+                                                                        detail.due_date + ' ' +
+                                                                        (new Date(detail.due_date).toDateString() === new Date().toDateString() ?
+                                                                            '<span class="badge bg-success">Upcoming</span>' : // Due date is today
+                                                                            (new Date(detail.due_date) < new Date() ?
+                                                                                '<span class="badge bg-danger">Overdue</span>' : // Due date is in the past
+                                                                                '<span class="badge bg-success">Upcoming</span>' // Due date is in the future
+                                                                            )
+                                                                        )
+                                                                    ) +
+                                                                    '</td>';
+
+                                                                installmentDetailsHTML += '<td>' + detail.remark + '</td>'; // Placeholder for remarks
+
+                                                                installmentDetailsHTML += '<td>' + detail.installment_amount + '</td>';
+
+                                                                // Check if installment_amount is 0 or 0.00 and disable checkbox accordingly
+                                                                let checkboxDisabled = (parseFloat(detail.installment_amount) === 0 || parseFloat(detail.installment_amount) === 0.00) ? 'disabled' : '';
+                                                                installmentDetailsHTML += '<td style="text-align: center;"><input type="checkbox" class="pay_checkbox" data-installment="' + detail.installment_numbers + '" data-row-id="' + detail.row_id + '" id="pay_checkbox_' + detail.installment_numbers + '" name="pay_checkbox_' + detail.installment_numbers + '" ' + checkboxDisabled + '></td>';
+
+                                                                // First, modify the input field to include the max amount as a data attribute
+                                                                installmentDetailsHTML += '<td><input type="text" class="form-control payment_amount" id="payment_amount_' + detail.installment_numbers + '" name="payment_amount_' + detail.installment_numbers + '" value="' + detail.installment_amount + '" data-max-amount="' + detail.installment_amount + '"></td>';
+                                                                installmentDetailsHTML += '</tr>';
+                                                            });
+
+                                                            // Append the generated HTML into the table's tbody
+                                                            $('#installment_details_table').html(installmentDetailsHTML);
+
+                                                            // Then add this validation code after the table is populated
+                                                            $(document).on('input', '.payment_amount', function() {
+                                                                var maxAmount = parseFloat($(this).data('max-amount')) || 0;
+                                                                var currentValue = parseFloat($(this).val()) || 0;
+
+                                                                if (currentValue > maxAmount) {
+                                                                    alert('Payment amount cannot exceed the installment amount of ' + maxAmount.toFixed(2));
+                                                                    $(this).val(maxAmount.toFixed(2));
+                                                                }
+
+                                                                updateTotalPayment(); // Update total payment after validation
+                                                            });
+
+                                                            // Update total payment based on checked checkboxes and payment amounts
+                                                            $(document).on('change', '.pay_checkbox', function() {
+                                                                updateTotalPayment();
+                                                            });
+
+
+                                                            function updateTotalPayment() {
+                                                                var totalPayment = 0;
+
+                                                                // Loop through each installment checkbox and check if it's checked
+                                                                $('.pay_checkbox').each(function() {
+                                                                    var installmentNumber = $(this).attr('id').replace('pay_checkbox_', '');
+                                                                    var paymentAmount = $('#payment_amount_' + installmentNumber).val();
+                                                                    var currentDate = new Date().toLocaleString("en-US", {
+                                                                        timeZone: "Asia/Colombo"
+                                                                    });
+
+                                                                    // If checkbox is checked and payment amount is valid, add to total payment
+                                                                    if ($(this).prop('checked') && !isNaN(paymentAmount) && paymentAmount.trim() !== '') {
+                                                                        totalPayment += parseFloat(paymentAmount);
+
+                                                                        console.log('Installment Number: ' + installmentNumber);
+                                                                        console.log('Payment Amount: ' + paymentAmount);
+                                                                        console.log('Date: ' + currentDate);
+                                                                    }
+                                                                });
+
+                                                                // Include University Fee Payment when checkbox is checked
+                                                                if ($('#pay_checkbox').is(':checked')) {
+                                                                    var universityFeeAmount = 0;
+
+                                                                    // Check which currency is being used and get the LKR equivalent
+                                                                    var paymentLKRValue = parseFloat($('#payment_LKR').val()) || 0;
+                                                                    var paymentAmountValue = parseFloat($('#payment_amount').val()) || 0;
+
+                                                                    // If payment_LKR has value (foreign currency converted), use that
+                                                                    if (paymentLKRValue > 0) {
+                                                                        universityFeeAmount = paymentLKRValue;
+                                                                    }
+                                                                    // Otherwise use the direct payment amount (for LKR)
+                                                                    else if (paymentAmountValue > 0) {
+                                                                        universityFeeAmount = paymentAmountValue;
+                                                                    }
+
+                                                                    totalPayment += universityFeeAmount;
+                                                                    console.log('University Fee Amount added: ' + universityFeeAmount);
+                                                                }
+
+                                                                // Include Initial Fee Payment when checkbox is checked
+                                                                if ($('#payment_checkbox').is(':checked')) {
+                                                                    var initialFeeAmount = parseFloat($('#payment_initial').val()) || 0;
+                                                                    totalPayment += initialFeeAmount;
+                                                                    console.log('Initial Fee Amount added: ' + initialFeeAmount);
+                                                                }
+
+                                                                // Update the total payment display
+                                                                $('#total_payment').text(totalPayment.toFixed(2));
+                                                                console.log('Final Total Payment: ' + totalPayment.toFixed(2));
+                                                            }
+
+                                                            // Function to validate University Fee payment amount against balance
+                                                            function validateUniversityFeeAmount() {
+                                                                var enteredAmount = parseFloat($('#payment_amount').val()) || 0;
+                                                                var balanceAmount = 0;
+
+                                                                // Get the balance amount based on currency
+                                                                if ($('#uni_fee_LKR').text()) {
+                                                                    balanceAmount = parseFloat($('#uni_fee_LKR').text()) || 0;
+                                                                } else if ($('#uni_fee_GBP').text()) {
+                                                                    balanceAmount = parseFloat($('#uni_fee_GBP').text()) || 0;
+                                                                } else if ($('#uni_fee_USD').text()) {
+                                                                    balanceAmount = parseFloat($('#uni_fee_USD').text()) || 0;
+                                                                }
+
+                                                                // If entered amount exceeds balance, set it to balance amount
+                                                                if (enteredAmount > balanceAmount && balanceAmount > 0) {
+                                                                    $('#payment_amount').val(balanceAmount.toFixed(2));
+
+                                                                    // Show warning message
+                                                                    alert('Payment amount cannot exceed the balance amount of ' + balanceAmount.toFixed(2) + '. Amount has been adjusted to the maximum allowed.');
+
+                                                                    // UPDATED: Recalculate LKR amount after adjustment
+                                                                    updatePaymentLKR();
+                                                                }
+                                                            }
+
+                                                            // NEW: Function to update Payment Amount LKR in real-time
+                                                            function updatePaymentLKR() {
+                                                                var paymentAmount = parseFloat($('#payment_amount').val()) || 0;
+                                                                var exchangeRate = parseFloat($('#exchange_rate').val()) || 0;
+
+                                                                // Check if we're dealing with foreign currency (GBP or USD)
+                                                                var isLKR = $('#currency_LKR').text().trim() === 'LKR';
+                                                                var isGBP = $('#currency_GBP').text().trim() === 'GBP';
+                                                                var isUSD = $('#currency_USD').text().trim() === 'USD';
+
+                                                                if (isLKR) {
+                                                                    // If currency is LKR, Payment Amount LKR should be the same as Payment Amount
+                                                                    $('#payment_LKR').val(paymentAmount > 0 ? paymentAmount.toFixed(2) : '');
+
+                                                                    // Hide exchange rate row for LKR
+                                                                    $('#exchange_rate_row').hide();
+                                                                    $('#payment_LKR_row').hide();
+                                                                } else if ((isGBP || isUSD) && paymentAmount > 0) {
+                                                                    // Show exchange rate and LKR rows for foreign currencies
+                                                                    $('#exchange_rate_row').show();
+                                                                    $('#payment_LKR_row').show();
+
+                                                                    if (exchangeRate > 0) {
+                                                                        // Calculate LKR equivalent: Payment Amount × Exchange Rate
+                                                                        var lkrAmount = paymentAmount * exchangeRate;
+                                                                        $('#payment_LKR').val(lkrAmount.toFixed(2));
+                                                                    } else {
+                                                                        // Clear LKR field if no exchange rate
+                                                                        $('#payment_LKR').val('');
+                                                                    }
+                                                                } else {
+                                                                    // Clear LKR field if no payment amount
+                                                                    $('#payment_LKR').val('');
+                                                                }
+                                                            }
+
+                                                            // Function to validate Initial Fee payment amount against balance
+                                                            function validateInitialFeeAmount() {
+                                                                var enteredAmount = parseFloat($('#payment_initial').val()) || 0;
+                                                                var balanceAmount = 0;
+
+                                                                // Get the balance amount based on currency
+                                                                if ($('#registration_fee_LKR').text()) {
+                                                                    balanceAmount = parseFloat($('#registration_fee_LKR').text()) || 0;
+                                                                } else if ($('#registration_fee_GBP').text()) {
+                                                                    balanceAmount = parseFloat($('#registration_fee_GBP').text()) || 0;
+                                                                } else if ($('#registration_fee_USD').text()) {
+                                                                    balanceAmount = parseFloat($('#registration_fee_USD').text()) || 0;
+                                                                }
+
+                                                                // If balance amount is 0, disable the entered amount field and checkbox
+                                                                if (balanceAmount === 0) {
+                                                                    $('#payment_initial').val('');
+                                                                    $('#payment_initial').prop('disabled', true);
+                                                                    $('#payment_checkbox').prop('disabled', true);
+                                                                } else {
+                                                                    // If entered amount exceeds balance, set it to balance amount
+                                                                    if (enteredAmount > balanceAmount) {
+                                                                        $('#payment_initial').val(balanceAmount.toFixed(2));
+
+                                                                        // Show warning message
+                                                                        alert('Payment amount cannot exceed the balance amount of ' + balanceAmount.toFixed(2) + '. Amount has been adjusted to the maximum allowed.');
+                                                                    }
+                                                                }
+                                                            }
+
+                                                            // UPDATED: Enhanced event listeners with real-time LKR updates
+                                                            $(document).ready(function() {
+                                                                // When University Fee checkbox is changed
+                                                                $('#pay_checkbox').on('change', function() {
+                                                                    updateTotalPayment();
+                                                                });
+
+                                                                // UPDATED: When University Fee payment amount is changed - ADD REAL-TIME LKR UPDATE
+                                                                $('#payment_amount').on('input', function() {
+                                                                    validateUniversityFeeAmount(); // Validate first
+                                                                    updatePaymentLKR(); // Update LKR amount in real-time
+                                                                    updateTotalPayment(); // Then update total
+                                                                });
+
+                                                                // When University Fee payment amount loses focus
+                                                                $('#payment_amount').on('blur', function() {
+                                                                    validateUniversityFeeAmount();
+                                                                    updatePaymentLKR();
+                                                                    updateTotalPayment();
+                                                                });
+
+                                                                // UPDATED: When exchange rate is changed - UPDATE LKR AMOUNT
+                                                                $('#exchange_rate').on('input', function() {
+                                                                    updatePaymentLKR(); // Update LKR amount when exchange rate changes
+                                                                    updateTotalPayment(); // Update total
+                                                                });
+
+                                                                // When exchange rate loses focus
+                                                                $('#exchange_rate').on('blur', function() {
+                                                                    updatePaymentLKR();
+                                                                    updateTotalPayment();
+                                                                });
+
+                                                                // When Initial Fee checkbox is changed
+                                                                $('#payment_checkbox').on('change', function() {
+                                                                    updateTotalPayment();
+                                                                });
+
+                                                                // When Initial Fee payment amount is changed
+                                                                $('#payment_initial').on('input', function() {
+                                                                    validateInitialFeeAmount();
+                                                                    updateTotalPayment();
+                                                                });
+
+                                                                // When Initial Fee payment amount loses focus
+                                                                $('#payment_initial').on('blur', function() {
+                                                                    validateInitialFeeAmount();
+                                                                    updateTotalPayment();
+                                                                });
+
+                                                                // Prevent typing non-numeric characters
+                                                                $('#payment_amount, #payment_initial, #exchange_rate').on('keypress', function(e) {
+                                                                    // Allow: backspace, delete, tab, escape, enter, decimal point
+                                                                    if ($.inArray(e.keyCode, [46, 8, 9, 27, 13, 110, 190]) !== -1 ||
+                                                                        // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                                                                        (e.keyCode === 65 && e.ctrlKey === true) ||
+                                                                        (e.keyCode === 67 && e.ctrlKey === true) ||
+                                                                        (e.keyCode === 86 && e.ctrlKey === true) ||
+                                                                        (e.keyCode === 88 && e.ctrlKey === true) ||
+                                                                        // Allow: home, end, left, right
+                                                                        (e.keyCode >= 35 && e.keyCode <= 39)) {
+                                                                        return;
+                                                                    }
+                                                                    // Ensure that it is a number and stop the keypress
+                                                                    if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                                                                        e.preventDefault();
+                                                                    }
+                                                                });
+                                                            });
+
+                                                            // -----------------------------------------------------------------------------------------
+                                                            // -------------------------------------------------------------- 
+                                                        } else {
+                                                            console.log('No installment details found.');
+                                                            $('#installment_details_table').html('<tr><td colspan="8" class="text-center text-danger">No installment details found.</td></tr>');
+                                                        }
+                                                    },
+
+                                                    error: function() {
+                                                        console.log('Error fetching installment details.');
+                                                    }
+                                                });
+                                            }
+                                        } else {
+                                            $('#uni_fee_LKR').text('');
+                                            $('#uni_fee_GBP').text('');
+                                            $('#uni_fee_USD').text('');
+
+                                            $('#currency_LKR').text('');
+                                            $('#currency_GBP').text('');
+                                            $('#currency_USD').text('');
+                                        }
+                                    },
+                                    error: function() {
+                                        $('#money').text('Error fetching data');
+                                    }
+                                });
+                                // --------------------------------------------------------------------------------------
+
+                                // Fetch prog_code and batch data
+                                $.ajax({
+                                    url: 'add_payment_plan_folder/get_prog_code_by_program_name.php',
+                                    method: 'POST',
+                                    data: {
+                                        program_code: programme_code,
+                                        batch_name: window.batch_name
+                                    },
+                                    dataType: 'json',
+                                    success: function(finalResponse) {
+                                        if (!finalResponse.success) {
+                                            console.warn('No matching program code and batch name found.');
+                                            return;
+                                        }
+
+                                        window.prog_code = finalResponse.prog_code;
+                                        $('#fetched_prog_code').val(finalResponse.prog_code);
+
+                                        const {
+                                            batch_no,
+                                            intake_no,
+                                            year_no
+                                        } = finalResponse.batch_data;
+                                        window.fetchedBatchNo = batch_no;
+                                        window.fetchedIntakeNo = intake_no;
+                                        window.fetchedYearNo = year_no;
+
+                                        $('#fetched_batch_no').val(batch_no);
+                                        $('#fetched_intake_no').val(intake_no);
+                                        $('#fetched_year').val(year_no);
+
+                                        // Fetch student registration IDs
+                                        $.ajax({
+                                            url: 'add_payment_plan_folder/get_student_reg_ids.php',
+                                            method: 'POST',
+                                            data: {
+                                                program_code: programme_code,
+                                                batch_id: batch_id
+                                            },
+                                            dataType: 'json',
+                                            success: function(resp) {
+                                                if (!resp.success) {
+                                                    $('#student_reg_ids_output').html("No student registration IDs found.");
+                                                    $('#last_student_reg_id').val('');
+                                                    $('#Last_new_std_reg_id').val('');
+                                                    $('#Last_new_std_reg_id_row').hide();
+                                                    return;
+                                                }
+
+                                                $('#student_reg_ids_output').html(resp.student_reg_ids.join('<br>'));
+
+                                                const lastEnteredId = resp.last_entered_id;
+                                                const lastNewEnteredId = resp.last_new_entered_id;
+
+                                                $('#last_student_reg_id').val(lastEnteredId);
+                                                $('#Last_new_std_reg_id').val(lastNewEnteredId);
+
+                                                window.lastEnteredId = lastEnteredId;
+                                                window.lastNewEnteredId = lastNewEnteredId;
+
+                                                // Generate next new reg ID (continuous numeric)
+                                                let lastNumeric = 0;
+                                                if (lastNewEnteredId) {
+                                                    // Extract numeric suffix (last 6 digits)
+                                                    const numericSuffix = lastNewEnteredId.slice(-6);
+                                                    if (!isNaN(parseInt(numericSuffix))) {
+                                                        lastNumeric = parseInt(numericSuffix, 10);
+                                                    }
+                                                }
+
+                                                const nextNumeric = (lastNumeric + 1).toString().padStart(6, '0');
+                                                const yearPrefix = window.fetchedYearNo.toString(); // e.g., '26'
+                                                const nextNewRegIdDisplay = yearPrefix + nextNumeric;
+
+                                                $('#new_reg_id').val(nextNewRegIdDisplay);
+                                                $('#new_reg_id_generated').text('New REG ID: ' + nextNewRegIdDisplay);
+                                                console.log('Next New REG ID (Display):', nextNewRegIdDisplay);
+
+                                                // Fetch specific student registration ID if exists
+                                                $.ajax({
+                                                    url: 'add_payment_plan_folder/get_specific_student_reg_id.php',
+                                                    method: 'POST',
+                                                    data: {
+                                                        student_code: student_id,
+                                                        program_code: programme_code,
+                                                        batch_id: batch_id
+                                                    },
+                                                    dataType: 'json',
+                                                    success: function(specificResp) {
+                                                        if (specificResp.success && specificResp.student_registration_id) {
+                                                            $('#specific_student_reg_id')
+                                                                .val(specificResp.student_registration_id)
+                                                                .prop('readonly', true);
+
+                                                            $('#new_reg_id')
+                                                                .val(specificResp.new_student_registration_id)
+                                                                .prop('readonly', true);
+
+                                                            $('#bms_automatic_ID, #program_code_row, #Last_new_std_reg_id_row, #batch_no_row, #intake_no_row, #year_no_row, #last_reg_ID_row').hide();
+                                                        } else {
+                                                            $('#Last_new_std_reg_id_row').show();
+                                                            $('#bms_automatic_ID, #program_code_row, #batch_no_row, #intake_no_row, #year_no_row, #last_reg_ID_row')
+                                                                .show()
+                                                                .prop('readonly', true);
+
+                                                            const lastEnteredIdStr = window.lastEnteredId ? window.lastEnteredId.toString() : '00';
+                                                            const lastTwoDigits = lastEnteredIdStr.slice(-2);
+                                                            const incrementedNum = parseInt(lastTwoDigits, 10) + 1;
+                                                            const incrementedStr = incrementedNum.toString().padStart(2, '0');
+
+                                                            const autoGeneratedID = window.prog_code + window.fetchedBatchNo + window.fetchedIntakeNo + window.fetchedYearNo + incrementedStr;
+                                                            $('#specific_student_reg_id').val(autoGeneratedID).prop('readonly', true);
+                                                        }
+                                                    },
+                                                    error: function(xhr, status, error) {
+                                                        console.error("Error fetching specific student registration ID:", error);
+                                                    }
+                                                });
+
+                                            },
+                                            error: function(xhr, status, error) {
+                                                console.error('Error fetching student registration IDs:', error);
+                                            }
+                                        });
+
+                                    },
+                                    error: function(xhr, status, error) {
+                                        console.error('Error fetching prog_code or batch data:', error);
+                                    }
+                                });
+
+                            },
+                            error: function() {
+                                console.error('Error fetching batch name');
+                            }
+                        });
+                    },
+                    error: function() {
+                        console.error('Error fetching program name');
+                    }
+                });
+
+            } else {
+                $('#money').text('0.00'); // Reset when no student is selected
+            }
+
+
+            // ---------------------------SUBMIT ------------------------------------------------------- 
+            $('#submitPayment').on('click', function() {
+                var studentId = $('#student').val(); // Get the student ID
+                var programCode = $('#student option:selected').data('programme-code'); // Get the program code
+                var batchId = $('#student option:selected').data('batch-id'); // Get the batch ID
+                // const regIDValue = document.getElementById('specific_student_reg_id').value;
+
+                // Log the values to the console
+                console.log('Student ID:', studentId);
+                console.log('Program Code:', programCode);
+                console.log('Batch ID:', batchId);
+                // console.log("EEEEEEEEEEEEEE Value:", regIDValue);
+
+                var totalPayment = parseFloat($('#total_payment').text()) || 0;
+                var studentName = $('#student option:selected').text();
+                var paymentInitialValue = $('#payment_initial').val();
+
+                // ------------------------------------------------------------------------------------ 
+                var USDfeeAmount = $('#payment_amount').val(); // Get the value of payment_LKR
+                // console.log('$ Amount :', USDfeeAmount); // Log the value to the console
+                // ------------------------------------------------------------------------------------ 
+                var USDexchangeRate = $('#exchange_rate').val(); // Get the value of payment_LKR
+                // console.log('Exchange rate :', USDexchangeRate); // Log the value to the console
+                // ------------------------------------------------------------------------------------ 
+                var paymentLKRValue = $('#payment_LKR').val(); // Get the value of payment_LKR
+                // console.log('Payment LKR Value:', paymentLKRValue); // Log the value to the console
+
+                // ------------------------------------------------------------------------------------ 
+
+                // // Get currency values
+                var currencyLKR = $('#currency_LKR').text();
+                var currencyGBP = $('#currency_GBP').text();
+                var currencyUSD = $('#currency_USD').text();
+
+                // Only store currencies that have values
+                var CRC = {};
+                if (currencyLKR) {
+                    CRC.LKR = currencyLKR;
+                }
+                if (currencyGBP) {
+                    CRC.GBP = currencyGBP;
+                }
+                if (currencyUSD) {
+                    CRC.USD = currencyUSD;
+                }
+
+                // Log for debugging if any currencies were stored
+                if (Object.keys(CRC).length > 0) {
+                    console.log('CRC values set:', CRC);
+
+                } else {
+                    console.log('No currency values to store');
+                }
+                // ------------------------------------------------------------------------------------ 
+
+                // Show unifeesection div only if USD fee values exist
+                if (USDfeeAmount && USDexchangeRate && paymentLKRValue) {
+                    $('#unifeesection').show();
+                } else {
+                    $('#unifeesection').hide();
+                }
+                // Clear previous installment details
+                $('#modalInstallments').empty();
+
+
+                // Prepare installment details with proper data attributes
+                $('.pay_checkbox:checked').each(function() {
+                    var installmentNumber = $(this).data('installment');
+                    var rowId = $(this).data('row-id');
+                    var paymentAmount = $('#payment_amount_' + installmentNumber).val();
+
+                    // Create list item with data attributes
+                    var listItem = $('<li>')
+                        .data('installment-number', installmentNumber)
+                        .data('payment-amount', paymentAmount)
+                        .data('row-id', rowId)
+                        .text(` ${installmentNumber}: Rs. ${paymentAmount}`);
+
+                    $('#modalInstallments').append(listItem);
+                });
+
+                // Update modal fields
+                $('#modalStudentId').text(studentId);
+                $('#modalStudentName').text(studentName);
+                $('#modalProgrammeBatch').text(window.programme_batch || "N/A");
+                $('#modalTotalPayment').text(totalPayment.toFixed(2));
+
+                // Check if the pay_checkbox is checked
+                if ($('#pay_checkbox').is(':checked')) {
+                    $('#modalUnifee').text(USDfeeAmount);
+                    $('#modalUnifeeexchangeRate').text(USDexchangeRate);
+                    $('#modalUnifeeLKR').text(paymentLKRValue);
+                    $('#madal-crc-Types').text(Object.keys(CRC).join(', ')); // Display stored currency types
+
+                } else {
+                    // Clear the modal fields if the checkbox is not checked
+                    $('#modalUnifee').text('');
+                    $('#modalUnifeeexchangeRate').text('');
+                    $('#modalUnifeeLKR').text('');
+                }
+
+                // Handle initial payment display
+                if ($('#payment_checkbox').is(':checked')) {
+                    var initialPaymentValue = parseFloat($('#payment_initial').val()) || 0; // Get the initial payment value
+
+                    // Set the value in the modal
+                    $('#modalPaymentInitialValue').text(initialPaymentValue.toFixed(2)); // Set the text to the formatted value
+
+                    // Show or hide the section based on the value
+                    if (initialPaymentValue > 0) {
+                        $('#initialPaymentSection').show(); // Show the section if value is greater than 0
+                    } else {
+                        $('#initialPaymentSection').hide(); // Hide the section if value is 0 or less
+                    }
+                } else {
+                    $('#modalPaymentInitialValue').text('0');
+                    $('#initialPaymentSection').hide();
+                }
+
+                // Show the modal
+                var modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+                modal.show();
+            });
+        });
+
+        // ----------------------------------------------------------------------------------------------------------------------------
+
+        // --------------------------------------------------------------------------------------------------------------
+        // --------------------------------------------------------------------------------------------------------------
+        // --------------------------------------------------------------------------------------------------------------
+        // --------------------------------------------------------------------------------------------------------------
+        // --------------------------------------------------------------------------------------------------------------
+        // Replace the confirmPaymentBtn click handler in payment.php with this updated version
+        // Replace the entire confirmPaymentBtn click handler in payment.php with this updated version
+
+        // ✅ NEW: flag to block a second click while a payment is already being processed.
+        // This is the main fix for the duplicate-payment issue - without it, a fast
+        // double-click (or a slow network + impatient click) fires this whole handler twice.
+        let paymentSubmitting = false;
+
+        $('#confirmPaymentBtn').on('click', function() {
+            // ✅ NEW: if a submission is already in progress, ignore this click entirely.
+            if (paymentSubmitting) {
+                console.log('Payment already in progress - ignoring duplicate click.');
+                return;
+            }
+            paymentSubmitting = true;
+
+            // ✅ NEW: disable the button + change its label so the user gets visual
+            // feedback that the click registered and can't click it again.
+            $('#confirmPaymentBtn').prop('disabled', true).text('Processing...');
+
+            const regIDValue = document.getElementById('specific_student_reg_id').value;
+            const NewRegIDValue = document.getElementById('new_reg_id').value;
+
+            // Use window.programme_code to ensure it's defined
+            $.ajax({
+                url: 'your_php_handler.php',
+                method: 'POST',
+                data: {
+                    reg_id: regIDValue,
+                    new_reg_id: NewRegIDValue,
+                    programme_code: window.programme_code,
+                    batch_id: window.batch_id,
+                    student_id: window.student_id
+                },
+                success: function(response) {
+                    console.log("Server Response:", response);
+                },
+                error: function(xhr, status, error) {
+                    console.error("AJAX Error:", error);
+                }
+            });
+
+            // Update receipt information
+            $('#rcp_student_regID').text(regIDValue);
+
+            var paidDate = $('#modalPaidDate').val();
+
+            var receiptNumber = Math.floor(Math.random() * 900000) + 100000;
+            var alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+            var randomAlphabet = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+            receiptNumber += randomAlphabet;
+            console.log(`Receipt Number: ${receiptNumber}`);
+
+            // Check if the Paid Date is empty
+            if (!paidDate) {
+                alert('Please select a Paid Date.');
+                event.preventDefault();
+                return;
+            }
+
+            // Check if either Cash or Card is selected
+            if (!$("input[name='payment_method']:checked").val()) {
+                alert('Please select either Cash or Card as your payment method.');
+                return;
+            }
+
+            // Get the selected student's program code
+            var programCode = $('#student option:selected').data('programme-code');
+
+            // Prepare data to be logged
+            var studentId = $('#modalStudentId').text();
+            var studentName = $('#modalStudentName').text();
+            var programmeBatch = $('#modalProgrammeBatch').text();
+            var totalPayment = $('#modalTotalPayment').text();
+            var initialPayment = $('#modalPaymentInitialValue').text();
+
+            var USDfeeAmount = $('#payment_amount').val();
+            var USDexchangeRate = $('#exchange_rate').val();
+            var paymentLKRValue = $('#payment_LKR').val();
+
+            if ($('#pay_checkbox').is(':checked')) {
+                var USDfeeAmount = $('#payment_amount').val();
+            } else {
+                var USDfeeAmount = '';
+            }
+
+            // Get currency values
+            var currencyLKR = $('#currency_LKR').text();
+            var currencyGBP = $('#currency_GBP').text();
+            var currencyUSD = $('#currency_USD').text();
+
+            // Only store currencies that have values
+            var CRC = {};
+            if (currencyLKR) {
+                CRC.LKR = currencyLKR;
+            }
+            if (currencyGBP) {
+                CRC.GBP = currencyGBP;
+            }
+            if (currencyUSD) {
+                CRC.USD = currencyUSD;
+            }
+
+            // Installments
+            var installments = [];
+            $('#modalInstallments li').each(function() {
+                var installmentNumber = $(this).data('installment-number');
+                var paymentAmount = $(this).data('payment-amount');
+                var rowId = $(this).data('row-id');
+                installments.push({
+                    installmentNumber: installmentNumber,
+                    paymentAmount: paymentAmount,
+                    rowId: rowId
+                });
+            });
+
+            // Get Selected Payment Type and Amount
+            var paymentType = $("input[name='payment_method']:checked").val();
+            var paymentAmount = '';
+
+            if (paymentType === 'cash') {
+                paymentAmount = $('#cashAmount').val();
+            } else if (paymentType === 'card') {
+                paymentAmount = $('#cardAmount').val();
+            } else if (paymentType === 'bank_deposit') {
+                paymentAmount = $('#bankDepositAmount').val();
+            }
+
+            // Get Bank Name (For both Card and Bank Deposit)
+            if (paymentType === 'card' || paymentType === 'bank_deposit') {
+                var bankName = $('#bankName').val();
+            }
+
+            // Get Payment Date (Only for Bank Deposit)
+            if (paymentType === 'bank_deposit') {
+                var paymentDate = $('#paymentDate').val();
+            }
+
+            $.ajax({
+                url: 'payment_folder/process_payment.php',
+                type: 'POST',
+                data: {
+                    studentId: studentId,
+                    studentName: studentName,
+                    programmeBatch: programmeBatch,
+                    programCode: programCode,
+                    totalPayment: totalPayment,
+                    initialPayment: initialPayment,
+                    installments: installments,
+                    USDfeeAmount: USDfeeAmount,
+                    USDexchangeRate: USDexchangeRate,
+                    paymentLKRValue: paymentLKRValue,
+                    CRC: CRC,
+                    paidDate: paidDate,
+                    paymentType: paymentType,
+                    paymentAmount: paymentAmount,
+                    bankName: bankName || null,
+                    paymentDate: paymentDate || '',
+                    receiptNumber: receiptNumber,
+                    studentBmsEmail: window.student_bms_email || 'N/A'
+                },
+                success: function(response) {
+                    try {
+                        console.log("Server Response:", response);
+
+                        var result = JSON.parse(response);
+
+                        // ✅ NEW: whatever the outcome, this request has finished -
+                        // release the flag and restore the button so the user can
+                        // try again (e.g. after a validation error).
+                        paymentSubmitting = false;
+                        $('#confirmPaymentBtn').prop('disabled', false).text('Save Changes');
+
+                        if (result.success) {
+                            alert('Payment processed successfully!');
+
+                            $('#paymentModal').modal('hide');
+
+                            // ✅ NEW: Update payment due tables with exact payment amount
+                            $.ajax({
+                                url: 'payment_folder/update_payment_due_tables.php',
+                                type: 'POST',
+                                data: {
+                                    student_id: result.student_id || studentId,
+                                    programme_batch: result.programme_batch || programmeBatch,
+                                    program_Code: result.program_code || programCode,
+                                    totalPayment: result.total_payment || totalPayment // ✅ Pass exact payment made
+                                },
+                                success: function(dueResponse) {
+                                    try {
+                                        var dueResult = JSON.parse(dueResponse);
+                                        if (dueResult.success) {
+                                            console.log('✅ Payment due tables updated successfully');
+                                            console.log('Previous Balance:', dueResult.previous_balance);
+                                            console.log('Payment Made:', dueResult.payment_made);
+                                            console.log('New Balance:', dueResult.new_balance);
+                                        } else {
+                                            console.error('❌ Error updating payment due tables:', dueResult.message);
+                                        }
+                                    } catch (e) {
+                                        console.error('Error parsing due tables response:', e);
+                                    }
+                                },
+                                error: function() {
+                                    console.error('Error calling update payment due tables');
+                                }
+                            });
+
+                            setTimeout(function() {
+                                window.location.reload();
+                            }, 2000);
+
+                            $('#student_payment_section').hide();
+                            $('#paymentRecipet').show();
+                            $('#payment_print').show();
+
+                            // Receipt generation
+                            var studentName = window.student_name || 'Student Name Not Available';
+                            var studentregID = window.student_registration_id || 'N/A';
+                            var totalPaymentReceipt = 0;
+                            var currentDate = new Date().toLocaleString("en-US", {
+                                timeZone: "Asia/Colombo"
+                            });
+
+                            // Set Receipt Information
+                            $('#reciept_current_date').text(currentDate);
+                            $('#rcp_student_name').text(studentName);
+                            $('#reciept_paid_date').text($('#modalPaidDate').val() || "N/A");
+                            $('#rcp_program_batch').text(window.programme_batch || "N/A");
+                            $('#reciept_No_AG').text(receiptNumber);
+
+                            var paymentMethod = $('input[name="payment_method"]:checked').val();
+                            $('#rcp_payment_method').text(paymentMethod ? paymentMethod : 'Not selected');
+
+                            // Initialize variables for storing bank name and deposit date
+                            var selectedBank = '';
+                            var selectedDate = '';
+
+                            if (paymentMethod === 'card') {
+                                $('#rcp_payment_bank').parent().show();
+                                $('#rcp_payment_dep_date').parent().hide();
+                                selectedBank = $('#bankName').val();
+                                $('#rcp_payment_bank').text(selectedBank ? selectedBank : 'No bank selected');
+                                console.log("Selected Bank (Card): " + selectedBank);
+                            } else if (paymentMethod === 'bank_deposit') {
+                                $('#rcp_payment_bank').parent().show();
+                                $('#rcp_payment_dep_date').parent().show();
+                                selectedBank = $('#bankName').val();
+                                selectedDate = $('#paymentDate').val();
+                                $('#rcp_payment_bank').text(selectedBank ? selectedBank : 'No bank selected');
+                                $('#rcp_payment_dep_date').text(selectedDate ? selectedDate : 'No deposit date selected');
+                                console.log("Selected Bank (Deposit): " + selectedBank);
+                                console.log("Selected Deposit Date: " + selectedDate);
+                            } else if (paymentMethod === 'cash') {
+                                $('#rcp_payment_bank').parent().hide();
+                                $('#rcp_payment_dep_date').parent().hide();
+                                console.log("Cash payment, no bank or deposit date displayed.");
+                            }
+
+                            // Clear Previous Receipt Data
+                            $('#receipt-details').empty();
+
+                            // Loop through each checkbox and collect installment details
+                            $('.pay_checkbox:checked').each(function() {
+                                var installmentNumber = $(this).attr('id').replace('pay_checkbox_', '');
+                                var paymentAmount = parseFloat($('#payment_amount_' + installmentNumber).val()) || 0;
+
+                                if (paymentAmount > 0) {
+                                    let formattedInstallment = installmentNumber.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                                    $('#receipt-details').append(`<tr><td>${formattedInstallment}</td><td>${paymentAmount.toFixed(2)}</td></tr>`);
+                                    totalPaymentReceipt += paymentAmount;
+                                }
+                            });
+
+                            // Initial Payment
+                            if ($('#payment_checkbox').is(':checked')) {
+                                var initialPayment = parseFloat($('#payment_initial').val()) || 0;
+                                $('#receipt-details').append(`<tr><td>Registration Fee</td><td>${initialPayment.toFixed(2)}</td></tr>`);
+                                totalPaymentReceipt += initialPayment;
+                            }
+
+                            // University Fee Details
+                            var uniFeeTable = '';
+                            if ($('#pay_checkbox_LKR').is(':checked') && parseFloat($('#uni_fee_LKR').text()) > 0) {
+                                uniFeeTable += `<tr><td>University Fee (LKR)</td><td>${$('#uni_fee_LKR').text()}</td></tr>`;
+                            }
+                            if ($('#pay_checkbox_GBP').is(':checked') && parseFloat($('#uni_fee_GBP').text()) > 0) {
+                                uniFeeTable += `<tr><td>University Fee (GBP)</td><td>${$('#uni_fee_GBP').text()}</td></tr>`;
+                            }
+                            if ($('#pay_checkbox_USD').is(':checked') && parseFloat($('#uni_fee_USD').text()) > 0) {
+                                uniFeeTable += `<tr><td>University Fee (USD)</td><td>${$('#uni_fee_USD').text()}</td></tr>`;
+                            }
+
+                            // Append University Fees if available
+                            if (uniFeeTable) {
+                                $('#receipt-details').append('<tr><td colspan="2"><strong>University Fees:</strong></td></tr>');
+                                $('#receipt-details').append(uniFeeTable);
+                            }
+
+                            // Add Exchange Rate and Payment Amount if checked
+                            var exchangeRate = parseFloat($('#exchange_rate').val()) || 0;
+                            var paymentAmountLKR = parseFloat($('#payment_LKR').val()) || 0;
+                            var paymentAmountUni = parseFloat($('#payment_amount').val()) || 0;
+
+                            if ($('#pay_checkbox').is(':checked')) {
+                                if (paymentAmountUni > 0) {
+                                    let currencyType = $('#madal-crc-Types').text().trim();
+                                    $('#receipt-details').append(`<tr><td class="tcolor">Uni Payment </td><td>${paymentAmountUni} <span style="color:red; font-weight:bold">[${currencyType}]</span> </td></tr>`);
+                                }
+
+                                if (exchangeRate > 0) {
+                                    $('#receipt-details').append(`<tr><td class="tcolor">Exchange Rate [LKR]</td><td>${exchangeRate.toFixed(2)}</td></tr>`);
+                                }
+
+                                if (paymentAmountLKR > 0) {
+                                    $('#receipt-details').append(`<tr><td class="tcolor">Uni Payment [LKR]</td><td>${paymentAmountLKR.toFixed(2)}</td></tr>`);
+                                    totalPaymentReceipt += paymentAmountLKR;
+                                }
+                            }
+
+                            // Final Total Payment
+                            $('#receipt-details').append(`<tr><td class="tcolor"><strong>Total</strong></td><td><strong>${totalPaymentReceipt.toFixed(2)}</strong></td></tr>`);
+
+                            // ----------------------------------- Email sending sections ----------------------------------------------------------------------------
+
+                            var receiptContent = document.getElementById("paymentRecipet");
+
+                            var options = {
+                                margin: 0.5,
+                                filename: 'receipt.pdf',
+                                image: {
+                                    type: 'jpeg',
+                                    quality: 0.98
+                                },
+                                html2canvas: {
+                                    scale: 2,
+                                    useCORS: true,
+                                    letterRendering: true,
+                                    background: '#fff',
+                                },
+                                jsPDF: {
+                                    unit: 'mm',
+                                    format: 'a4',
+                                    orientation: 'portrait'
+                                }
+                            };
+
+                            // Convert HTML to PDF
+                            html2pdf()
+                                .from(receiptContent)
+                                .set(options)
+                                .toPdf()
+                                .get('pdf')
+                                .then(function(pdf) {
+                                    var pdfData = pdf.output('blob');
+                                    var formData = new FormData();
+                                    formData.append('pdf', pdfData, 'receipt.pdf');
+
+                                    // Additional Data to send
+                                    var studentName = window.student_name || 'Student Name Not Available';
+                                    var studentRegID = window.student_registration_id || 'N/A';
+                                    var programBatch = window.programme_batch || 'N/A';
+                                    var paymentMethod = $('input[name="payment_method"]:checked').val() || 'Not selected';
+                                    var receiptNo = $('#reciept_No_AG').text() || 'N/A';
+                                    var paidDate = $('#reciept_paid_date').text() || 'N/A';
+                                    var studentBmsEmail = window.student_bms_email || 'N/A';
+                                    var totalPaymentEmail = 0;
+
+                                    // Loop through each checkbox and collect installment details
+                                    $('.pay_checkbox:checked').each(function() {
+                                        var installmentNumber = $(this).attr('id').replace('pay_checkbox_', '');
+                                        var paymentAmount = parseFloat($('#payment_amount_' + installmentNumber).val()) || 0;
+
+                                        if (paymentAmount > 0) {
+                                            totalPaymentEmail += paymentAmount;
+                                        }
+                                    });
+
+                                    // Initial Payment
+                                    if ($('#payment_checkbox').is(':checked')) {
+                                        var initialPayment = parseFloat($('#payment_initial').val()) || 0;
+                                        totalPaymentEmail += initialPayment;
+                                    }
+
+                                    // University Fees
+                                    var uniFeeLKR = parseFloat($('#uni_fee_LKR').text()) || 0;
+                                    var uniFeeGBP = parseFloat($('#uni_fee_GBP').text()) || 0;
+                                    var uniFeeUSD = parseFloat($('#uni_fee_USD').text()) || 0;
+
+                                    // Add Exchange Rate and Payment Amount if checked
+                                    var exchangeRate = parseFloat($('#exchange_rate').val()) || 0;
+                                    var paymentAmountLKR = parseFloat($('#payment_LKR').val()) || 0;
+
+                                    // Append additional data to FormData
+                                    formData.append('student_name', studentName);
+                                    formData.append('student_regID', studentRegID);
+                                    formData.append('program_batch', programBatch);
+                                    formData.append('payment_method', paymentMethod);
+                                    formData.append('receipt_no', receiptNo);
+                                    formData.append('paid_date', paidDate);
+                                    formData.append('total_payment', totalPaymentEmail.toFixed(2));
+                                    formData.append('student_bms_email', studentBmsEmail);
+
+                                    // Send the FormData (PDF and additional data) to the server
+                                    var xhr = new XMLHttpRequest();
+                                    xhr.open('POST', 'upload_pdfs.php', true);
+                                    xhr.onload = function() {
+                                        if (xhr.status === 200) {
+                                            alert('PDF and data uploaded successfully!');
+                                        } else {
+                                            alert('Upload failed. Please try again.');
+                                        }
+                                    };
+                                    xhr.send(formData);
+                                });
+
+                        } else {
+                            // This now also covers the new server-side duplicate-payment
+                            // message (e.g. "Duplicate payment blocked: ...") if the
+                            // request somehow got through twice anyway.
+                            alert('Error: ' + (result.message || 'Payment processing failed'));
+                        }
+
+                    } catch (e) {
+                        // ✅ NEW: reset here too - if JSON parsing itself failed,
+                        // the earlier reset above never ran.
+                        paymentSubmitting = false;
+                        $('#confirmPaymentBtn').prop('disabled', false).text('Save Changes');
+                        alert('Error processing response');
+                        console.error('Error parsing response:', e);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    // ✅ NEW: reset on network/server error too, so the user isn't
+                    // stuck with a permanently disabled button.
+                    paymentSubmitting = false;
+                    $('#confirmPaymentBtn').prop('disabled', false).text('Save Changes');
+                    alert('Error processing payment. Please try again.');
+                    console.error('Payment Error:', error);
+                }
+            });
+        });
+        // --------------------------------------------------------------------------------------------------------------
+        // --------------------------------------------------------------------------------------------------------------
+
+        // Reset all dynamic fields to default values
+        function resetFields() {
+            $('#uni_fee_LKR').text('');
+            $('#uni_fee_GBP').text('');
+            $('#uni_fee_USD').text('');
+            $('#currency_LKR').text('');
+            $('#currency_GBP').text('');
+            $('#currency_USD').text('');
+            $('#payment_amount').val('');
+            $('#payment_LKR').val('');
+            $('#exchange_rate').val('');
+            $('#pay_checkbox').prop('checked', false); // Uncheck the checkbox
+            $('#payment_initial').val('');
+            $('#registration_fee_LKR').text('');
+            $('#registration_fee_GBP').text('');
+            $('#registration_fee_USD').text('');
+            $('#registration_currency_LKR').text('');
+            $('#registration_currency_GBP').text('');
+            $('#registration_currency_USD').text('');
+            $('#fetched_program_name').text('');
+            $('#fetched_currency').text('');
+            $('#fetched_installment_type').text('');
+            $('#exchange_rate_row').show();
+            $('#payment_LKR_row').show();
+        }
+
+    });
+</script>
+
+<style>
+    #paymentModal .modal-dialog {
+        max-width: 40%;
+        /* Adjust width */
+        max-height: 90vh;
+        /* Adjust height */
+    }
+
+    #paymentModal .modal-content {
+        height: 85vh;
+        /* Adjust content height */
+        overflow-y: auto;
+        /* Scroll if content is too long */
+    }
+
+    .modal-header {
+        background-color: #052c65;
+        /* Change to any color */
+        color: white;
+    }
+
+    .modal-header .btn-close {
+        filter: invert(1);
+        /* Makes the close button white */
+    }
+
+    /* ------------------------  */
+
+    .btn-primary {
+        background-color: #052c65 !important;
+        /* Custom dark blue color */
+        border-color: #052c65 !important;
+        /* Match border color */
+        color: white !important;
+        /* White text */
+    }
+
+    .btn-primary:hover {
+        background-color: #031b42 !important;
+        /* Darker shade on hover */
+        border-color: #031b42 !important;
+    }
+
+    /* ------------------------  */
+</style>
+
+<!-- Bootstrap 5 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Bootstrap 5 JS (Include this before closing </body>) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Select2 CSS -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+<!-- jQuery (required for Select2) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Select2 JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+<div id="receiptContainer"></div>
+
+<script>
+    // Check if the URL has the refresh parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('refresh')) {
+        // Refresh the page
+        window.location.reload();
+    }
+</script>
