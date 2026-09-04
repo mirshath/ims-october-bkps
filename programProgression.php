@@ -109,9 +109,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
 
-
-
-
     // Insert into allocate_programme
     $allocateQuery = "INSERT INTO allocate_programme 
                       (student_code, university_id, programme_code, batch_id, student_registration_id, new_student_registration_id, compulsory_sub, entered_by) 
@@ -446,7 +443,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     SELECT s.*, s.student_code, s.nic, s.first_name, s.last_name
                                     FROM students s
                                     INNER JOIN allocate_programme a ON a.student_code = s.student_code
-                                    WHERE a.status = 'completed'  AND s.transfer_status = 0
+                                    WHERE a.status = 'progressionTo'  AND s.transfer_status = 0
                                     ";
                                 $result = $conn->query($query);
                                 while ($row = $result->fetch_assoc()) {
@@ -549,14 +546,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     Progression To
                                 </div>
                                 <div class="card-body">
-                                    <!-- <div class="form-group">
-                                        <div class="row">
-                                            <div class="col-md-4"> <label for="university">University</label></div>
-                                            <div class="col-md-8">
-                                                <select id="university" name="university_id" class="form-control select2" required></select>
-                                            </div>
-                                        </div>
-                                    </div> -->
 
                                     <div class="form-group">
                                         <div class="row">
@@ -610,7 +599,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <div class="row">
                                             <div class="col-md-4">
                                                 <label for="from_registration_code"> <s> Registration Code New For Selected
-                                                    Batch</s></label>
+                                                        Batch</s></label>
                                             </div>
                                             <div class="col-md-8">
                                                 <input type="text" readonly id="from_registration_code"
@@ -735,13 +724,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <script>
-        $(document).ready(function () {
-            $('#select_student').on('change', function () {
+        $(document).ready(function() {
+            $('#select_student').on('change', function() {
                 const fromProg = $(this).find(':selected').data('from-programme') || '';
                 $('#from_programme').val(fromProg).trigger('input');
             });
 
-            $('#programme').on('change', function () {
+            $('#programme').on('change', function() {
                 let fromValue = $('#from_programme').val().trim().toLowerCase();
 
                 // Get the text of the selected option from the #programme dropdown
@@ -775,7 +764,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </script>
 
     <script>
-        $(document).ready(function () {
+        $(document).ready(function() {
             $('.select2').select2();
             $('#transfer_sbt_btn').hide();
 
@@ -783,34 +772,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $.ajax({
                 url: 'Batch_transer/fetch_universities.php',
                 type: 'GET',
-                success: function (data) {
+                success: function(data) {
                     $('#university').html(data);
                 }
             });
-
-            // When university is selected, load programs
-            // $('#university').on('change', function() {
-            //     const universityId = $(this).val();
-            //     if (universityId) {
-            //         $.ajax({
-            //             url: 'Batch_transer/fetch_programs_all_programs.php',
-            //             type: 'POST',
-            //             data: {
-            //                 university_id: universityId
-            //             },
-            //             success: function(data) {
-            //                 $('#programme').html(data);
-            //                 $('#batch').html('<option value="">-- Select Batch --</option>');
-            //             }
-            //         });
-            //     } else {
-            //         $('#programme').html('<option value="">-- Select Programme --</option>');
-            //         $('#batch').html('<option value="">-- Select Batch --</option>');
-            //     }
-            // });
-
-
-
 
             // Use fetch_programs_all_programs.php as in lines 22-37 (ignoring university_id filter)
             // Directly load all programs for programme select on page load (no need for university select/change)
@@ -819,45 +784,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $.ajax({
                 url: 'Batch_transer/fetch_programs_all_programs_without_uni.php',
                 type: 'POST',
-                success: function (data) {
+                success: function(data) {
                     $('#programme').html(data);
                     $('#batch').html('<option value="">-- Select Batch --</option>');
                 }
             });
 
-            // When program is selected, load batches and log selected program clearly
-            // $('#programme').on('change', function() {
-            //     const programId = $(this).val();
-            //     const universityId = $('#university').val();
-            //     // Get display text of selected program option
-            //     const programText = $(this).find("option:selected").text();
-
-            //     if (programId && universityId) {
-            //         $.ajax({
-            //             url: 'Batch_transer/fetch_batches.php',
-            //             type: 'POST',
-            //             data: {
-            //                 program_id: programId,
-            //                 university_id: universityId
-            //             },
-            //             success: function(data) {
-            //                 $('#batch').html(data);
-            //                 // Show more detailed info in the console
-            //                 console.log("Selected Program Name :", programText);
-            //                 console.log("Selected Program ID :", programId);
-            //             }
-            //         });
-            //     } else {
-            //         $('#batch').html('<option value="">-- Select Batch --</option>');
-            //     }
-            // });
-
-
-
-
-
-
-            $('#programme').on('change', function () {
+            $('#programme').on('change', function() {
                 const programId = $(this).val();
                 // Get display text of selected program option
                 const programText = $(this).find("option:selected").text();
@@ -869,7 +802,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         data: {
                             program_id: programId
                         },
-                        success: function (data) {
+                        success: function(data) {
                             $('#batch').html(data);
                             // Show more detailed info in the console
                             console.log("Selected Program Name :", programText);
@@ -881,121 +814,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             });
 
-            // -----------------------------------    15-12-2025   Changing    --------------------------------------------------------------- 
-
-            // $(document).on('change', '#batch', function() {
-            //     const batchId = $(this).val();
-            //     const programId = $('#programme').val();
-
-            //     if (batchId && programId) {
-            //         $.ajax({
-            //             url: 'Batch_transer/fetch_registration_ids.php',
-            //             type: 'POST',
-            //             data: {
-            //                 programme_id: programId,
-            //                 batch_id: batchId
-            //             },
-            //             dataType: 'json',
-            //             success: function(response) {
-            //                 // response = { student_registration_id: [...], new_student_registration_id: [...] }
-
-            //                 // Get arrays for old and new registration ids, filter null/empty/undefined
-            //                 const oldRegIdsRaw = Array.isArray(response.student_registration_id) ? response.student_registration_id : [];
-            //                 const oldRegIds = oldRegIdsRaw.filter(item => item !== '' && item !== null && typeof item !== "undefined");
-            //                 const newRegIdsRaw = Array.isArray(response.new_student_registration_id) ? response.new_student_registration_id : [];
-            //                 const newRegIds = newRegIdsRaw.filter(item => item !== '' && item !== null && typeof item !== "undefined");
-
-            //                 // ------- Handle last old registration id -------
-            //                 let sortedOld = oldRegIds.slice().sort(function(a, b) {
-            //                     const aNum = parseInt(a, 10);
-            //                     const bNum = parseInt(b, 10);
-            //                     if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
-            //                     if (a < b) return -1;
-            //                     if (a > b) return 1;
-            //                     return 0;
-            //                 });
-            //                 // Grab the true last value (ignoring null/empty)
-            //                 let lastOldRegId = sortedOld.length > 0 ? sortedOld[sortedOld.length - 1] : '';
-            //                 $('#current_registration_last_code').val(lastOldRegId).prop('readonly', true);
-
-            //                 // Calculate the next registration id (old system)
-            //                 let nextRegId = '';
-            //                 if (lastOldRegId !== undefined && lastOldRegId !== null && lastOldRegId !== '') {
-            //                     if (!isNaN(lastOldRegId)) {
-            //                         nextRegId = parseInt(lastOldRegId, 10) + 1;
-            //                     } else if (/^\d+$/.test(lastOldRegId)) {
-            //                         nextRegId = Number(lastOldRegId) + 1;
-            //                     } else {
-            //                         let match = lastOldRegId.match(/^(.*?)(\d+)$/);
-            //                         if (match) {
-            //                             nextRegId = match[1] + (parseInt(match[2], 10) + 1);
-            //                         } else {
-            //                             nextRegId = '';
-            //                         }
-            //                     }
-            //                 }
-            //                 $('#from_registration_code').val(nextRegId).prop('readonly', false);
-
-            //                 // ------- Handle last new registration id (BMS) -------
-            //                 let sortedNew = newRegIds.slice().sort(function(a, b) {
-            //                     const aNum = parseInt(a, 10);
-            //                     const bNum = parseInt(b, 10);
-            //                     if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
-            //                     if (a < b) return -1;
-            //                     if (a > b) return 1;
-            //                     return 0;
-            //                 });
-            //                 let lastNewRegId = sortedNew.length > 0 ? sortedNew[sortedNew.length - 1] : '';
-            //                 $('#bms_registration_code_last').val(lastNewRegId).prop('readonly', true);
-
-            //                 // Populate .bms_registration_code
-            //                 const bmsHaveCode = $('#bms_registration_have_code').val();
-            //                 let bmsSuggestedCode = '';
-            //                 if (bmsHaveCode === "" || bmsHaveCode === null || typeof bmsHaveCode === "undefined") {
-            //                     if (lastNewRegId !== '') {
-            //                         if (!isNaN(lastNewRegId)) {
-            //                             bmsSuggestedCode = parseInt(lastNewRegId, 10) + 1;
-            //                         } else if (/^\d+$/.test(lastNewRegId)) {
-            //                             bmsSuggestedCode = Number(lastNewRegId) + 1;
-            //                         } else {
-            //                             let matchNew = lastNewRegId.match(/^(.*?)(\d+)$/);
-            //                             if (matchNew) {
-            //                                 bmsSuggestedCode = matchNew[1] + (parseInt(matchNew[2], 10) + 1);
-            //                             } else {
-            //                                 bmsSuggestedCode = '';
-            //                             }
-            //                         }
-            //                     } else {
-            //                         bmsSuggestedCode = '';
-            //                     }
-            //                     $('#bms_registration_code').val(bmsSuggestedCode).prop('readonly', true);
-            //                 } else {
-            //                     $('#bms_registration_code').val(bmsHaveCode).prop('readonly', true);
-            //                 }
-
-            //                 // For logging/debug
-            //                 console.log("Old student_registration_id list:", oldRegIds);
-            //                 console.log("New new_student_registration_id list:", newRegIds);
-            //                 console.log("Last old registration:", lastOldRegId, " Next:", nextRegId);
-            //                 console.log("Last new reg:", lastNewRegId, " Suggest:", bmsSuggestedCode);
-
-            //                 // Clear fields if empty
-            //                 if (oldRegIds.length === 0) {
-            //                     $('#current_registration_last_code').val('').prop('readonly', true);
-            //                     $('#from_registration_code').val('').prop('readonly', false);
-            //                 }
-            //                 if (newRegIds.length === 0) {
-            //                     $('#bms_registration_code_last').val('').prop('readonly', true);
-            //                     $('#bms_registration_code').val('').prop('readonly', true);
-            //                 }
-            //             }
-            //         });
-            //     }
-            // });
-
             // -------------------------------------------------------------------------------------------------- 
             //   Use new fetch_registration_ids.php output structure for current/next registration codes (see file lines 1-36)
-            $(document).on('change', '#batch', function () {
+            $(document).on('change', '#batch', function() {
                 const batchId = $(this).val();
                 const programId = $('#programme').val();
 
@@ -1008,7 +829,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             batch_id: batchId
                         },
                         dataType: 'json',
-                        success: function (response) {
+                        success: function(response) {
                             // Only get NON-EMPTY/NON-NULL values for oldRegIds
                             const oldRegIds = Array.isArray(response.student_registration_id) ?
                                 response.student_registration_id.filter(item => item !== '' && item !== null && typeof item !== "undefined") : [];
@@ -1017,7 +838,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 response.new_student_registration_id.filter(item => item !== '' && item !== null && typeof item !== "undefined") : [];
 
                             // ------- Handle last old registration id -------
-                            let sortedOld = oldRegIds.slice().sort(function (a, b) {
+                            let sortedOld = oldRegIds.slice().sort(function(a, b) {
                                 const aNum = parseInt(a, 10);
                                 const bNum = parseInt(b, 10);
                                 if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
@@ -1028,7 +849,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             let lastOldRegId = sortedOld.length > 0 ? sortedOld[sortedOld.length - 1] : '';
                             // $('#current_registration_last_code').val(lastOldRegId).prop('readonly', true);
-                             $('#current_registration_last_code').val('').prop('readonly', true);
+                            $('#current_registration_last_code').val('').prop('readonly', true);
 
                             // Calculate the next registration id (old system)
                             let nextRegId = '';
@@ -1051,7 +872,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             // ------- Handle and ORDER new registration ids (BMS) -------
                             // newRegIds is already only with values!
-                            let sortedNew = newRegIds.slice().sort(function (a, b) {
+                            let sortedNew = newRegIds.slice().sort(function(a, b) {
                                 const aNum = parseInt(a, 10);
                                 const bNum = parseInt(b, 10);
                                 if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
@@ -1103,7 +924,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // -------------------------------------------------------------------------------------------------- 
 
             // When a student is selected from the dropdown
-            $('#select_student').on('change', function () {
+            $('#select_student').on('change', function() {
                 const studentId = $(this).val();
                 console.log('Selected student ID:', studentId); // Debug log
 
@@ -1115,7 +936,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             id: studentId
                         },
                         dataType: 'json',
-                        success: function (response) {
+                        success: function(response) {
                             console.log('Response received:', response); // Debug log
                             if (!response.error) {
                                 // Update the form fields with student data
@@ -1142,8 +963,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $('#Program_old_code').val(response.programme_code);
                                 console.log('Batch ID OLD:', response.batch_id);
                                 $('#batch_old_code').val(response.batch_id);
-
-
 
 
                                 // Set default red background color
@@ -1175,7 +994,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
                                 // Real-time checking for registration code
-                                $('#from_registration_code_old').on('input', function () {
+                                $('#from_registration_code_old').on('input', function() {
                                     const inputValue = $(this).val();
                                     if (inputValue === response.student_registration_id) {
                                         $(this).css('background-color', 'red'); // Keep background red if it matches
@@ -1191,7 +1010,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 alert('Student data not found');
                             }
                         },
-                        error: function (xhr, status, error) {
+                        error: function(xhr, status, error) {
                             console.log('AJAX Error:', xhr.responseText); // More detailed error log
                             console.log('Status:', status);
                             console.log('Error:', error);
@@ -1204,40 +1023,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             });
 
-            // When program is selected, load subjects
-            // $('#programme').on('change', function() {
-            //     const programId = $(this).val();
-            //     const universityId = $('#university').val();
-            //     if (programId && universityId) {
-            //         $.ajax({
-            //             url: 'Batch_transer/fetch_subjects.php',
-            //             type: 'POST',
-            //             data: {
-            //                 program_id: programId,
-            //                 university_id: universityId
-            //             },
-            //             success: function(data) {
-            //                 const subjects = JSON.parse(data);
-            //                 // Clear the existing subjects
-            //                 $('#compulsory_subjects').html('');
-            //                 // Hide the compulsory subjects initially
-            //                 $('#compulsory_subjects').hide();
 
-            //                 subjects.compulsory.forEach(function(subject) {
-            //                     $('#compulsory_subjects').append(`<div><input type="checkbox" name="compulsory_subjects[]" value="${subject}" checked> ${subject}</div>`);
-            //                 });
-
-            //             }
-            //         });
-            //     } else {
-            //         $('#compulsory_subjects').html('');
-            //     }
-            // });
-
-
-
-
-            $('#programme').on('change', function () {
+            $('#programme').on('change', function() {
                 const programId = $(this).val();
                 if (programId) {
                     $.ajax({
@@ -1246,14 +1033,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         data: {
                             program_id: programId
                         },
-                        success: function (data) {
+                        success: function(data) {
                             const subjects = JSON.parse(data);
                             // Clear the existing subjects
                             $('#compulsory_subjects').html('');
                             // Hide the compulsory subjects initially
                             $('#compulsory_subjects').hide();
 
-                            subjects.compulsory.forEach(function (subject) {
+                            subjects.compulsory.forEach(function(subject) {
                                 $('#compulsory_subjects').append(`<div><input type="checkbox" name="compulsory_subjects[]" value="${subject}" checked> ${subject}</div>`);
                             });
 
@@ -1267,68 +1054,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </script>
 
     <script>
-        // On programme change -> load modules
-        // $('#programme').on('change', function() {
-        //     const programId = $(this).val();
-        //     const universityId = $('#university').val();
-        //     $('#batch').html('<option value="">-- Select Batch --</option>');
-        //     $('#modules-container').hide(); // Hide modules container initially
-
-        //     if (programId && universityId) {
-        //         $.ajax({
-        //             url: 'allocateProgram_files/get_modules.php',
-        //             type: 'GET',
-        //             data: {
-        //                 programme_code: programId
-        //             },
-        //             dataType: 'json',
-        //             success: function(data) {
-        //                 // Clear both sections
-        //                 $('#compulsory-modules-container').empty();
-        //                 $('#elective-modules-container').empty();
-        //                 $('#modules-container').show(); // Show modules container
-
-        //                 if (data.length > 0) {
-        //                     $.each(data, function(key, value) {
-        //                         const moduleType = value.type; // 'Compulsory' or 'Elective'
-        //                         const moduleName = value.module_name;
-
-        //                         // Create the module checkbox HTML
-        //                         let moduleHTML;
-
-        //                         if (moduleType === 'Compulsory') {
-        //                             moduleHTML = `
-        //                                     <div class="form-check">
-        //                                         <input class="form-check-input" type="checkbox" name="compulsory_modules[]" value="${moduleName}" checked>
-        //                                         <label class="form-check-label">${moduleName}</label>
-        //                                     </div>
-        //                                 `;
-        //                             $('#compulsory-modules-container').append(moduleHTML);
-        //                         } else if (moduleType === 'Elective') {
-        //                             moduleHTML = `
-        //                                     <div class="form-check">
-        //                                         <input class="form-check-input" type="checkbox" name="elective_modules[]" value="${moduleName}">
-        //                                         <label class="form-check-label">${moduleName}</label>
-        //                                     </div>
-        //                                 `;
-        //                             $('#elective-modules-container').append(moduleHTML);
-        //                         }
-        //                     });
-        //                 } else {
-        //                     $('#modules-container').append('<p>No modules found for this programme.</p>');
-        //                 }
-        //             },
-        //             error: function(xhr, status, error) {
-        //                 $('#modules-container').empty().append('<p>Error fetching modules.</p>');
-        //                 console.error('Error:', error);
-        //             }
-        //         });
-        //     }
-        // });
-
-
-
-        $('#programme').on('change', function () {
+        $('#programme').on('change', function() {
             const programId = $(this).val();
             $('#batch').html('<option value="">-- Select Batch --</option>');
             $('#modules-container').hide(); // Hide modules container initially
@@ -1341,14 +1067,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         programme_code: programId
                     },
                     dataType: 'json',
-                    success: function (data) {
+                    success: function(data) {
                         // Clear both sections
                         $('#compulsory-modules-container').empty();
                         $('#elective-modules-container').empty();
                         $('#modules-container').show(); // Show modules container
 
                         if (data.length > 0) {
-                            $.each(data, function (key, value) {
+                            $.each(data, function(key, value) {
                                 const moduleType = value.type; // 'Compulsory' or 'Elective'
                                 const moduleName = value.module_name;
 
@@ -1377,7 +1103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $('#modules-container').append('<p>No modules found for this programme.</p>');
                         }
                     },
-                    error: function (xhr, status, error) {
+                    error: function(xhr, status, error) {
                         $('#modules-container').empty().append('<p>Error fetching modules.</p>');
                         console.error('Error:', error);
                     }
@@ -1386,7 +1112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
         // ----------------------------- 
 
-        $('#programme, #batch').change(function () {
+        $('#programme, #batch').change(function() {
             let programmeId = $('#programme').val();
             let batchId = $('#batch').val();
 
@@ -1399,7 +1125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         batch_id: batchId
                     },
                     dataType: 'json',
-                    success: function (response) {
+                    success: function(response) {
                         $('#paymentTableContainer').html(response.table);
 
                         if (response.data) {
@@ -1421,7 +1147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $('#transfer_sbt_btn').hide();
                         }
                     },
-                    error: function (xhr, status, error) {
+                    error: function(xhr, status, error) {
                         alert('Error fetching payment data: ' + error);
                     }
                 });

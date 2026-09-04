@@ -179,78 +179,24 @@ require_once 'PermissionChecking.php';
                             var table = $('#studentsTable').DataTable();
                             table.clear();
 
-                            // studentsData.forEach(function(student) {
-                            //     var statusOptions = getStatusOptions(student.status);
-                            //     // Now, store dataset with the real program/batch id as data attributes for later use
-                            //     table.row.add([
-                            //         "<span class='program-name' data-program-code='" + student.program_code + "'>" + student.program_name + "</span>",
-                            //         "<span class='batch-name' data-batch-id='" + student.batch_id + "'>" + student.batch_name + "</span>",
-                            //         student.student_code,
-                            //         student.student_registration_id,
-                            //         student.first_name + " " + student.last_name,
-                            //         "<select name='student_status' class='form-control'>" + statusOptions + "</select>",
-                            //         "<input type='text' name='additional_info[]' class='form-control' placeholder='Additional Info' value='" + student.dm_remark + "' />",
-                            //         "<button type='button' class='btn btn-sm btn-primary updateBtn' " +
-                            //         "data-registration-id='" + student.student_registration_id + "' " +
-                            //         "data-student-code='" + student.student_code + "' " +
-                            //         "data-program-code='" + student.program_code + "' " +
-                            //         "data-batch-id='" + student.batch_id + "' " +
-                            //         ">Update</button>"
-                            //     ]).draw();
-                            // });
-
-
                             studentsData.forEach(function(student) {
-
                                 var statusOptions = getStatusOptions(student.status);
-
+                                // Now, store dataset with the real program/batch id as data attributes for later use
                                 table.row.add([
-
-                                    "<span class='program-name' data-program-code='" +
-                                    student.program_code + "'>" +
-                                    student.program_name +
-                                    "</span>",
-
-                                    "<span class='batch-name' data-batch-id='" +
-                                    student.batch_id + "'>" +
-                                    student.batch_name +
-                                    "</span>",
-
+                                    "<span class='program-name' data-program-code='" + student.program_code + "'>" + student.program_name + "</span>",
+                                    "<span class='batch-name' data-batch-id='" + student.batch_id + "'>" + student.batch_name + "</span>",
                                     student.student_code,
-
                                     student.student_registration_id,
-
                                     student.first_name + " " + student.last_name,
-
-                                    // STATUS - Select2
-                                    "<select name='student_status' class='form-control student-status-select2' style='width: 100%;'>" +
-                                    statusOptions +
-                                    "</select>",
-
-                                    "<input type='text' name='additional_info[]' class='form-control' " +
-                                    "placeholder='Additional Info' value='" +
-                                    student.dm_remark +
-                                    "' />",
-
+                                    "<select name='student_status' class='form-control'>" + statusOptions + "</select>",
+                                    "<input type='text' name='additional_info[]' class='form-control' placeholder='Additional Info' value='" + student.dm_remark + "' />",
                                     "<button type='button' class='btn btn-sm btn-primary updateBtn' " +
-                                    "data-registration-id='" +
-                                    student.student_registration_id + "' " +
-                                    "data-student-code='" +
-                                    student.student_code + "' " +
-                                    "data-program-code='" +
-                                    student.program_code + "' " +
-                                    "data-batch-id='" +
-                                    student.batch_id + "'>" +
-                                    "Update</button>"
-
-                                ]).draw(false);
-
-                                // Only Status column uses Select2
-                                $('.student-status-select2').select2({
-                                    width: '100%',
-                                    minimumResultsForSearch: Infinity
-                                });
-
+                                    "data-registration-id='" + student.student_registration_id + "' " +
+                                    "data-student-code='" + student.student_code + "' " +
+                                    "data-program-code='" + student.program_code + "' " +
+                                    "data-batch-id='" + student.batch_id + "' " +
+                                    ">Update</button>"
+                                ]).draw();
                             });
                         },
                         error: function() {
@@ -302,8 +248,7 @@ require_once 'PermissionChecking.php';
                 }
 
                 // If status=completed, check dues using correct ids
-                // if (studentStatus === 'completed') {
-                if (studentStatus === 'completed' || studentStatus === 'progressionTo') {
+                if (studentStatus === 'completed') {
                     $.ajax({
                         type: 'POST',
                         url: 'updateStudentStatus/check_student_dues.php',

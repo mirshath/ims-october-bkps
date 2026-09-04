@@ -49,3 +49,19 @@ wanna change as same like wanna table name wnna change to   program_re_register_
 program_progression_table
 to
 program_re_register_table table created
+
+
+
+
+
+
+
+
+
+
+
+--------------------------------------------------------------------
+
+UpdateStudentStatus.php
+
+var statuses = ['active', 'drop', 'transferred', 'completed', 'inactive', 'batchSwap', 'ReRegister', 'progressionTo'];

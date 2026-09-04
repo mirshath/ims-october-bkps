@@ -87,7 +87,7 @@ if ($result_for_up) {
 
 
 
-<!--  ----------------------------------------- MASTER FILE SECTION --------------------------------------------------- -->
+    <!--  ----------------------------------------- MASTER FILE SECTION --------------------------------------------------- -->
     <!-- Nav Item - Pages Collapse Menu -->
     <li class="top_bottom_line nav-item <?= ($current_url == 'create_lead' ||
                                             $current_url == 'db_tables_count' ||
@@ -140,25 +140,25 @@ if ($result_for_up) {
                 <a class="collapse-item <?= ($current_url == 'create_grade' && in_array('Grade - create_grade', $subListValues)) ? 'active' : '' ?>" href="./create_grade" <?= !in_array('Grade - create_grade', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Grade</a>
                 <a class="collapse-item <?= ($current_url == 'create_currency' && in_array('Currency - create_currency', $subListValues)) ? 'active' : '' ?>" href="./create_currency" <?= !in_array('Currency - create_currency', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Currency</a>
                 <a class="collapse-item <?= ($current_url == 'create_status' && in_array('Status - create_status', $subListValues)) ? 'active' : '' ?>" href="./create_status" <?= !in_array('Status - create_status', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Status</a>
-                 <a class="collapse-item <?= ($current_url == 'assign_components_allocations' && in_array('Components Allocations - assign_components_allocations', $subListValues)) ? 'active' : '' ?>" href="assign_components_allocations" <?= !in_array('Components Allocations - assign_components_allocations', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Components Allocations</a>
-                
-                
+                <a class="collapse-item <?= ($current_url == 'assign_components_allocations' && in_array('Components Allocations - assign_components_allocations', $subListValues)) ? 'active' : '' ?>" href="assign_components_allocations" <?= !in_array('Components Allocations - assign_components_allocations', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Components Allocations</a>
+
+
                 <!-- Nav colelction CRUD  -->
                 <a class="collapse-item <?= ($current_url == 'master_nav_collection' && in_array('Nav Collection CRUD - master_nav_collection', $subListValues)) ? 'active' : '' ?>" href="master_nav_collection" <?= !in_array('Nav Collection CRUD - master_nav_collection', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Nav Collection CRUD</a>
 
 
-             
+
                 <a
                     class="collapse-item <?= ($current_url == 'create_decision' && in_array('Decision - create_decision', $subListValues)) ? 'active' : '' ?>"
                     href="./create_decision"
                     <?= !in_array('Decision - create_decision', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Decision</a>
-                    
-                       <!-- induction  section  -->
-                 <h6 class="collapse-header">INDUCTION Components</h6>
-                 
+
+                <!-- induction  section  -->
+                <h6 class="collapse-header">INDUCTION Components</h6>
+
                 <a class="collapse-item <?= ($current_url == 'induction_master' && in_array('Induction Edit - induction_master', $subListValues)) ? 'active' : '' ?>"
                     href="./induction_master" <?= !in_array('Induction Edit - induction_master', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Induction Edit(New)</a>
-                
+
                 <a class="collapse-item <?= ($current_url == 'induction_master_db' && in_array('Induction Edit From DB - induction_master_db', $subListValues)) ? 'active' : '' ?>"
                     href="induction_master_db" <?= !in_array('Induction Edit From DB - induction_master_db', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Induction Edit(From DB)</a>
 
@@ -169,12 +169,12 @@ if ($result_for_up) {
 
 
 
-<!--  ----------------------------------------- TRANSACTION FILE SECTION --------------------------------------------------- -->
+    <!--  ----------------------------------------- TRANSACTION FILE SECTION --------------------------------------------------- -->
 
 
- <!-- ---------------------------------------------------------------------------------------------------------------------  -->
+    <!-- ---------------------------------------------------------------------------------------------------------------------  -->
     <!-- recruitment section (14 COUNT) 02.04.2026   -->
-    
+
     <li class="nav-item top_bottom_line <?= ($current_url == 'addLeads'
                                             || $current_url == 'online_registration_data'
                                             || $current_url == 'uploadStudents'
@@ -185,6 +185,7 @@ if ($result_for_up) {
                                             || $current_url == 'batch_transfer'
                                             || $current_url == 'batchSwap'
                                             || $current_url == 'programProgression'
+                                            || $current_url == 're_register'
                                             || $current_url == 'offer_letter'
                                             || $current_url == 'get_data_from_std'
                                             || $current_url == 'leadsReport'
@@ -241,6 +242,10 @@ if ($result_for_up) {
                     href="programProgression" <?= !in_array('Student Program Progression - programProgression', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Student Program Progression
                 </a>
 
+                <a class="collapse-item <?= ($current_url == 're_register' && in_array('Program Re Registration - re_register', $subListValues)) ? 'active' : '' ?>"
+                    href="re_register" <?= !in_array('Program Re Registration - re_register', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Program Re Registration
+                </a>
+
                 <!--<a class="collapse-item <?= ($current_url == 'UpdateElectiveModule' && in_array('Update Students E Module - UpdateElectiveModule', $subListValues)) ? 'active' : '' ?>"-->
                 <!--    href="UpdateElectiveModule" <?= !in_array('Update Students E Module - UpdateElectiveModule', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>><strike>Update Students E-->
                 <!--        Module</strike></a>-->
@@ -266,9 +271,9 @@ if ($result_for_up) {
         </div>
     </li>
 
-<!-- ---------------------------------------------------------------------------------------------------------------------  -->
+    <!-- ---------------------------------------------------------------------------------------------------------------------  -->
     <!-- EXAM / ASSIGNMENT SECTIONs NEW ON 02.04.2026 -->
-    
+
     <li class="nav-item top_bottom_line <?= ($current_url == 'exams'
                                             || $current_url == 'assesmentDocumentSend'
                                             || $current_url == 'exam_result'
@@ -361,9 +366,9 @@ if ($result_for_up) {
 
     <!-- ---------------------------------------------------------------------------------------------------------------------  -->
     <!-- HRRRRRRRRRRRR  -->
-    
-   
-       <li class="nav-item top_bottom_line <?= ($current_url == 'feedback_link_generate' || $current_url == 'feedback_report') ? 'active' : '' ?> "
+
+
+    <li class="nav-item top_bottom_line <?= ($current_url == 'feedback_link_generate' || $current_url == 'feedback_report') ? 'active' : '' ?> "
         id="navHover">
         <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseHRsection" aria-expanded="true"
             aria-controls="collapseHRsection">
@@ -378,7 +383,7 @@ if ($result_for_up) {
 
 
                 <h6 class="collapse-header">Report</h6>
-               
+
                 <a class="collapse-item <?= ($current_url == 'feedback_report' && in_array('Feedback Report - feedback_report', $subListValues)) ? 'active' : '' ?>"
                     href="feedback_report" <?= !in_array('Feedback Report - feedback_report', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Feedback Report </a>
 
@@ -388,8 +393,8 @@ if ($result_for_up) {
             </div>
         </div>
     </li>
-    
-    
+
+
     <!-- here wanna create a finance separate section -->
     <!-- ---------------------------------------------------------------------------------------------------------------------  -->
     <!-- Finance  -->
@@ -452,15 +457,15 @@ if ($result_for_up) {
 
 
 
-<!--  ----------------------------------------- ONE TO ONE FILE SECTION BY THILSHATH --------------------------------------------------- -->
+    <!--  ----------------------------------------- ONE TO ONE FILE SECTION BY THILSHATH --------------------------------------------------- -->
 
- <!-- One to One  -->
-    <li class="top_bottom_line nav-item <?= ($current_url == 'tutor_time_allocation' 
+    <!-- One to One  -->
+    <li class="top_bottom_line nav-item <?= ($current_url == 'tutor_time_allocation'
                                             || $current_url == 'create_session'
                                             || $current_url == 'tutor_allocation'
                                             || $current_url == 'tutor_session'
                                             || $current_url == 'tutor_view') ? 'active' : '' ?>" id="navHover">
-        
+
         <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsOneToOne"
             aria-expanded="true" aria-controls="collapsOneToOne">
             <i class="fas fa-solid fa-people-arrows"></i>
@@ -469,28 +474,28 @@ if ($result_for_up) {
         <div id="collapsOneToOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordionSidebar">
             <div class="bg-white py-2 collapse-inner rounded">
                 <h6 class="collapse-header">Components</h6>
-                
+
                 <a class="collapse-item <?= ($current_url == 'create_session' && in_array('Create Session - create_session', $subListValues)) ? 'active' : '' ?>" href="create_session" <?= !in_array('Create Session - create_session', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Create Session</a>
 
                 <a class="collapse-item <?= ($current_url == 'tutor_allocation' && in_array('Tutor Allocation - tutor_allocation', $subListValues)) ? 'active' : '' ?>" href="tutor_allocation" <?= !in_array('Tutor Allocation - tutor_allocation', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Tutor Allocation</a>
 
                 <a class="collapse-item <?= ($current_url == 'tutor_session' && in_array('Tutor Session - tutor_session', $subListValues)) ? 'active' : '' ?>" href="tutor_session" <?= !in_array('Tutor Session - tutor_session', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Tutor Session Allocation</a>
-           
-                
+
+
                 <a class="collapse-item <?= ($current_url == 'tutor_time_allocation') ? 'active' : '' ?>" href="tutor_time_allocation" <?= !in_array('Tutor Time Allocation - tutor_time_allocation', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Time Allocation</a>
                 <a class="collapse-item <?= ($current_url == 'tutor_view') ? 'active' : '' ?>" href="tutor_view" <?= !in_array('Tutor View - tutor_view', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Time Slot View</a>
-                
+
             </div>
         </div>
     </li>
-    
-    
-     <!--  ----------------------------------------- OPERATIONS FILE SECTION BY THILSHATH --------------------------------------------------- -->
 
- <!-- OPERATIONS  -->
-    <li class="top_bottom_line nav-item <?= ($current_url == 'classroom_reservation' 
+
+    <!--  ----------------------------------------- OPERATIONS FILE SECTION BY THILSHATH --------------------------------------------------- -->
+
+    <!-- OPERATIONS  -->
+    <li class="top_bottom_line nav-item <?= ($current_url == 'classroom_reservation'
                                             || $current_url == 'add_classroom') ? 'active' : '' ?>" id="navHover">
-        
+
         <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsOperation"
             aria-expanded="true" aria-controls="collapsOperation">
             <i class="fas fa-users-cog"></i>
@@ -505,17 +510,17 @@ if ($result_for_up) {
                 <a class="collapse-item <?= ($current_url == 'class_allocation') ? 'active' : '' ?>" href="class_allocation" <?= !in_array('Class Allocation - class_allocation', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Room Allocation</a>
                 <a class="collapse-item <?= ($current_url == 'add_classroom') ? 'active' : '' ?>" href="add_classroom" <?= !in_array('Add Classroom - add_classroom', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Add Rooms</a>
                 <a class="collapse-item <?= ($current_url == 'add_inventory') ? 'active' : '' ?>" href="add_inventory" <?= !in_array('Add Inventory - add_inventory', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Add Room Inventory</a>
-                
-                
+
+
             </div>
         </div>
     </li>
 
     <!--  ----------------------------------------- DIGITAL FILE SECTION BY THILSHATH --------------------------------------------------- -->
 
- <!-- DIGITAL -->
+    <!-- DIGITAL -->
     <li class="top_bottom_line nav-item <?= ($current_url == 'tv_image') ? 'active' : '' ?>" id="navHover">
-        
+
         <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsDigital"
             aria-expanded="true" aria-controls="collapsDigital">
             <i class="fas fa-icons"></i>
@@ -525,24 +530,24 @@ if ($result_for_up) {
             <div class="bg-white py-2 collapse-inner rounded">
                 <h6 class="collapse-header">Components</h6>
                 <a class="collapse-item <?= ($current_url == 'tv_image') ? 'active' : '' ?>" href="tv_image" <?= !in_array('TV Folder Drive - tv_image', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>TV Folder Drive</a>
-                
-                
+
+
             </div>
         </div>
     </li>
 
 
- <!-- ---------------------------------------------------------------------------------------------------------------------  -->
+    <!-- ---------------------------------------------------------------------------------------------------------------------  -->
     <!-- INDUCTION SECTION  -->
-    
+
     <li class="nav-item top_bottom_line <?= ($current_url == 'induction_scan'
-        || $current_url == 'total_induction_students'
-        || $current_url == 'upload_induction_students'
-        || $current_url == 'induction_from_db_email_send'
-        || $current_url == 'induction_email_report'
-        || $current_url == 'induction_email_body_page'
-        || $current_url == 'induction_scan_db'
-        || $current_url == 'induction_fl_report_db') ? 'active' : '' ?> " id="navHover">
+                                            || $current_url == 'total_induction_students'
+                                            || $current_url == 'upload_induction_students'
+                                            || $current_url == 'induction_from_db_email_send'
+                                            || $current_url == 'induction_email_report'
+                                            || $current_url == 'induction_email_body_page'
+                                            || $current_url == 'induction_scan_db'
+                                            || $current_url == 'induction_fl_report_db') ? 'active' : '' ?> " id="navHover">
         <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseInductionSectionsection"
             aria-expanded="true" aria-controls="collapseInductionSectionsection">
             <i class="fas fa-fw fa-graduation-cap"></i>
@@ -551,7 +556,7 @@ if ($result_for_up) {
         <div id="collapseInductionSectionsection" class="collapse" aria-labelledby="headingOne"
             data-parent="#accordionSidebar">
             <div class="bg-white py-2 collapse-inner rounded">
-                
+
                 <h6 class="collapse-header">FROM OUT SOURCE</h6>
 
                 <a class="collapse-item <?= ($current_url == 'induction_scan' && in_array('Induction Scan - induction_scan', $subListValues)) ? 'active' : '' ?>"
@@ -579,24 +584,24 @@ if ($result_for_up) {
 
 
                 <h6 class="collapse-header">Report</h6>
-    
-                
+
+
                 <a class="collapse-item <?= ($current_url == 'induction_fl_report_db' && in_array('Induction DB Student List - induction_fl_report_db', $subListValues)) ? 'active' : '' ?>"
                     href="induction_fl_report_db" <?= !in_array('Induction DB Student List - induction_fl_report_db', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Induction DB Student List</a>
 
                 <a class="collapse-item <?= ($current_url == 'induction_email_report' && in_array('Induction Email Report - induction_email_report', $subListValues)) ? 'active' : '' ?>"
                     href="induction_email_report" <?= !in_array('Induction Email Report - induction_email_report', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Induction Email Report</a>
 
-    
+
             </div>
         </div>
     </li>
-    
-    
-     <!--  ----------------------------------------- Library FILE SECTION BY THILSHATH --------------------------------------------------- -->
 
- <!-- Library  -->
-    <li class="top_bottom_line nav-item <?= ($current_url == 'library_dashboard' 
+
+    <!--  ----------------------------------------- Library FILE SECTION BY THILSHATH --------------------------------------------------- -->
+
+    <!-- Library  -->
+    <li class="top_bottom_line nav-item <?= ($current_url == 'library_dashboard'
                                             || $current_url == 'borrow'
                                             || $current_url == 'return'
                                             || $current_url == 'book'
@@ -604,7 +609,7 @@ if ($result_for_up) {
                                             || $current_url == 'lib_dashboard'
                                             || $current_url == 'lib_report_view'
                                             || $current_url == 'lib_catagory_items') ? 'active' : '' ?>" id="navHover">
-        
+
         <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsLibrary"
             aria-expanded="true" aria-controls="collapsLibrary">
             <i class="fas fa-solid fa-swatchbook"></i>
@@ -616,7 +621,7 @@ if ($result_for_up) {
                 <a class="collapse-item <?= ($current_url == 'library_dashboard') ? 'active' : '' ?>" href="library_dashboard" <?= !in_array('Library Dashboard - library_dashboard', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Library Dashboard</a>
                 <a class="collapse-item <?= ($current_url == 'borrow') ? 'active' : '' ?>" href="borrow" <?= !in_array('Borrow Book - borrow', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Borrow Book</a>
                 <a class="collapse-item <?= ($current_url == 'return') ? 'active' : '' ?>" href="return" <?= !in_array('Return Book - return', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Return Book</a>
-                
+
                 <h6 class="collapse-header">Book Inventory</h6>
                 <a class="collapse-item <?= ($current_url == 'book') ? 'active' : '' ?>" href="book" <?= !in_array('Book - book', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Book Info</a>
                 <a class="collapse-item <?= ($current_url == 'category') ? 'active' : '' ?>" href="category" <?= !in_array('Category - category', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Book Category</a>
@@ -625,14 +630,14 @@ if ($result_for_up) {
                 <a class="collapse-item <?= ($current_url == 'lib_dashboard') ? 'active' : '' ?>" href="lib_dashboard" target="_blank" rel="noopener noreferrer" <?= !in_array('Library POS - lib_dashboard', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Library POS</a>
                 <a class="collapse-item <?= ($current_url == 'lib_report_view') ? 'active' : '' ?>" href="lib_report_view" <?= !in_array('Library Sales Report - lib_report_view', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Library Sales Report</a>
                 <a class="collapse-item <?= ($current_url == 'lib_catagory_items') ? 'active' : '' ?>" href="lib_catagory_items" <?= !in_array('Library POS Itmes - lib_catagory_items', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Library POS Itmes</a>
-                
-                
+
+
             </div>
         </div>
     </li>
 
 
-<!--  ----------------------------------------- EDIT FILE SECTION --------------------------------------------------- -->
+    <!--  ----------------------------------------- EDIT FILE SECTION --------------------------------------------------- -->
 
     <!-- ---------------------------------------------------------------------------------------------------------------------  -->
     <!-- edit  -->
@@ -653,7 +658,7 @@ if ($result_for_up) {
     </li>
 
 
-<!--  ----------------------------------------- CANCELLATION FILE SECTION --------------------------------------------------- -->
+    <!--  ----------------------------------------- CANCELLATION FILE SECTION --------------------------------------------------- -->
 
     <!-- ---------------------------------------------------------------------------------------------------------------------  -->
     <!-- cancellation  -->
@@ -672,8 +677,8 @@ if ($result_for_up) {
             </div>
         </div>
     </li>
-    
-    
+
+
     <!-- -------------  BMS POS RELATED DATA-------------------------------------------------------------------------------------------------------  -->
     <!-- ---------------------------------------------------------------------------------------------------------------------  -->
 
@@ -725,13 +730,13 @@ if ($result_for_up) {
 
 
 
-<!--  ----------------------------------------- REPORT FILE SECTION --------------------------------------------------- -->
+    <!--  ----------------------------------------- REPORT FILE SECTION --------------------------------------------------- -->
 
     <!-- ---------------------------------------------------------------------------------------------------------------------  -->
     <!-- reports -->
     <li class="nav-item top_bottom_line <?= ($current_url == 'allStudentDetails'
                                             || $current_url == 'studentWiseDetails'
-                                           
+
                                             || $current_url == 'aluminiReport') ? 'active' : '' ?>" id="navHover">
         <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseSix"
             aria-expanded="true" aria-controls="collapseSix">
@@ -741,21 +746,21 @@ if ($result_for_up) {
         <div id="collapseSix" class="collapse" aria-labelledby="headingOne" data-parent="#accordionSidebar">
             <div class="bg-white py-2 collapse-inner rounded">
                 <h6 class="collapse-header">Components</h6>
-                
+
                 <!-- --------------------------------------------------------  -->
                 <a class="collapse-item <?= ($current_url == 'check_all_data_for') ? 'active' : '' ?>"
                     href="check_all_data_for" <?= !in_array('Payment Check Report - check_all_data_for', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Payment Check Report</a>
                 <!-- --------------------------------------------------------  -->
                 <a class="collapse-item <?= ($current_url == 'allStudentDetails') ? 'active' : '' ?>" href="allStudentDetails" <?= !in_array('All Student Details - allStudentDetails', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>All Student Details</a>
                 <a class="collapse-item <?= ($current_url == 'studentWiseDetails') ? 'active' : '' ?>" href="studentWiseDetails" <?= !in_array('Student Wise Details - studentWiseDetails', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Student Wise Details</a>
-                         
+
 
             </div>
         </div>
     </li>
-    
-    
-<!--  ----------------------------------------- OPTION FILE SECTION --------------------------------------------------- -->
+
+
+    <!--  ----------------------------------------- OPTION FILE SECTION --------------------------------------------------- -->
 
     <!-- ---------------------------------------------------------------------------------------------------------------------  -->
     <!-- options  -->
@@ -772,12 +777,12 @@ if ($result_for_up) {
                 <a class="collapse-item <?= ($current_url == 'userPermission') ? 'active' : '' ?>" href="userPermission" <?= !in_array('User Permission - userPermission', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>User Permission</a>
                 <a class="collapse-item <?= ($current_url == 'all_notifications') ? 'active' : '' ?>" href="all_notifications" <?= !in_array('All Notifications - all_notifications', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>All Notifications</a>
                 <a class="collapse-item <?= ($current_url == 'program_to_user' && in_array('UserProgram - program_to_user', $subListValues)) ? 'active' : '' ?>" href="./program_to_user" <?= !in_array('UserProgram - program_to_user', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>User Program Allocation</a>
-             <!--<a class="collapse-item <?= ($current_url == 'studentCheckPayment' && in_array('Student Check Payments - studentCheckPayment', $subListValues)) ? 'active' : '' ?>" href="./studentCheckPayment" <?= !in_array('Student Check Payments - studentCheckPayment', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Student check payment</a>-->
-          
-           <!--THILSHATH BRO ADDED THE ONE TO ONE SESSTION PART -->
-           
-             <a class="collapse-item <?= ($current_url == 'send_student_login') ? 'active' : '' ?>" href="send_student_login" <?= !in_array('Send Student Login - send_student_login', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Student Log</a>
-             <a class="collapse-item <?= ($current_url == 'generate_student_logins') ? 'active' : '' ?>" href="generate_student_logins" <?= !in_array('Generate Student Logins - generate_student_logins', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Loard Student Logins</a>
+                <!--<a class="collapse-item <?= ($current_url == 'studentCheckPayment' && in_array('Student Check Payments - studentCheckPayment', $subListValues)) ? 'active' : '' ?>" href="./studentCheckPayment" <?= !in_array('Student Check Payments - studentCheckPayment', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Student check payment</a>-->
+
+                <!--THILSHATH BRO ADDED THE ONE TO ONE SESSTION PART -->
+
+                <a class="collapse-item <?= ($current_url == 'send_student_login') ? 'active' : '' ?>" href="send_student_login" <?= !in_array('Send Student Login - send_student_login', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Student Log</a>
+                <a class="collapse-item <?= ($current_url == 'generate_student_logins') ? 'active' : '' ?>" href="generate_student_logins" <?= !in_array('Generate Student Logins - generate_student_logins', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Loard Student Logins</a>
             </div>
         </div>
     </li>
