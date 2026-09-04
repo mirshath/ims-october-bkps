@@ -19,8 +19,6 @@ Changed here corelcty
 Re Register
 -----------------------------------------------------
 
-
-
 re_register.php
 
 included the status - UpdateStudentStatus.php    212 line
@@ -49,6 +47,5 @@ wanna change as same like wanna table name wnna change to   program_re_register_
 
 
 program_progression_table
-
-
+to
 program_re_register_table table created
