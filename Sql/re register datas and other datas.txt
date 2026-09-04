@@ -1,0 +1,54 @@
+batch swap ok when already batch have student that ok  - ID genaratge 
+
+---------------------------------------------------
+03-09-2026 nyt Data
+-----------------------------------------------------
+
+---------------------------------------------------
+Program Progression
+-----------------------------------------------------
+// $('#from_registration_code').val(nextRegId).prop('readonly', false);
+                            $('#from_registration_code').val('').prop('readonly', true);
+
+Changed here corelcty
+
+
+
+
+---------------------------------------------------
+Re Register
+-----------------------------------------------------
+
+
+
+re_register.php
+
+included the status - UpdateStudentStatus.php    212 line
+
+
+-----------------------------------------------------
+ // If status=completed, check dues using correct ids
+                if (studentStatus === 'completed') {
+                    $.ajax({
+                        type: 'POST',
+                        url: 'updateStudentStatus/check_student_dues.php',
+                        data: {
+                            student_code: studentCode,
+                            program_code: programCode,
+                            batch_id: batchId
+                        },
+
+
+wanan check these 
+-----------------------------------------------------
+
+wanna log wanans eparately store 
+it storing program_progression_table 
+wanna change as same like wanna table name wnna change to   program_re_register_table
+
+
+
+program_progression_table
+
+
+program_re_register_table table created
