@@ -1,0 +1,247 @@
+<?php
+include '../database/connection.php'; // Include DB connection
+
+if (isset($_POST['saveButton'])) { // Check if the submit button is pressed
+    // Get the student codes as an array
+    $student_codes = $_POST['student_codes']; // This should already be an array, no need to explode
+
+    // Other variables from the form
+    $programme_batch = $_POST['programmeBatch'];
+    $entered_by = $_POST['username'];
+
+
+    // ---------------- reg date paymetn section ---------------------
+
+    $courseFeeLKR_InstallmentDateFirst = $_POST['courseFeeLKR_InstallmentDateFirst'] ?? '';
+    $courseFeeLKR_InstallmentDateFirst_DUE = $_POST['courseFeeLKR_InstallmentDateFirst_DUE'] ?? '';
+
+    // ---------------------------------------------------
+
+    // University Fee
+    $university_fee_LKR = $_POST['uniFeeLKR'] ?? NULL;
+    $university_fee_GBP = $_POST['uniFeeGBP'] ?? NULL;
+    $university_fee_USD = $_POST['uniFeeUSD'] ?? NULL;
+
+    // Course Fee
+    $courseFeeLKR_total = $_POST['courseFeeInputLKR_initial_value'] ?? NULL;
+    $courseFeeGBP_total = $_POST['courseFeeInputGBP_initial_value'] ?? NULL;
+    $courseFeeUSD_total = $_POST['courseFeeInputUSD_initial_value'] ?? NULL;
+
+    $course_fee_LKR = $_POST['courseFeeLKR'] ?? NULL;
+    $course_fee_GBP = $_POST['courseFeeGBP'] ?? NULL;
+    $course_fee_USD = $_POST['courseFeeUSD'] ?? NULL;
+
+    // Registration Fee
+    $registration_fee_LKR = $_POST['registrationFeeLKR'] ?? NULL;
+    $registration_fee_GBP = $_POST['registrationFeeGBP'] ?? NULL;
+    $registration_fee_USD = $_POST['registrationFeeUSD'] ?? NULL;
+
+    // Payment Types
+    $course_fee_type_LKR = $_POST['courseFeeLKR_type'] ?? NULL;
+    $course_fee_type_GBP = $_POST['courseFeeGBP_type'] ?? NULL;
+    $course_fee_type_USD = $_POST['courseFeeUSD_type'] ?? NULL;
+
+    // Installments
+    $installment_month_LKR = $_POST['installmentsLKR'] ?? NULL;
+    $installment_month_GBP = $_POST['installmentsGBP'] ?? NULL;
+    $installment_month_USD = $_POST['installmentsUSD'] ?? NULL;
+
+    // Retrieve installment amounts and dates
+    $installmentGBP_amounts = $_POST['installmentGBP_amount'] ?? [];
+    $installmentGBP_dates = $_POST['installmentGBP_date'] ?? [];
+    $installmentLKR_amounts = $_POST['installmentLKR_amount'] ?? [];
+    $installmentLKR_dates = $_POST['installmentLKR_date'] ?? [];
+    $installmentUSD_amounts = $_POST['installmentUSD_amount'] ?? [];
+    $installmentUSD_dates = $_POST['installmentUSD_date'] ?? [];
+
+    // Fetch hidden input values for installments
+    $discount_types = $_POST['installmentLKR_discount_type'] ?? [];
+    $discount_values = $_POST['installmentLKR_discount_value'] ?? [];
+    $remarks = $_POST['installmentLKR_remark'] ?? [];
+
+    // Start transaction to ensure both payment and installment insertions are successful
+    mysqli_begin_transaction($conn);
+
+    try {
+        foreach ($student_codes as $student_code) {
+            // Check if the payment plan already exists in add_payment_plan_table
+            $check_payment_plan_sql = "SELECT COUNT(*) FROM add_payment_plan_table 
+            WHERE student_id = '$student_code' 
+            AND programme_batch = '$programme_batch'";
+
+            $check_result = mysqli_query($conn, $check_payment_plan_sql);
+            $check_row = mysqli_fetch_array($check_result);
+
+            if ($check_row[0] > 0) {
+                // If there's an existing record, show an error or skip the insertion
+                // echo "<script>alert('Duplicate entry: A payment plan for student code $student_code and programme batch already exists in add_payment_plan_table. Skipping this entry.');</script>";
+                continue; // Skip to the next student code
+            }
+
+            // Prepare the SQL query to insert the data for each student code
+            $sql = "INSERT INTO add_payment_plan_table 
+                (student_id, programme_batch, 
+                university_fee_LKR, courseFeeLKR_total, course_fee_LKR, course_fee_type_LKR, installment_month_LKR, registration_fee_LKR,
+                university_fee_GBP, courseFeeGBP_total, course_fee_GBP, course_fee_type_GBP, installment_month_GBP, registration_fee_GBP,
+                university_fee_USD, courseFeeUSD_total, course_fee_USD, course_fee_type_USD, installment_month_USD, registration_fee_USD, entered_by, lkr_reg_date, lkr_reg_due_date) 
+                VALUES ('$student_code', '$programme_batch', 
+                '$university_fee_LKR',  '$courseFeeLKR_total', '$course_fee_LKR', '$course_fee_type_LKR', '$installment_month_LKR', '$registration_fee_LKR',
+                '$university_fee_GBP',  '$courseFeeGBP_total', '$course_fee_GBP', '$course_fee_type_GBP', '$installment_month_GBP', '$registration_fee_GBP',
+                '$university_fee_USD',  '$courseFeeUSD_total', '$course_fee_USD', '$course_fee_type_USD', '$installment_month_USD',  '$registration_fee_USD',
+                '$entered_by', '$courseFeeLKR_InstallmentDateFirst', '$courseFeeLKR_InstallmentDateFirst_DUE')";
+
+            // Execute the query for each student
+            if (!mysqli_query($conn, $sql)) {
+                // In case of an error, throw an exception
+                throw new Exception("Error inserting payment plan for student code $student_code: " . mysqli_error($conn));
+            }
+
+            // --------------------------------- 
+            // Optionally, you can get the last inserted ID here
+            $last_id = mysqli_insert_id($conn);
+
+            // Check if the payment plan already exists in installment_payment_table
+            $check_sql = "SELECT COUNT(*) FROM installment_payment_table 
+            WHERE student_id = '$student_code' 
+            AND programme_batch = '$programme_batch' 
+            AND fee_type = '$course_fee_type_LKR'";
+
+            $result = mysqli_query($conn, $check_sql);
+            $row = mysqli_fetch_array($result);
+
+            if ($row[0] > 0) {
+                // If there's an existing record, show an error or skip the insertion
+                // echo "<script>alert('Duplicate entry: A payment plan for student code $student_code and programme batch already exists in installment_payment_table. Skipping this entry.');</script>";
+                continue; // Skip to the next student code
+            }
+
+            // Insert payment plan into the installment payment table
+            $installment_sql = "INSERT INTO installment_payment_table 
+                (
+                payment_plans_tb_id,
+                student_id,
+                programme_batch, 
+                unifee_lkr_total,
+                unifee_lkr,
+                unifee_gbp_total,
+                unifee_gbp,
+                unifee_usd_total,
+                unifee_usd, 
+                fee_type,
+                coursefee_total,
+                coursefee,
+                registrationfee) 
+                VALUES (
+                '$last_id', 
+                '$student_code', 
+                '$programme_batch',
+                '$university_fee_LKR',
+                '$university_fee_LKR',
+                '$university_fee_GBP', 
+                '$university_fee_GBP',
+                '$university_fee_USD', 
+                '$university_fee_USD', 
+                '$course_fee_type_LKR', 
+                '$courseFeeLKR_total',
+                '$course_fee_LKR',
+                '$registration_fee_LKR'
+                )";
+
+            // Execute the query
+            if (!mysqli_query($conn, $installment_sql)) {
+                echo "Error inserting into installment payment table: " . mysqli_error($conn);
+                exit;
+            }
+
+            // ------------------------------- 
+
+            // Step 3: Get the last inserted ID from installment_payment_table
+            $installment_payment_id = mysqli_insert_id($conn);
+
+            if (isset($_POST['installmentLKR_amount']) && isset($_POST['installmentLKR_date'])) {
+                $amounts = $_POST['installmentLKR_amount'];
+                $hiddenAmounts = $_POST['HiddeninstallmentLKR_amount'] ?? []; // Capture hidden amounts
+                $dates = $_POST['installmentLKR_date'];
+                $installmentNumbers = $_POST['installment_number'];
+
+                // Create installment_details_table if not exists
+                $create_table_sql = "CREATE TABLE IF NOT EXISTS installment_details_table (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        installment_payment_table_id INT,
+                        student_id VARCHAR(255),
+                        programme_batch VARCHAR(255),
+                        installment_numbers VARCHAR(255),
+                        devided_values DECIMAL(10, 2), 
+                        installment_amount DECIMAL(10, 2),
+                        due_date DATE,
+                        discount_type VARCHAR(255),
+                        discount_value DECIMAL(10, 2),
+                        remark VARCHAR(255),
+                        entered_by VARCHAR(50),
+                        UNIQUE KEY unique_installment (installment_payment_table_id, student_id, installment_numbers)
+                    )";
+
+                if (!mysqli_query($conn, $create_table_sql)) {
+                    throw new Exception("Error creating installment details table: " . mysqli_error($conn));
+                }
+
+                // Insert installment details
+                for ($i = 0; $i < count($amounts); $i++) {
+                    $installment_count = trim($installmentNumbers[$i]);
+                    $amount = str_replace(',', '', $amounts[$i]); // Remove commas
+                    $hidden_amount = str_replace(',', '', $hiddenAmounts[$i] ?? $amount); // Use hidden amount if available
+                    $due_date = $dates[$i];
+
+                    // Assign values to variables
+                    $discount_type = $discount_types[$i] ?? NULL;
+                    $discount_value = $discount_values[$i] ?? NULL;
+                    $remark = $remarks[$i] ?? NULL;
+
+                    // Prepare the SQL statement
+                    $installment_details_sql = "INSERT INTO installment_details_table 
+                (installment_payment_table_id, student_id, programme_batch, installment_numbers, devided_values, installment_amount, due_date, discount_type, discount_value, remark, entered_by)
+                VALUES 
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+                    $stmt = mysqli_prepare($conn, $installment_details_sql);
+                    mysqli_stmt_bind_param($stmt, "isssddssdss", $installment_payment_id, $student_code, $programme_batch, $installment_count, $hidden_amount, $amount, $due_date, $discount_type, $discount_value, $remark, $entered_by);
+
+                    if (!mysqli_stmt_execute($stmt)) {
+                        throw new Exception("Error inserting installment details: " . mysqli_error($conn));
+                    }
+                    mysqli_stmt_close($stmt);
+                }
+            }
+
+            // Insert into payment_withheld_table
+            $program_id = $_POST['programme_id'] ?? null;
+            $batch_id = $_POST['batch_id'] ?? null;
+
+            if ($program_id && $batch_id) {
+                $payment_status = 'withheld';
+
+                $withheld_sql = "INSERT INTO payment_withheld_table (student_code, program_id, batch_id, payment_status) 
+                                 VALUES ('$student_code', '$program_id', '$batch_id', '$payment_status')";
+
+                if (!mysqli_query($conn, $withheld_sql)) {
+                    throw new Exception("Error inserting into payment_withheld_table: " . mysqli_error($conn));
+                }
+            } else {
+                echo "Error: Invalid program_id or batch_id.";
+                exit; // Stop execution if values are invalid
+            }
+        }
+
+        // Commit the transaction after successful insertion for all students
+        mysqli_commit($conn);
+
+        // Successfully inserted
+        echo "<script>alert('Installment payment plan has been successfully added for the Batch!');</script>";
+        echo '<script>window.location.href = "../batch_wise_payment_plan";</script>';
+        exit();
+    } catch (Exception $e) {
+        // Rollback transaction in case of an error
+        mysqli_rollback($conn);
+        echo "Error: " . $e->getMessage();
+    }
+}

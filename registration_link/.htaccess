@@ -1,0 +1,54 @@
+# # Enable URL rewriting
+# RewriteEngine On
+
+# # -------------------------
+# # Redirect root access (/ims/) to BMS
+# # -------------------------
+# RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\ /ims/?\ HTTP/
+# RewriteRule ^$ https://bms.ac.lk [R=302,L]
+
+# # -------------------------
+# # Redirect direct access to registration_link folder to BMS
+# # -------------------------
+# RewriteCond %{REQUEST_URI} ^/ims/registration_link/?$
+# RewriteRule ^.*$ https://bms.ac.lk [R=302,L]
+
+
+# # -------------------------
+# # Allow save_register.php, generate_link.php, upload_document.php, upload_doc_backend.php, and register.php with token
+# # -------------------------
+# RewriteCond %{REQUEST_URI} ^/ims/registration_link/
+# RewriteCond %{REQUEST_URI} !^/ims/registration_link/register\.php$
+# RewriteCond %{REQUEST_URI} !^/ims/registration_link/save_register\.php$
+# RewriteCond %{REQUEST_URI} !^/ims/registration_link/generate_link\.php$
+# RewriteCond %{REQUEST_URI} !^/ims/registration_link/upload_document\.php$
+# RewriteCond %{REQUEST_URI} !^/ims/registration_link/upload_doc_backend\.php$
+# RewriteRule ^.*$ https://bms.ac.lk [R=302,L]
+
+
+
+# Enable URL rewriting
+RewriteEngine On
+
+# -------------------------
+# Redirect root access (https://ims.bms.ac.lk/) to main BMS site
+# -------------------------
+RewriteCond %{REQUEST_URI} ^/?$
+RewriteRule ^$ https://bms.ac.lk [R=302,L]
+
+# -------------------------
+# Redirect direct access to registration_link folder to BMS
+# -------------------------
+RewriteCond %{REQUEST_URI} ^/registration_link/?$
+RewriteRule ^.*$ https://bms.ac.lk [R=302,L]
+
+# -------------------------
+# Allow only specific PHP files inside registration_link
+# -------------------------
+RewriteCond %{REQUEST_URI} ^/registration_link/
+RewriteCond %{REQUEST_URI} !^/registration_link/register\.php$
+RewriteCond %{REQUEST_URI} !^/registration_link/save_register\.php$
+RewriteCond %{REQUEST_URI} !^/registration_link/generate_link\.php$
+RewriteCond %{REQUEST_URI} !^/registration_link/upload_document\.php$
+RewriteCond %{REQUEST_URI} !^/registration_link/upload_doc_backend\.php$
+RewriteRule ^.*$ https://bms.ac.lk [R=302,L]

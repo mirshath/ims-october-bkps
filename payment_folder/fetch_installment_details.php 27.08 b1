@@ -1,0 +1,43 @@
+<?php
+    // Include your database connection
+;
+include("../database/connection.php");
+// Check if student_id is set
+
+if (isset($_POST['student_id'])) {
+    $student_id = $_POST['student_id'];
+
+    // Prepare SQL query to fetch installment details for the student
+    $sql = "SELECT * FROM installment_details_table WHERE student_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('s', $student_id); // Bind student_id to the query
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    // Check if there are any results
+    if ($result->num_rows > 0) {
+        $installment_details = [];
+
+        // Fetch data and store it in an array
+        while ($row = $result->fetch_assoc()) {
+            $installment_details[] = [
+                'row_id' => $row['id'],
+                'installment_numbers' => $row['installment_numbers'],
+                'installment_amount' => $row['installment_amount'],
+                'due_date' => $row['due_date'],
+                'remark' => $row['remark']
+            ];
+        }
+
+        // Return the data as JSON
+        echo json_encode(['success' => true, 'installment_details' => $installment_details]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'No installment details found.']);
+    }
+
+    $stmt->close();
+} else {
+    echo json_encode(['success' => false, 'message' => 'Student ID not provided.']);
+}
+
+$conn->close();

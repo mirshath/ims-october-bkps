@@ -1,0 +1,666 @@
+CREATE TABLE add_payment_plan_table (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    programme_batch VARCHAR(255),
+    university_fee_LKR DECIMAL(10,2),
+    university_fee_GBP DECIMAL(10,2),
+    university_fee_USD DECIMAL(10,2),
+    course_fee_LKR DECIMAL(10,2),
+    course_fee_GBP DECIMAL(10,2),
+    course_fee_USD DECIMAL(10,2),
+    course_fee_type_LKR ENUM('full', 'installment'),
+    course_fee_type_GBP ENUM('full', 'installment'),
+    course_fee_type_USD ENUM('full', 'installment'),
+    installments_LKR DECIMAL(10,2),
+    installments_GBP DECIMAL(10,2),
+    installments_USD DECIMAL(10,2),
+    registration_fee_LKR DECIMAL(10,2),
+    registration_fee_GBP DECIMAL(10,2),
+    registration_fee_USD DECIMAL(10,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE add_payment_plan_table (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    programme_batch VARCHAR(255) NOT NULL,
+    university_fee_LKR DECIMAL(10,2) NULL,
+    university_fee_GBP DECIMAL(10,2) NULL,
+    university_fee_USD DECIMAL(10,2) NULL,
+    course_fee_LKR DECIMAL(10,2) NULL,
+    course_fee_GBP DECIMAL(10,2) NULL,
+    course_fee_USD DECIMAL(10,2) NULL,
+    course_fee_type_LKR ENUM('full', 'installment') NULL,
+    course_fee_type_GBP ENUM('full', 'installment') NULL,
+    course_fee_type_USD ENUM('full', 'installment') NULL,
+    installments_LKR DECIMAL(10,2) NULL,
+    installments_GBP DECIMAL(10,2) NULL,
+    installments_USD DECIMAL(10,2) NULL,
+    registration_fee_LKR DECIMAL(10,2) NULL,
+    registration_fee_GBP DECIMAL(10,2) NULL,
+    registration_fee_USD DECIMAL(10,2) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
+CREATE TABLE add_payment_plan_table (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    programme_batch VARCHAR(255) NOT NULL,
+    university_fee_LKR INT NULL,
+    course_fee_LKR INT NULL,
+    course_fee_type_LKR ENUM('full', 'installment') NULL,
+    installments_LKR INT NULL,
+    registration_fee_LKR INT NULL,
+    university_fee_GBP INT NULL,
+    course_fee_GBP INT NULL,
+    course_fee_type_GBP ENUM('full', 'installment') NULL,
+    installments_GBP INT NULL,
+    registration_fee_GBP INT NULL,
+    university_fee_USD INT NULL,
+    course_fee_USD INT NULL,
+    course_fee_type_USD ENUM('full', 'installment') NULL,
+    installments_USD INT NULL,
+    registration_fee_USD INT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
+CREATE TABLE `installment_payment_table` (
+   id INT AUTO_INCREMENT PRIMARY KEY,
+  `payment_plans_tb_id` int(11) NOT NULL,
+  `student_id` int(11) NOT NULL,
+  `programme_batch` varchar(255) NOT NULL,
+  `unifee_lkr_total` int(11) NOT NULL,
+  `unifee_lkr` int(11) NOT NULL,
+  `unifee_gbp_total` int(11) NOT NULL,
+  `unifee_gbp` int(11) NOT NULL,
+  `unifee_usd_total` int(11) DEFAULT NULL,
+  `unifee_usd` int(11) NOT NULL,
+  `fee_type` varchar(255) NOT NULL,
+  `coursefee_total` int(11) NOT NULL,
+  `coursefee` int(11) NOT NULL,
+  `registrationfee` int(11) NOT NULL,
+  `installment_money` int(11) NOT NULL,  -- New column
+  `duedate` date NOT NULL,               -- New column
+  `paid_money` int(11) NOT NULL,         -- New column
+  `outstanding` int(11) NOT NULL         -- New column
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+CREATE TABLE `installment_payment_table` (
+   id INT AUTO_INCREMENT PRIMARY KEY,
+  `payment_plans_tb_id` int(11) NOT NULL,
+  `student_id` int(11) NOT NULL,
+  `programme_batch` varchar(255)  NULL,
+  `unifee_lkr_total` int(11)  NULL,
+  `unifee_lkr` int(11)  NULL,
+  `unifee_gbp_total` int(11)  NULL,
+  `unifee_gbp` int(11)  NULL,
+  `unifee_usd_total` int(11) DEFAULT NULL,
+  `unifee_usd` int(11)  NULL,
+  `fee_type` varchar(255)  NULL,
+  `coursefee_total` int(11)  NULL,
+  `coursefee` int(11)  NULL,
+  `registrationfee` int(11)  NULL,
+  `installment_money` int(11)  NULL,  -- New column
+  `duedate` date  NULL,               -- New column
+  `paid_money` int(11)  NULL,         -- New column
+  `outstanding` int(11)  NULL         -- New column
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+
+-- Create the installment_details_table
+CREATE TABLE IF NOT EXISTS installment_details_table (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    installment_payment_table_id INT,
+    student_id VARCHAR(50),
+    programme_batch VARCHAR(100),
+    installment_amount DECIMAL(10,2),
+    due_date DATE,
+    FOREIGN KEY (installment_payment_table_id) REFERENCES installment_payment_table(id)
+);
+
+
+   <script>
+        // Disable right-click on the page
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault(); // Prevent the default context menu
+
+            // Create custom alert div
+            const alertDiv = document.createElement('div');
+            alertDiv.style.position = 'fixed';
+            alertDiv.style.top = '50%';
+            alertDiv.style.left = '50%';
+            alertDiv.style.transform = 'translate(-50%, -50%)';
+            alertDiv.style.backgroundColor = '#c83939';
+            alertDiv.style.color = 'white';
+            alertDiv.style.padding = '20px';
+            alertDiv.style.borderRadius = '5px';
+            alertDiv.style.boxShadow = '0 0 10px rgba(0,0,0,0.3)';
+            alertDiv.style.zIndex = '9999';
+            alertDiv.innerHTML = 'Your are not allowed to view this page';
+
+            // Add to page
+            document.body.appendChild(alertDiv);
+
+            // Remove after 2 seconds
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 2000);
+        });
+
+
+        document.addEventListener('keydown', function(e) {
+            // Prevent F12 (developer tools)
+            if (e.keyCode === 123) {
+                e.preventDefault();
+            }
+            // Prevent Ctrl+Shift+I (developer tools)
+            if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+                e.preventDefault();
+            }
+            // Prevent Ctrl+U (view source)
+            if (e.ctrlKey && e.keyCode === 85) {
+                e.preventDefault();
+            }
+            // Prevent right-click menu by disabling context menu shortcut
+            if (e.ctrlKey && e.keyCode === 117) { // Ctrl+U
+                e.preventDefault();
+            }
+        });
+    </script>
+    <style>
+        /* common CSS  */
+        /* ----------------------------------------------  */
+
+        .form-control {
+            display: block;
+            width: 100%;
+            padding: 0.3rem 0.75rem;
+            font-size: 0.8rem;
+            font-weight: 400;
+            line-height: 1.5;
+            color: var(--bs-body-color);
+            background-color: var(--bs-body-bg);
+            background-clip: padding-box;
+            border: var(--bs-border-width) solid var(--bs-border-color);
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            border-radius: var(--bs-border-radius);
+            transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+        }
+
+        .form-control:focus {
+            box-shadow: 0 0 5px #c110104f;
+            border-color: #c110104f;
+        }
+
+        .cke_notification_warning {
+            background: #c83939;
+            border: 1px solid #902b2b;
+            display: none;
+        }
+
+
+
+
+
+
+
+
+
+----------------------------------------------------------------
+        CREATE TABLE _payment_uni_fee (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    program_batch VARCHAR(255) NOT NULL,
+    currency_type VARCHAR(200) NOT NULL,
+    paid_amount DOUBLE NOT NULL,
+    exchange_rate DOUBLE NOT NULL,
+    LKR_money DOUBLE NOT NULL,
+    entered_by VARCHAR(100) DEFAULT 'admin',
+    entered_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+------------- 10.03.2025 --------------------------------
+dispaly payment 
+
+
+
+<div class="card-body">
+                                                        <?php
+                                                        function calculateInstallments($amount, $installments, $currency, &$dateTime)
+                                                        {
+                                                            if ($amount && $installments) {
+                                                                $installmentAmount = $amount / $installments;
+                                                                for ($i = 1; $i <= $installments; $i++) {
+                                                                    $dueDate = clone $dateTime;
+                                                                    $dueDate->modify("+30 days");
+                                                        ?>
+                                                                    <table class='table table-bordered table-striped table-hover'>
+                                                                        <tr>
+                                                                            <th>Installment <?php echo $i; ?></th>
+
+                                                                            <!-- Installment Amount (Original) -->
+                                                                            <td>
+                                                                                <input type='hidden' name='installment_number[]' value='installment_<?php echo $i; ?>'>
+                                                                                <input type='text' class='form-control installment-amount'
+                                                                                    name='installment<?php echo $currency; ?>_amount[]'
+                                                                                    value='<?php echo number_format($installmentAmount, 2); ?>'>
+                                                                            </td>
+
+                                                                            <!-- Discount Section -->
+                                                                            <td>
+                                                                                <select class='form-control select2 discount-type' name='discount_type[]'>
+                                                                                    <option value="">N/A</option>
+                                                                                    <option value="percentage">Percentage</option>
+                                                                                    <option value="value">Value</option>
+                                                                                </select>
+                                                                                <input type='text' class='form-control discount-value mt-1'
+                                                                                    name='discount_value[]' placeholder='Enter discount value' disabled>
+                                                                            </td>
+
+                                                                            <!-- Final Installment Amount (After Discount) -->
+                                                                            <td>
+                                                                                <input type='hidden' name='installment_number[]' value='installment_<?php echo $i; ?>'>
+                                                                                <input type='text' class='form-control final-installment-amount'
+                                                                                    name='installment<?php echo $currency; ?>_amount[]'
+                                                                                    value='<?php echo number_format($installmentAmount, 2); ?>' readonly>
+                                                                            </td>
+
+                                                                            <!-- Installment Date -->
+                                                                            <td>
+                                                                                <input type='date' class='form-control' name='installment<?php echo $currency; ?>_date[]'
+                                                                                    value='<?php echo $dueDate->format('Y-m-d'); ?>' readonly>
+                                                                            </td>
+
+                                                                            <!-- Remark Section -->
+                                                                            <td>
+                                                                                <input type="text" name="remarks[]" class="form-control">
+                                                                            </td>
+                                                                        </tr>
+                                                                    </table>
+                                                        <?php
+                                                                    $dateTime = $dueDate;
+                                                                }
+                                                            }
+                                                        }
+
+                                                        if ($course_fee_type_GBP == 'installment') {
+                                                            calculateInstallments($course_fee_GBP, $installment_month_GBP, 'GBP', $dateTime);
+                                                        }
+                                                        if ($course_fee_type_LKR == 'installment') {
+                                                            calculateInstallments($course_fee_LKR, $installment_month_LKR, 'LKR', $dateTime);
+                                                        }
+                                                        if ($course_fee_type_USD == 'installment') {
+                                                            calculateInstallments($course_fee_USD, $installment_month_USD, 'USD', $dateTime);
+                                                        }
+                                                        ?>
+                                                    </div>
+
+
+
+
+
+
+                                                    <!-- jQuery and Select2 Initialization -->
+                                                    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+                                                    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+                                                    <script>
+                                                        $(document).ready(function() {
+                                                            $(".select2").select2({
+                                                                width: '100%'
+                                                            });
+
+                                                            // Event delegation to handle dynamically added rows
+                                                            $(document).on("change", ".discount-type", function() {
+                                                                var row = $(this).closest("tr"); // Get the current row
+                                                                var discountType = $(this).val(); // Get selected discount type
+                                                                var discountInput = row.find(".discount-value"); // Discount input field
+                                                                var originalAmount = parseFloat(row.find(".installment-amount").val().replace(/,/g, "")) || 0; // Original amount
+                                                                var finalAmountField = row.find(".final-installment-amount"); // Final amount field
+
+                                                                // Reset fields when changing discount type
+                                                                discountInput.val("").prop("disabled", discountType === ""); // Enable input only if a discount is selected
+                                                                finalAmountField.val(originalAmount.toFixed(2)); // Reset to original amount
+
+                                                                // If discount type is selected, allow input
+                                                                discountInput.off("input").on("input", function() {
+                                                                    var discountValue = parseFloat($(this).val()) || 0;
+                                                                    var newAmount = originalAmount;
+
+                                                                    if (discountType === "percentage" && discountValue >= 0 && discountValue <= 100) {
+                                                                        newAmount = originalAmount - (originalAmount * discountValue / 100);
+                                                                    } else if (discountType === "value" && discountValue >= 0) {
+                                                                        newAmount = originalAmount - discountValue;
+                                                                    }
+
+                                                                    // Ensure amount does not go below zero
+                                                                    newAmount = Math.max(newAmount, 0);
+                                                                    finalAmountField.val(newAmount.toFixed(2));
+                                                                });
+                                                            });
+                                                        });
+                                                    </script>
+
+  <script>
+                                                                        function updateHiddenDiscountType(selectElement, index) {
+                                                                            document.getElementById('hidden_discount_type_' + index).value = selectElement.value;
+                                                                        }
+
+                                                                        function updateHiddenDiscountValue(inputElement, index) {
+                                                                            document.getElementById('hidden_discount_value_' + index).value = inputElement.value;
+                                                                        }
+
+                                                                        function updateHiddenRemark(inputElement, index) {
+                                                                            document.getElementById('hidden_installment_remark_' + index).value = inputElement.value;
+                                                                        }
+                                                                    </script>
+
+
+
+ <!-- Hidden Inputs -->
+                                        <input type="hidden" name="hidden_discount_type[]" id="hidden_discount_type_<?php echo $i; ?>">
+                                        <input type="hidden" name="hidden_discount_value[]" id="hidden_discount_value_<?php echo $i; ?>">
+                                        <input type="hidden" name="hidden_installment_remark[]" id="hidden_installment_remark_<?php echo $i; ?>">
+
+
+
+
+    $hidden_discount_types = $_POST['hidden_discount_type'] ?? [];
+    $hidden_discount_values = $_POST['hidden_discount_value'] ?? [];
+    $hidden_installment_remarks = $_POST['hidden_installment_remark'] ?? [];
+
+ for ($i = 0; $i < count($amounts); $i++) {
+                $installment_count = trim($installmentNumbers[$i]);
+                $amount = str_replace(',', '', $amounts[$i]);
+                $due_date = $dates[$i];
+
+                // Fetch the corresponding discount type and value
+                $discount_type = $hidden_discount_types[$i] ?? NULL;
+                $discount_value = $hidden_discount_values[$i] ?? NULL;
+                $installment_remark = $hidden_installment_remarks[$i] ?? NULL;
+
+                $installment_details_sql = "INSERT INTO installment_details_table 
+                (installment_payment_table_id, student_id, programme_batch, installment_numbers, installment_amount, discount_type, discount_value, remark, due_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+                $stmt = mysqli_prepare($conn, $installment_details_sql);
+                mysqli_stmt_bind_param($stmt, "isssdssss", $installment_payment_id, $student_code, $programme_batch, $installment_count, $amount, $discount_type, $discount_value, $installment_remark, $due_date);
+
+                if (!mysqli_stmt_execute($stmt)) {
+                    throw new Exception("Error inserting installment details: " . mysqli_error($conn));
+                }
+                mysq li_stmt_close($stmt);
+            }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            --------------------   SELECT2 ------------------------
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/js/select2.min.js"></script>
+<script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+
+
+ $(".select2").select2({
+            width: '100%'
+        });
+
+
+        ---------------------
+
+
+
+
+
+
+
+
+
+        CREATE TABLE `BBM_direct_result` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `student_id` int(11) NOT NULL,
+  `program_id` int(11) NOT NULL,
+  `batch_id` int(11) NOT NULL,
+  `module_id` int(11) NOT NULL,
+  `main_comp_id` int(11) DEFAULT NULL,
+  `sub_component_id` int(11) DEFAULT NULL,
+  `with_Ques` varchar(10) DEFAULT NULL,
+  `question_no` varchar(50) NOT NULL,
+  `100marksEx1` varchar(50) DEFAULT NULL,
+  `examiner1_marks` decimal(5,2) DEFAULT NULL,
+  `100marksEx2` varchar(50) DEFAULT NULL,
+  `examiner2_marks` decimal(5,2) DEFAULT NULL,
+  `final_marks` decimal(5,2) DEFAULT NULL,
+  `status` enum('Pending','Finalized') DEFAULT 'Pending',
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+
+
+07.04.2025 
+
+
+CREATE TABLE BBM_final_results_tbl (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    student_reg_code VARCHAR(200) DEFAULT NULL,
+    program_id INT NOT NULL,
+    batch_id INT NOT NULL,
+    module_id INT NOT NULL,
+    main_comp_id INT NOT NULL,
+    sub_comp_id INT NOT NULL,
+    final_result INT DEFAULT 0
+);
+
+
+
+
+
+CREATE TABLE IF NOT EXISTS GPA_calculate_tbl (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    std_id INT NOT NULL,
+    std_reg_no VARCHAR(100),
+    prog_id INT NOT NULL,
+    batch_id INT NOT NULL,
+    year_id INT NOT NULL,
+    semester_id INT NOT NULL,
+    total_credit_value DECIMAL(10,2) DEFAULT 0.00,
+    total_CGP_value DECIMAL(10,2) DEFAULT 0.00,
+    UNIQUE KEY unique_student_semester (std_id, prog_id, batch_id, year_id, semester_id)
+);
+
+
+
+ $mail->isSMTP(); // Set mailer to use SMTP
+                                        $mail->Host = 'smtp.office365.com';
+                                        $mail->SMTPAuth = true; // Enable SMTP authentication
+                                        $mail->Username = 'noreply@bms.ac.lk'; // SMTP username
+                                        $mail->Password = 'Lox51527'; // SMTP password
+                                        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // Enable TLS encryption
+                                        $mail->Port = 587; // TCP port to connect to
+                                
+                                
+                                        //Recipients
+                                        $mail->setFrom('noreply@bms.ac.lk', 'Business Management School'); // Replace with your email and name
+
+
+
+
+-- Create penalty_payments table
+CREATE TABLE `penalty_payments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `student_id` varchar(50) NOT NULL COMMENT 'Student code from students table',
+  `student_registration_id` varchar(50) NOT NULL COMMENT 'Registration ID from allocate_programme',
+  `programme_code` varchar(20) NOT NULL COMMENT 'Program code from program_table',
+  `batch_id` int(11) NOT NULL COMMENT 'Batch ID from batch_table',
+  `program_batch` varchar(100) NOT NULL COMMENT 'Combined program and batch name for easy reference',
+  `penalty_type` varchar(50) NOT NULL COMMENT 'Type of penalty (Late Fee, Missing Documents, etc.)',
+  `penalty_amount` decimal(10,2) NOT NULL COMMENT 'Original penalty amount',
+  `discount_type` varchar(50) DEFAULT 'N/A' COMMENT 'Type of discount if applicable',
+  `discount_amount` decimal(10,2) DEFAULT 0.00 COMMENT 'Discount amount',
+  `final_amount` decimal(10,2) NOT NULL COMMENT 'Final amount after discount',
+  `paid_date` date NOT NULL COMMENT 'Date when penalty was paid',
+  `payment_method` varchar(30) DEFAULT 'Cash' COMMENT 'Method of payment',
+  `payment_reference` varchar(100) DEFAULT NULL COMMENT 'Reference number for payment if applicable',
+  `remarks` text DEFAULT NULL COMMENT 'Any additional notes',
+  `status` enum('paid','pending','cancelled') NOT NULL DEFAULT 'paid' COMMENT 'Payment status',
+  `entered_by` varchar(50) NOT NULL COMMENT 'Username who entered this record',
+  `created_at` datetime NOT NULL COMMENT 'Record creation timestamp',
+  `updated_at` datetime DEFAULT NULL COMMENT 'Record last update timestamp',
+  PRIMARY KEY (`id`),
+  KEY `idx_student_id` (`student_id`),
+  KEY `idx_student_registration_id` (`student_registration_id`),
+  KEY `idx_programme_code` (`programme_code`),
+  KEY `idx_batch_id` (`batch_id`),
+  KEY `idx_paid_date` (`paid_date`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+
+
+
+
+
+
+-- Create additional_fee_payments table
+CREATE TABLE `additional_fee_payments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `student_id` varchar(50) NOT NULL COMMENT 'Student code from students table',
+  `student_registration_id` varchar(50) NOT NULL COMMENT 'Registration ID from allocate_programme',
+  `programme_code` varchar(20) NOT NULL COMMENT 'Program code from program_table',
+  `batch_id` int(11) NOT NULL COMMENT 'Batch ID from batch_table',
+  `program_name` varchar(100) NOT NULL COMMENT 'Program name for reference',
+  `batch_name` varchar(50) NOT NULL COMMENT 'Batch name for reference',
+  `total_amount` decimal(10,2) NOT NULL COMMENT 'Total amount of all fee items',
+  `paid_date` date NOT NULL COMMENT 'Date when fee was paid',
+  `payment_method` varchar(30) DEFAULT 'Cash' COMMENT 'Method of payment',
+  `payment_reference` varchar(100) DEFAULT NULL COMMENT 'Reference number for payment if applicable',
+  `remarks` text DEFAULT NULL COMMENT 'Any additional notes',
+  `status` enum('paid','pending','cancelled') NOT NULL DEFAULT 'paid' COMMENT 'Payment status',
+  `entered_by` varchar(50) NOT NULL COMMENT 'Username who entered this record',
+  `created_at` datetime NOT NULL COMMENT 'Record creation timestamp',
+  `updated_at` datetime DEFAULT NULL COMMENT 'Record last update timestamp',
+  PRIMARY KEY (`id`),
+  KEY `idx_student_id` (`student_id`),
+  KEY `idx_student_registration_id` (`student_registration_id`),
+  KEY `idx_programme_code` (`programme_code`),
+  KEY `idx_batch_id` (`batch_id`),
+  KEY `idx_paid_date` (`paid_date`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Create additional_fee_items table
+CREATE TABLE `additional_fee_items` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `payment_id` int(11) NOT NULL COMMENT 'Reference to additional_fee_payments.id',
+  `sequence` int(11) NOT NULL COMMENT 'Display order of the fee item',
+  `description` varchar(255) NOT NULL COMMENT 'Description of the fee item',
+  `amount` decimal(10,2) NOT NULL COMMENT 'Amount for this fee item',
+  `created_at` datetime NOT NULL COMMENT 'Record creation timestamp',
+  PRIMARY KEY (`id`),
+  KEY `idx_payment_id` (`payment_id`),
+  CONSTRAINT `fk_additional_fee_items_payment` FOREIGN KEY (`payment_id`) REFERENCES `additional_fee_payments` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+
+
+
+
+-- Create timetable table if it doesn't exist
+CREATE TABLE IF NOT EXISTS `timetable` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `programme_id` varchar(20) NOT NULL COMMENT 'Program code from program_table',
+  `programme_name` varchar(100) NOT NULL COMMENT 'Program name for reference',
+  `batch_id` int(11) NOT NULL COMMENT 'Batch ID from batch_table',
+  `batch_name` varchar(50) NOT NULL COMMENT 'Batch name for reference',
+  `module_id` int(11) NOT NULL COMMENT 'Module ID from modules table',
+  `module_name` varchar(100) NOT NULL COMMENT 'Module name for reference',
+  `lecturer_id` int(11) NOT NULL COMMENT 'Lecturer ID from lecturer_table',
+  `lecturer_name` varchar(100) NOT NULL COMMENT 'Lecturer name for reference',
+  `day` varchar(10) NOT NULL COMMENT 'Day of the week',
+  `start_time` time NOT NULL COMMENT 'Class start time',
+  `end_time` time NOT NULL COMMENT 'Class end time',
+  `start_date` date NOT NULL COMMENT 'Module start date',
+  `end_date` date NOT NULL COMMENT 'Module end date',
+  `comp1_deadline` date NOT NULL COMMENT 'Component 1 deadline',
+  `comp2_deadline` date NOT NULL COMMENT 'Component 2 deadline',
+  `created_by` varchar(50) NOT NULL COMMENT 'Username who created this entry',
+  `created_at` datetime NOT NULL COMMENT 'Record creation timestamp',
+  `updated_by` varchar(50) DEFAULT NULL COMMENT 'Username who last updated this entry',
+  `updated_at` datetime DEFAULT NULL COMMENT 'Record last update timestamp',
+  `status` enum('active','inactive','cancelled') NOT NULL DEFAULT 'active' COMMENT 'Timetable entry status',
+  PRIMARY KEY (`id`),
+  KEY `idx_programme_id` (`programme_id`),
+  KEY `idx_batch_id` (`batch_id`),
+  KEY `idx_module_id` (`module_id`),
+  KEY `idx_lecturer_id` (`lecturer_id`),
+  KEY `idx_day` (`day`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+
+CREATE TABLE `special_class_messages` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `programme_id` int(11) NOT NULL,
+  `programme_name` varchar(255) NOT NULL,
+  `batch_id` int(11) NOT NULL,
+  `batch_name` varchar(50) NOT NULL,
+  `module_id` int(11) NOT NULL,
+  `module_name` varchar(255) NOT NULL,
+  `class_date` date NOT NULL,
+  `class_time` time DEFAULT NULL,
+  `meeting_link` varchar(255) DEFAULT NULL,
+  `mail_subject` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `entered_by` varchar(50) NOT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

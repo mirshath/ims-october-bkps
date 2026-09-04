@@ -1,0 +1,297 @@
+<?php
+session_start();
+$Session_username = $_SESSION['username'] ?? null;
+include("database/connection.php");
+include("includes/header.php");
+
+if (!$Session_username) {
+    echo '<script>window.location.href = "login";</script>';
+    exit;
+}
+
+// Permission Checking
+require_once 'PermissionChecking.php';
+
+// ------------------- Registration Logic -------------------
+if (isset($_POST['register'])) {
+    $username = trim($_POST['username'] ?? '');
+    $email = trim($_POST['admin_email'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $role = $_POST['role'] ?? '';
+
+    if ($username && $email && $password && $role) {
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+        $query = "INSERT INTO admin (username, admin_email, password, role) VALUES (?, ?, ?, ?)";
+        $stmt = $conn->prepare($query);
+
+        if ($stmt) {
+            $stmt->bind_param("ssss", $username, $email, $hashed_password, $role);
+            if ($stmt->execute()) {
+                $_SESSION['message'] = "User Added Successfully!";
+                $redirect = $_SERVER['HTTP_REFERER'] ?? 'addUser.php';
+                echo '<script>window.location.href = "' . htmlspecialchars($redirect) . '";</script>';
+            } else {
+                echo "<script>alert('Database Error!');</script>";
+            }
+            $stmt->close();
+        }
+    }
+}
+
+// ------------------- Update Logic -------------------
+if (isset($_POST['update'])) {
+    $user_id = (int)($_POST['user_id'] ?? 0);
+    $new_email = trim($_POST['admin_email'] ?? '');
+    $new_password = $_POST['new_password'] ?? '';
+    $new_role = $_POST['role'] ?? '';
+
+    if ($user_id && $new_email && $new_role) {
+        if (!empty($new_password)) {
+            $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+            $query = "UPDATE admin SET admin_email = ?, password = ?, role = ? WHERE id = ?";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("sssi", $new_email, $hashed_password, $new_role, $user_id);
+        } else {
+            $query = "UPDATE admin SET admin_email = ?, role = ? WHERE id = ?";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("ssi", $new_email, $new_role, $user_id);
+        }
+
+        if ($stmt) {
+            if ($stmt->execute()) {
+                $_SESSION['message'] = "User updated successfully!";
+                $redirect = $_SERVER['HTTP_REFERER'] ?? 'addUser.php';
+                echo '<script>window.location.href = "' . htmlspecialchars($redirect) . '";</script>';
+            } else {
+                echo "<script>alert('Database Error!');</script>";
+            }
+            $stmt->close();
+        }
+    }
+}
+
+// ------------------- Delete Logic -------------------
+if (isset($_GET['delete_id'])) {
+    $user_id = (int)($_GET['delete_id'] ?? 0);
+    if ($user_id > 0) {
+        $query = "DELETE FROM admin WHERE id = ?";
+        $stmt = $conn->prepare($query);
+        if ($stmt) {
+            $stmt->bind_param("i", $user_id);
+            $stmt->execute();
+            $_SESSION['message'] = "User deleted successfully.";
+            $redirect = $_SERVER['HTTP_REFERER'] ?? 'addUser.php';
+            echo '<script>window.location.href = "' . htmlspecialchars($redirect) . '";</script>';
+            $stmt->close();
+            exit();
+        }
+    }
+}
+
+// ------------------- Fetch Users -------------------
+$query = "SELECT * FROM admin";
+$result = $conn->query($query);
+
+?>
+
+
+<!-- DataTables CSS -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css">
+
+<!-- DataTables JS -->
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"></script>
+
+
+
+<!-- FRONTEND -->
+<div id="wrapper">
+    <?php include('nav.php'); ?>
+
+    <div id="content-wrapper" class="d-flex flex-column">
+        <div id="content">
+            <?php include("includes/topnav.php"); ?>
+
+            <div class="p-3">
+                <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                    <h4 class="h4 mb-0 text-gray-800">Add / Remove User</h4>
+                </div>
+
+                <!-- Registration Form -->
+                <div class="row mb-5">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header d-flex align-items-center" style="height: 60px;">
+                                <span class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                    <i class="fas fa-plus-circle"></i>
+                                </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                                <h6 class="mb-0 me-2">Add / Remove User</h6>
+                            </div>
+                            <div class="card-body">
+                                <form action="" method="POST" autocomplete="off">
+                                    <div class="row mb-2">
+                                        <div class="col-md-4"><label for="username" class="form-label">Username</label></div>
+                                        <div class="col-md-8"><input type="text" class="form-control" name="username" placeholder="username" required></div>
+                                    </div>
+
+                                    <div class="row mb-2">
+                                        <div class="col-md-4"><label for="admin_email" class="form-label">Email</label></div>
+                                        <div class="col-md-8"><input type="email" class="form-control" placeholder="email" name="admin_email" required></div>
+                                    </div>
+
+                                    <div class="row mb-2">
+                                        <div class="col-md-4"><label>Password</label></div>
+                                        <div class="col-md-8">
+                                            <div class="input-group">
+                                                <input type="password" class="form-control" id="password" name="password" placeholder="password" required onkeyup="checkPasswords()">
+                                                <span class="input-group-text" onclick="togglePasswordVisibility('password')">
+                                                    <i class="fas fa-eye" id="eye-icon-password"></i>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row mb-2">
+                                        <div class="col-md-4"><label>Confirm Password</label></div>
+                                        <div class="col-md-8">
+                                            <div class="input-group">
+                                                <input type="password" class="form-control" placeholder="confirm password" id="confirm_password" required onkeyup="checkPasswords()">
+                                                <span class="input-group-text" onclick="togglePasswordVisibility('confirm_password')">
+                                                    <i class="fas fa-eye" id="eye-icon-confirm"></i>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row mb-3">
+                                        <div class="col-md-4"><label>Role</label></div>
+                                        <div class="col-md-8">
+                                            <select class="form-control select2" name="role" required>
+                                                <option value="super_admin">Super Admin</option>
+                                                <option value="manager">Manager</option>
+                                                <option value="data_enter">Data Enter</option>
+                                                <option value="lecture">Lecture</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="text-end">
+                                        <button type="submit" name="register" id="registerButton" class="btn btn-primary w-50" disabled>Save</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Table -->
+                <div class="row mb-5">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">Current Users Setting</div>
+                            <div class="card-body">
+                                <table class="table table-bordered" id="userTable">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Username</th>
+                                            <th>Email</th>
+                                            <th>New Password</th>
+                                            <th>Role</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php $i = 1;
+                                        while ($row = $result->fetch_assoc()) { ?>
+                                            <tr>
+                                                <form action="" method="POST" autocomplete="off">
+                                                    <td><?= $i++; ?></td>
+                                                    <td><?= htmlspecialchars($row['username'] ?? '', ENT_QUOTES); ?></td>
+                                                    <td>
+                                                        <input type="email" name="admin_email" value="<?= htmlspecialchars($row['admin_email'] ?? '', ENT_QUOTES); ?>" class="form-control" required>
+                                                    </td>
+                                                    <td>
+                                                        <input type="password" name="new_password" class="form-control" placeholder="New Password" autocomplete="off">
+                                                    </td>
+                                                    <td>
+                                                        <select name="role" class="form-control">
+                                                            <option value="super_admin" <?= $row['role'] == 'super_admin' ? 'selected' : ''; ?>>Super Admin</option>
+                                                            <option value="manager" <?= $row['role'] == 'manager' ? 'selected' : ''; ?>>Manager</option>
+                                                            <option value="data_enter" <?= $row['role'] == 'data_enter' ? 'selected' : ''; ?>>Data Enter</option>
+                                                            <option value="lecture" <?= $row['role'] == 'lecture' ? 'selected' : ''; ?>>Lecture</option>
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        <input type="hidden" name="user_id" value="<?= (int)$row['id']; ?>">
+                                                        <button type="submit" name="update" class="btn btn-sm btn-success"><i class="fas fa-edit"></i></button>
+                                                        <a href="?delete_id=<?= (int)$row['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this user?')"><i class="fas fa-trash-alt"></i></a>
+                                                    </td>
+                                                </form>
+                                            </tr>
+                                        <?php } ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function checkPasswords() {
+        const pass = document.getElementById("password").value;
+        const confirm = document.getElementById("confirm_password").value;
+        document.getElementById("registerButton").disabled = !(pass && confirm && pass === confirm);
+    }
+
+    function togglePasswordVisibility(inputId) {
+        const input = document.getElementById(inputId);
+        const eyeIcon = document.getElementById(`eye-icon-${inputId}`);
+        if (input.type === "password") {
+            input.type = "text";
+            eyeIcon.classList.remove("fa-eye");
+            eyeIcon.classList.add("fa-eye-slash");
+        } else {
+            input.type = "password";
+            eyeIcon.classList.remove("fa-eye-slash");
+            eyeIcon.classList.add("fa-eye");
+        }
+    }
+
+    window.addEventListener('load', function() {
+        $('#userTable').DataTable({
+            pageLength: 50,
+            lengthMenu: [
+                [10, 25, 50, -1],
+                [10, 25, 50, 'All']
+            ],
+            stateSave: true,
+            order: [
+                [1, 'asc']
+            ],
+            columnDefs: [{
+                    targets: [3, 4, 5],
+                    orderable: false
+                },
+                {
+                    targets: [3, 5],
+                    searchable: false
+                }
+            ],
+            language: {
+                search: 'Filter:',
+                lengthMenu: 'Show _MENU_ entries',
+                paginate: {
+                    previous: 'Prev',
+                    next: 'Next'
+                }
+            }
+        });
+    });
+</script>
+
+<?php include("includes/footer.php"); ?>

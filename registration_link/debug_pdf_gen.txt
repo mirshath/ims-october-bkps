@@ -1,0 +1,6 @@
+CMD: python "C:\xampp\htdocs\ims/generate_student_pdf.py" "C:\Users\User1\AppData\Local\Temp/reg_pdf_BMSCONSEQUATUR QUIBUSD_1768536131.json" 2>&1
+OUTPUT: PDF generated successfully: C:\xampp\htdocs\ims\registration_link/qr/Graduate Diploma in Management (Level 6)-Batch 85/BMSCONSEQUATUR QUIBUSD_Application.pdf
+
+CMD: python "C:\xampp\htdocs\ims/generate_student_pdf.py" "C:\Users\User1\AppData\Local\Temp/reg_pdf_BMSTOTAM ASPERIORES A Q_1768536424.json" 2>&1
+OUTPUT: PDF generated successfully: C:\xampp\htdocs\ims\registration_link/qr/Graduate Diploma in Management (Level 6)-Batch 85/BMSTOTAM ASPERIORES A Q_Application.pdf
+

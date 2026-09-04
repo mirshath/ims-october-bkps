@@ -1,0 +1,718 @@
+<?php
+session_start();
+include("database/connection.php");
+include("includes/header.php");
+
+if (!isset($_SESSION['username'])) {
+    echo '<script>window.location.href = "login";</script>';
+    exit;
+}
+
+// Permission checking
+require_once 'PermissionChecking.php';
+
+$user_id = $_SESSION['user_id'] ?? 0;
+$role = $_SESSION['role'] ?? '';
+$isSuperAdmin = ($role === 'super_admin');
+
+// Check if editing existing record
+$isEdit = false;
+$editData = null;
+$programsList = [];
+$batchesList = [];
+
+// First load all programs for the select dropdown
+try {
+    if ($role === 'super_admin') {
+        $query = "SELECT program_code, program_name FROM program_table ORDER BY program_name";
+        $stmt = $conn->prepare($query);
+    } else {
+        $query = "
+            SELECT pt.program_code, pt.program_name 
+            FROM program_allocation_user pau
+            INNER JOIN program_table pt ON pau.program_code = pt.program_code
+            WHERE pau.user_id = ?
+            ORDER BY pt.program_name
+        ";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("i", $user_id);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $programsList[] = $row;
+    }
+    $stmt->close();
+} catch (Exception $e) {
+    // Fallback
+}
+
+if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
+    $editId = intval($_GET['edit']);
+    $checkEditQuery = "SELECT * FROM induction_email_body_db_table WHERE id = ?";
+    $stmt = $conn->prepare($checkEditQuery);
+    $stmt->bind_param("i", $editId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result->num_rows > 0) {
+        $editData = $result->fetch_assoc();
+        $isEdit = true;
+    }
+    $stmt->close();
+}
+?>
+
+<style>
+    .banner-preview {
+        max-width: 100%;
+        max-height: 300px;
+        border: 1px dashed #ccc;
+        margin-top: 10px;
+        padding: 10px;
+        display: none;
+    }
+
+    .banner-preview img {
+        max-width: 100%;
+        max-height: 280px;
+    }
+
+    .preview-modal-content {
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    .preview-banner {
+        max-width: 100%;
+        margin-bottom: 20px;
+    }
+</style>
+
+<div id="wrapper">
+    <?php include("nav.php"); ?>
+    <div id="content-wrapper" class="d-flex flex-column">
+        <div id="content">
+            <?php include("includes/topnav.php"); ?>
+            <div class="p-3">
+                <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                    <h4 class="h4 mb-0 text-gray-800">
+                        <?php echo $isEdit ? 'Edit' : 'Create'; ?> Induction Email Template
+                    </h4>
+                </div>
+
+                <!-- Form Section -->
+                <form id="emailTemplateForm" method="POST" enctype="multipart/form-data">
+                    <div class="row mb-5">
+                        <div class="col-md-12">
+                            <div class="card shadow">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <!-- Column 1: All Form Fields -->
+                                        <div class="col-md-7">
+                                            <div class="row mb-3">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Programme</label>
+                                                </div>
+                                                <div class="col-md-9">
+                                                    <select id="programmeDropdown" name="programme_id"
+                                                        class="form-control select2" required>
+                                                        <option value="">Select Programme</option>
+                                                        <?php foreach ($programsList as $program): ?>
+                                                            <option value="<?php echo htmlspecialchars($program['program_code']); ?>"
+                                                                <?php echo ($isEdit && $editData['program_id'] == $program['program_code']) ? 'selected' : ''; ?>>
+                                                                <?php echo htmlspecialchars($program['program_name']); ?>
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-3">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Batch</label>
+                                                </div>
+                                                <div class="col-md-9">
+                                                    <select id="batchDropdown" name="batch_id"
+                                                        class="form-control select2" required>
+                                                        <option value="">Select Batch</option>
+                                                        <?php foreach ($batchesList as $batch): ?>
+                                                            <option value="<?php echo htmlspecialchars($batch['id']); ?>"
+                                                                <?php echo ($isEdit && $editData['batch_id'] == $batch['id']) ? 'selected' : ''; ?>>
+                                                                <?php echo htmlspecialchars($batch['batch_name']); ?>
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-3">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Banner Image</label>
+                                                </div>
+                                                <div class="col-md-9">
+                                                    <input type="file" id="bannerImage" name="banner_image"
+                                                        class="form-control" accept="image/*" <?php echo $isEdit ? '' : 'required'; ?>>
+                                                    <div id="bannerPreview" class="banner-preview">
+                                                        <?php if ($isEdit && !empty($editData['banner_image_path'])): ?>
+                                                            <img id="existingBanner" src="<?php echo htmlspecialchars($editData['banner_image_path']); ?>" alt="Current Banner">
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-3">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Email Body</label>
+                                                </div>
+                                                <div class="col-md-9">
+                                                    <textarea id="emailBody" name="email_body"
+                                                        class="form-control" rows="10" required><?php
+                                                                                                echo $isEdit ? $editData['email_body'] : '';
+                                                                                                ?></textarea>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-3">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Date</label>
+                                                </div>
+                                                <div class="col-md-9">
+                                                    <input type="text" id="date" name="date"
+                                                        class="form-control" placeholder="e.g., Saturday, 07th March 2026"
+                                                        value="<?php echo $isEdit ? htmlspecialchars($editData['date']) : ''; ?>" required>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-3">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Time</label>
+                                                </div>
+                                                <div class="col-md-9">
+                                                    <textarea id="time" name="time"
+                                                        class="form-control" rows="10" required><?php
+                                                                                                echo $isEdit ? $editData['time'] : '';
+                                                                                                ?></textarea>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-3">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Dress Code</label>
+                                                </div>
+                                                <div class="col-md-9">
+                                                    <input type="text" id="dressCode" name="dress_code"
+                                                        class="form-control" placeholder="e.g., Formal Attire"
+                                                        value="<?php echo $isEdit ? htmlspecialchars($editData['dress_code']) : ''; ?>" required>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-3">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Important Note</label>
+                                                </div>
+                                                <div class="col-md-9">
+                                                    <textarea id="importantNote" name="important_note"
+                                                        class="form-control" rows="10" required><?php
+                                                                                                echo $isEdit ? $editData['important_note'] : '';
+                                                                                                ?></textarea>
+                                                </div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-12 text-right">
+                                                    <button type="button" id="previewFormBtn"
+                                                        class="btn btn-info mr-2">
+                                                        <i class="fas fa-eye"></i> Preview
+                                                    </button>
+                                                    <button type="submit" id="saveBtn"
+                                                        class="btn btn-primary">
+                                                        <?php echo $isEdit ? 'Update' : 'Save'; ?> Template
+                                                    </button>
+                                                    <?php if ($isEdit): ?>
+                                                        <a href="induction_email_body_page.php" class="btn btn-secondary">Cancel</a>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Column 2: Big Sample Image -->
+                                        <div class="col-md-5">
+                                            <div class="text-center">
+                                                <h6 class="mb-3">Sample Reference</h6>
+                                                <img src="uploads/induction_banners/induction_sample.jpeg"
+                                                    alt="Sample Banner"
+                                                    class="img-fluid border rounded shadow"
+                                                    style="max-height: 600px;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Existing Templates Table -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card shadow">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">Saved Templates</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-striped" id="templatesTable">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Programme</th>
+                                                <th>Batch</th>
+                                                <th>Banner</th>
+                                                <th>Created By</th>
+                                                <th>Created At</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="templatesTableBody">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1" role="dialog" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content shadow-lg rounded-0">
+            <div class="modal-header bg-gradient-primary text-white" style="background: linear-gradient(90deg, #0f4c81 0%, #1a73b5 100%);">
+                <h5 class="modal-title" id="previewModalLabel">Email Preview</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body preview-modal-content">
+                <!-- Banner Container -->
+                <div id="previewBannerContainerFull" class="text-center mb-4" style="display: none;">
+                    <img id="previewBannerFull" src="" alt="Banner" class="img-fluid rounded shadow-sm" style="max-height: 200px;">
+                </div>
+
+                <!-- Main Content -->
+                <div class="container">
+                    <!-- Subject -->
+                    <h2 class="text-center mb-4" style="color: #0f4c81; font-weight: 600;">Induction Programme Invitation</h2>
+
+                    <!-- Email Body (custom content) -->
+                    <div id="previewEmailBody" class="mb-4"></div>
+
+                    <!-- Details Table -->
+                    <div id="previewDetailsTable" class="p-4 rounded" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-left: 5px solid #0f4c81; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                        <div id="previewDateRow" class="mb-3" style="display: none;">
+                            <div class="row">
+                                <div class="col-4 font-weight-bold" style="color: #0f4c81;">Date:</div>
+                                <div class="col-8" id="previewDateValue"></div>
+                            </div>
+                        </div>
+
+                        <div id="previewTimeRow" class="mb-3" style="display: none;">
+                            <div class="row">
+                                <div class="col-4 font-weight-bold" style="color: #0f4c81;">Time:</div>
+                                <div class="col-8" id="previewTimeValue"></div>
+                            </div>
+                        </div>
+
+                        <div id="previewVenueRow" class="mb-3">
+                            <div class="row">
+                                <div class="col-4 font-weight-bold" style="color: #0f4c81;">Venue:</div>
+                                <div class="col-8" id="previewVenueValue">BMS - Colombo Graduate School</div>
+                            </div>
+                        </div>
+
+                        <div id="previewProgrammeRow" class="mb-3">
+                            <div class="row">
+                                <div class="col-4 font-weight-bold" style="color: #0f4c81;">Programme:</div>
+                                <div class="col-8" id="previewProgrammeValue"></div>
+                            </div>
+                        </div>
+                        <div id="previewDressCodeRow" class="mb-3" style="display: none;">
+                            <div class="row">
+                                <div class="col-4 font-weight-bold" style="color: #0f4c81;">Dress Code:</div>
+                                <div class="col-8" id="previewDressCodeValue"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Important Note -->
+                    <div id="previewImportantNoteContainer" class="mt-4 p-4 rounded" style="background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%); border: 2px solid #ffc107; border-radius: 10px; display: none;">
+                        <h5 class="font-weight-bold mb-2" style="color: #856404;">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>Important:
+                        </h5>
+                        <div id="previewImportantNoteValue" style="color: #856404;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="background: #f8f9fa;">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" data-bs-dismiss="modal">
+                    <i class="fas fa-times mr-2"></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Initialize CKEditor -->
+<script src="https://cdn.ckeditor.com/4.16.2/standard/ckeditor.js"></script>
+<link href="https://cdn.datatables.net/1.13.11/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+<script src="https://cdn.datatables.net/1.13.11/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.11/js/dataTables.bootstrap5.min.js"></script>
+<script>
+    var editor;
+    var isSuperAdmin = <?php echo $isSuperAdmin ? 'true' : 'false'; ?>;
+    var templatesData = [];
+
+    $(document).ready(function() {
+        $('.select2').select2();
+
+        // Initialize CKEditor
+        var editorEmailBody = CKEDITOR.replace('emailBody', {
+            height: 200
+        });
+        var editorTime = CKEDITOR.replace('time', {
+            height: 150
+        });
+        var editorImportantNote = CKEDITOR.replace('importantNote', {
+            height: 200
+        });
+
+        // Show banner preview if editing
+        <?php if ($isEdit && !empty($editData['banner_image_path'])): ?>
+            $('#bannerPreview').show();
+        <?php endif; ?>
+
+        // Load batches for edit mode
+        <?php if ($isEdit): ?>
+            let editProgramId = '<?php echo $editData['program_id']; ?>';
+            let editBatchId = '<?php echo $editData['batch_id']; ?>';
+            loadBatches(editProgramId, editBatchId);
+        <?php endif; ?>
+
+        // Banner preview
+        $('#bannerImage').change(function() {
+            if (this.files && this.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    $('#bannerPreview').html('<img src="' + e.target.result + '" alt="Banner Preview">');
+                    $('#bannerPreview').show();
+                };
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+
+        // Load batches when programme is selected
+        $('#programmeDropdown').change(function() {
+            let programmeId = $(this).val();
+            loadBatches(programmeId);
+        });
+
+        function loadBatches(programmeId, selectedBatchId = null) {
+            if (!programmeId) {
+                $('#batchDropdown').empty().append('<option value="">Select Batch</option>');
+                return;
+            }
+            $.ajax({
+                url: 'reports/AllStudents/fetch_batches.php',
+                type: 'POST',
+                data: {
+                    program_id: programmeId
+                },
+                success: function(data) {
+                    $('#batchDropdown').html(data);
+                    if (selectedBatchId) {
+                        $('#batchDropdown').val(selectedBatchId);
+                    }
+                    $('#batchDropdown').trigger('change.select2');
+                }
+            });
+        }
+
+        // Load templates
+        loadTemplates();
+
+        function loadTemplates() {
+            $.ajax({
+                url: 'induction_DB_folder/fetch_induction_email_templates.php',
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if ($.fn.DataTable.isDataTable('#templatesTable')) {
+                        $('#templatesTable').DataTable().destroy();
+                    }
+                    let tbody = $('#templatesTableBody');
+                    tbody.empty();
+                    templatesData = [];
+                    if (response.success && response.templates.length > 0) {
+                        let index = 1;
+                        response.templates.forEach(function(template) {
+                            templatesData.push(template);
+                            let bannerHtml = template.banner_image_path ?
+                                `<img src="${template.banner_image_path}" style="max-height: 50px;">` :
+                                'No Banner';
+
+                            let actionsHtml = '';
+                            if (isSuperAdmin) {
+                                actionsHtml = `
+                                    <button type="button" class="btn btn-sm btn-info previewBtn" data-index="${index - 1}">
+                                        <i class="fas fa-eye"></i> Preview
+                                    </button>
+                                    <a href="induction_email_body_page.php?edit=${template.id}" class="btn btn-sm btn-primary">Edit</a>
+                                    <button type="button" class="btn btn-sm btn-danger deleteBtn" data-id="${template.id}">Delete</button>
+                                `;
+                            } else {
+                                actionsHtml = `
+                                    <button type="button" class="btn btn-sm btn-info previewBtn" data-index="${index - 1}">
+                                        <i class="fas fa-eye"></i> Preview
+                                    </button>
+                                `;
+                            }
+
+                            tbody.append(`
+                                <tr>
+                                    <td>${index}</td>
+                                    <td>${template.program_name}</td>
+                                    <td>${template.batch_name}</td>
+                                    <td>${bannerHtml}</td>
+                                    <td>${template.created_by}</td>
+                                    <td>${new Date(template.created_at).toLocaleString()}</td>
+                                    <td>${actionsHtml}</td>
+                                </tr>
+                            `);
+                            index++;
+                        });
+
+                        $('#templatesTable').DataTable({
+                            columnDefs: [{
+                                orderable: false,
+                                targets: [3, 6]
+                            }],
+                            order: [],
+                            pageLength: 50
+                        });
+                    } else {
+                        tbody.append('<tr><td colspan="7" class="text-center">No templates found</td></tr>');
+                    }
+                }
+            });
+        }
+
+        // Preview button click (existing templates)
+        $(document).on('click', '.previewBtn', function() {
+            let index = $(this).data('index');
+            let template = templatesData[index];
+
+            if (template) {
+                // Banner
+                if (template.banner_image_path) {
+                    $('#previewBannerFull').attr('src', template.banner_image_path);
+                    $('#previewBannerContainerFull').show();
+                } else {
+                    $('#previewBannerContainerFull').hide();
+                }
+
+                // Email Body
+                $('#previewEmailBody').html(template.email_body);
+
+                // Date
+                if (template.date) {
+                    $('#previewDateValue').text(template.date);
+                    $('#previewDateRow').show();
+                } else {
+                    $('#previewDateRow').hide();
+                }
+
+                // Time
+                if (template.time) {
+                    $('#previewTimeValue').html(template.time);
+                    $('#previewTimeRow').show();
+                } else {
+                    $('#previewTimeRow').hide();
+                }
+
+                // Programme
+                if (template.program_name) {
+                    $('#previewProgrammeValue').text(template.program_name);
+                }
+
+                // Dress Code
+                if (template.dress_code) {
+                    $('#previewDressCodeValue').text(template.dress_code);
+                    $('#previewDressCodeRow').show();
+                } else {
+                    $('#previewDressCodeRow').hide();
+                }
+
+                // Important Note
+                if (template.important_note) {
+                    $('#previewImportantNoteValue').html(template.important_note);
+                    $('#previewImportantNoteContainer').show();
+                } else {
+                    $('#previewImportantNoteContainer').hide();
+                }
+
+                // Open modal
+                if ($.fn.modal) {
+                    $('#previewModal').modal('show');
+                } else if (typeof bootstrap !== 'undefined') {
+                    let modal = new bootstrap.Modal(document.getElementById('previewModal'));
+                    modal.show();
+                }
+            }
+        });
+
+        // Preview button click (current form)
+        $('#previewFormBtn').on('click', function() {
+            // Banner
+            let bannerSrc = '';
+            let existingBanner = $('#existingBanner');
+            if (existingBanner.length > 0) {
+                bannerSrc = existingBanner.attr('src');
+            }
+            let bannerPreviewImg = $('#bannerPreview img');
+            if (bannerPreviewImg.length > 0) {
+                bannerSrc = bannerPreviewImg.attr('src');
+            }
+
+            if (bannerSrc) {
+                $('#previewBannerFull').attr('src', bannerSrc);
+                $('#previewBannerContainerFull').show();
+            } else {
+                $('#previewBannerContainerFull').hide();
+            }
+
+            // Email Body
+            let emailBody = editorEmailBody.getData();
+            $('#previewEmailBody').html(emailBody);
+
+            // Date
+            let dateVal = $('#date').val();
+            if (dateVal) {
+                $('#previewDateValue').text(dateVal);
+                $('#previewDateRow').show();
+            } else {
+                $('#previewDateRow').hide();
+            }
+
+            // Time
+            let timeVal = editorTime.getData();
+            if (timeVal) {
+                $('#previewTimeValue').html(timeVal);
+                $('#previewTimeRow').show();
+            } else {
+                $('#previewTimeRow').hide();
+            }
+
+            // Programme (from dropdown)
+            let programName = $('#programmeDropdown option:selected').text();
+            if (programName && programName !== 'Select Programme') {
+                $('#previewProgrammeValue').text(programName);
+            } else {
+                $('#previewProgrammeValue').text('');
+            }
+
+            // Dress Code
+            let dressCodeVal = $('#dressCode').val();
+            if (dressCodeVal) {
+                $('#previewDressCodeValue').text(dressCodeVal);
+                $('#previewDressCodeRow').show();
+            } else {
+                $('#previewDressCodeRow').hide();
+            }
+
+            // Important Note
+            let importantNoteVal = editorImportantNote.getData();
+            if (importantNoteVal) {
+                $('#previewImportantNoteValue').html(importantNoteVal);
+                $('#previewImportantNoteContainer').show();
+            } else {
+                $('#previewImportantNoteContainer').hide();
+            }
+
+            // Open modal
+            if ($.fn.modal) {
+                $('#previewModal').modal('show');
+            } else if (typeof bootstrap !== 'undefined') {
+                let modal = new bootstrap.Modal(document.getElementById('previewModal'));
+                modal.show();
+            }
+        });
+
+        // Form submission
+        $('#emailTemplateForm').submit(function(e) {
+            e.preventDefault();
+
+            // Update all CKEditor textareas
+            editorEmailBody.updateElement();
+            editorTime.updateElement();
+            editorImportantNote.updateElement();
+
+            let formData = new FormData(this);
+            <?php if ($isEdit): ?>
+                formData.append('edit_id', '<?php echo $editId; ?>');
+            <?php endif; ?>
+            $('#saveBtn').prop('disabled', true).text('Saving...');
+
+            $.ajax({
+                url: 'induction_DB_folder/save_induction_email_template.php',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        alertify.success(response.message);
+                        setTimeout(() => {
+                            window.location.href = 'induction_email_body_page.php';
+                        }, 1500);
+                    } else {
+                        alertify.error(response.message);
+                        $('#saveBtn').prop('disabled', false).text('<?php echo $isEdit ? 'Update' : 'Save'; ?> Template');
+                    }
+                },
+                error: function() {
+                    alertify.error('Something went wrong');
+                    $('#saveBtn').prop('disabled', false).text('<?php echo $isEdit ? 'Update' : 'Save'; ?> Template');
+                }
+            });
+        });
+
+        // Delete template
+        $(document).on('click', '.deleteBtn', function() {
+            let id = $(this).data('id');
+            if (confirm('Are you sure you want to delete this template?')) {
+                $.ajax({
+                    url: 'induction_DB_folder/delete_induction_email_template.php',
+                    type: 'POST',
+                    data: {
+                        id: id
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            alertify.success(response.message);
+                            loadTemplates();
+                        } else {
+                            alertify.error(response.message);
+                        }
+                    }
+                });
+            }
+        });
+    });
+</script>
+
+<?php include("includes/footer.php"); ?>

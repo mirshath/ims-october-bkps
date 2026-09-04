@@ -1,0 +1,399 @@
+<?php
+session_start();
+include("database/connection.php");
+include("includes/header.php");
+
+if (!isset($_SESSION['username'])) {
+    echo '<script>window.location.href = "login";</script>';
+}
+
+// ---------------------------- allowed Redirections ---------------------------------------------------------------- 
+// -------- Permission CHECKING TO REDIRECT TO HOME PAGE -------- 
+require_once 'PermissionChecking.php';
+// --------------------------------------------------------------------- 
+// -------------------------------------------------------------------------------------------- 
+
+
+
+?>
+
+
+
+<!-- Page Wrapper -->
+<div id="wrapper">
+    <!-- Sidebar -->
+    <?php include("nav.php"); ?>
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+        <!-- Main Content -->
+        <div id="content">
+            <!-- Topbar -->
+            <?php include("includes/topnav.php"); ?>
+
+            <!-- Begin Page Content -->
+            <div class="p-3">
+                <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                    <h4 class="h4 mb-0 text-gray-800">Edit Payment</h4>
+                </div>
+
+                <!-- Payment Plan Form -->
+                <div class="row mb-5">
+                    <div class="col-md-10">
+                        <div class="card">
+                            <div class="card-header d-flex align-items-center" style="height: 60px;">
+                                <span class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                    <i class="fas fa-coins"></i>
+                                </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                                <h6 class="mb-0 me-2">Batch Wise Payment Plan</h6>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST" action="display_batchwise_payment_plan.php">
+                                    <div class="mb-3 row">
+                                        <label for="programme" class="col-sm-3 col-form-label">Programme:</label>
+                                        <div class="col-sm-9">
+                                            <select name="programme_id" id="programme" style="font-size: 12px;" class="form-control select2" required>
+                                                <option value="">Select Programme</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3 row">
+                                        <label for="batch" class="col-sm-3 col-form-label">Batch:</label>
+                                        <div class="col-sm-9">
+                                            <select name="batch_id" id="batch" style="font-size: 12px;" class="form-control select2" required>
+                                                <option value="">Select Batch</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Student List</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table id="studentTable" class="table table-bordered table-striped table-hover" style="width:100%">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Reg ID</th>
+                                                <th>Student Name</th>
+                                                <th>Programme</th>
+                                                <th>Batch</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Student data will be populated here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CSS Dependencies -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+<link href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css" rel="stylesheet" />
+<link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet" />
+
+<!-- JavaScript Dependencies -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/js/select2.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        // Initialize Select2 for all dropdowns
+        $(".select2").select2({
+            width: '100%'
+        });
+
+        // Initialize DataTable
+        let studentDataTable = $('#studentTable').DataTable({
+            "processing": true,
+            "serverSide": false,
+            "responsive": true,
+            "pageLength": 100,
+            "lengthMenu": [
+                [10, 25, 50, 100, -1],
+                [10, 25, 50, 100, "All"]
+            ],
+            "order": [
+                [1, "asc"]
+            ],
+            "columnDefs": [{
+                "targets": [0, 5], // # and Action columns
+                "orderable": false,
+                "searchable": false
+            }],
+            "language": {
+                "search": "Search Students:",
+                "lengthMenu": "Show _MENU_ students per page",
+                "info": "Showing _START_ to _END_ of _TOTAL_ students",
+                "infoEmpty": "No students found",
+                "infoFiltered": "(filtered from _MAX_ total students)",
+                "emptyTable": "No student data available",
+                "loadingRecords": "Loading students...",
+                "processing": "Processing...",
+                "zeroRecords": "No matching students found"
+            },
+            "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+                '<"row"<"col-sm-12"tr>>' +
+                '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            "buttons": [{
+                    extend: 'excel',
+                    text: '<i class="fas fa-file-excel"></i> Excel',
+                    className: 'btn btn-success btn-sm'
+                },
+                {
+                    extend: 'pdf',
+                    text: '<i class="fas fa-file-pdf"></i> PDF',
+                    className: 'btn btn-danger btn-sm'
+                },
+                {
+                    extend: 'print',
+                    text: '<i class="fas fa-print"></i> Print',
+                    className: 'btn btn-info btn-sm'
+                }
+            ]
+        });
+
+        // Fetch Programmes
+        $.ajax({
+            url: "transection_exams/fetch_programmes.php",
+            method: "GET",
+            dataType: "json",
+            success: function(data) {
+                let programmeDropdown = $('#programme');
+                programmeDropdown.empty().append('<option value="">Select Programme</option>');
+                data.forEach(function(programme) {
+                    programmeDropdown.append(`<option value="${programme.program_code}">${programme.program_name}</option>`);
+                });
+            },
+            error: function(xhr, status, error) {
+                console.error("Error fetching programmes:", error);
+            }
+        });
+
+        // Function to fetch and populate student data
+        function fetchStudentCode(programmeId, batchId) {
+            if (programmeId && batchId) {
+                // Show loading state
+                studentDataTable.clear().draw();
+
+                $.ajax({
+                    url: "add_payment_plan_folder/batchwise_fetch_students.php",
+                    method: "POST",
+                    data: {
+                        programme_id: programmeId,
+                        batch_id: batchId
+                    },
+                    dataType: "json",
+                    success: function(data) {
+                        // Handle error response (from backend catch block)
+                        if (data && typeof data === 'object' && !Array.isArray(data) && data.error) {
+                            alert("Failed to load students (from server):\n\n" + data.error);
+                            console.error("Server-side error details (trace):", data.trace);
+                            studentDataTable.clear().draw();
+                            return;
+                        }
+
+                        if (!Array.isArray(data)) {
+                            console.error("Unexpected server response (not array):", data);
+                            alert("Unexpected server response. Check browser console (F12).");
+                            studentDataTable.clear().draw();
+                            return;
+                        }
+
+                        // Clear existing data
+                        studentDataTable.clear();
+
+                        // Get programme and batch names for display
+                        let programmeName = $('#programme option:selected').text();
+                        let batchName = $('#batch option:selected').text();
+
+                        // Add new data to DataTable
+                        data.forEach((student, index) => {
+                            studentDataTable.row.add([
+                                index + 1,
+                                student.student_registration_id,
+                                `${student.first_name} ${student.last_name}`,
+                                programmeName,
+                                batchName,
+                                `<button class="btn btn-primary btn-sm edit-button" 
+                                data-student-code="${student.student_code}" 
+                                data-programme-id="${programmeId}" 
+                                data-batch-id="${batchId}" 
+                                data-registration-id="${student.student_registration_id}"
+                                data-bs-toggle="tooltip" 
+                                title="Edit Payment Plan">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>`
+                            ]);
+                        });
+
+                        // Redraw the table
+                        studentDataTable.draw();
+
+                        // Initialize tooltips
+                        $('[data-bs-toggle="tooltip"]').tooltip();
+
+                        console.log("Fetched Students:", data);
+                    },
+                    error: function(xhr, status, error) {
+                        console.error("Error fetching student data:", error);
+                        console.error("Response Text:", xhr.responseText);
+
+                        let errMsg = "Error loading students. Check console (F12).";
+                        try {
+                            const parsed = JSON.parse(xhr.responseText);
+                            if (parsed && parsed.error) {
+                                errMsg = parsed.error;
+                            }
+                        } catch (_) {
+                            if (xhr.responseText && xhr.responseText.trim().length > 0) {
+                                console.error("RAW Response (first 500 chars):", xhr.responseText.slice(0, 500));
+                            }
+                        }
+
+                        alert("Failed to load students:\n\n" + errMsg);
+
+                        studentDataTable.clear().draw();
+                    }
+                });
+            } else {
+                // Clear table if no programme or batch selected
+                studentDataTable.clear().draw();
+            }
+        }
+
+        // Programme change event
+        $('#programme').change(function() {
+            let programmeId = $(this).val();
+            let batchDropdown = $('#batch');
+
+            // Clear batch dropdown and student table
+            batchDropdown.empty().append('<option value="">Select Batch</option>');
+            studentDataTable.clear().draw();
+
+            if (programmeId) {
+                $.ajax({
+                    url: "transection_exams/fetch_batches.php",
+                    method: "POST",
+                    data: {
+                        programme_id: programmeId
+                    },
+                    dataType: "json",
+                    success: function(data) {
+                        data.forEach(function(batch) {
+                            batchDropdown.append(`<option value="${batch.id}">${batch.batch_name}</option>`);
+                        });
+                    },
+                    error: function(xhr, status, error) {
+                        console.error("Error fetching batches:", error);
+                    }
+                });
+            }
+        });
+
+        // Batch change event
+        $('#batch').change(function() {
+            let programmeId = $('#programme').val();
+            let batchId = $(this).val();
+            fetchStudentCode(programmeId, batchId);
+        });
+
+        // Edit button click event
+        $(document).on('click', '.edit-button', function() {
+            let studentCode = $(this).data('student-code');
+            let programmeId = $(this).data('programme-id');
+            let batchId = $(this).data('batch-id');
+            let registrationId = $(this).data('registration-id');
+
+            // Redirect to editPayment_plan.php with parameters
+            window.location.href = `editPayment_plan.php?studentCode=${studentCode}&programmeId=${programmeId}&batchId=${batchId}&registrationId=${registrationId}`;
+        });
+
+        // Custom search functionality (optional)
+        $('#customSearch').on('keyup', function() {
+            studentDataTable.search(this.value).draw();
+        });
+    });
+</script>
+
+
+
+<style>
+    /* Custom DataTable styling */
+    .dataTables_wrapper .dataTables_length select {
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+
+    .dataTables_wrapper .dataTables_filter input {
+        padding: 6px 12px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+    }
+
+    .table-responsive {
+        border-radius: 8px;
+    }
+
+    #studentTable thead th {
+        background-color: #343a40;
+        color: white;
+        font-weight: 600;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    #studentTable tbody td {
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    #studentTable tbody td:nth-child(3) {
+        text-align: left;
+    }
+
+    .edit-button {
+        transition: all 0.3s ease;
+    }
+
+    .edit-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Loading state */
+    .dataTables_processing {
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        color: #333;
+        font-size: 14px;
+        padding: 10px;
+    }
+</style>

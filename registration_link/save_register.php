@@ -1,0 +1,747 @@
+<?php
+include("../database/connection.php");
+
+// ---- PHPMailer for email notifications ----
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+require_once("../vendor/autoload.php");
+
+// Utility: Generate Temporary ID
+function generateTempID($nic, $passport)
+{
+    if (!empty($nic)) {
+        return 'BMS' . strtoupper($nic);
+    } elseif (!empty($passport)) {
+        return 'BMS' . strtoupper($passport);
+    } else {
+        return 'BMS' . bin2hex(random_bytes(4));
+    }
+}
+
+// -------------------------------------
+// Gather Fields from POST (from register.php)
+// -------------------------------------
+
+// Clean/validate core fields
+$title = (isset($_POST['title']) && trim($_POST['title']) !== '') ? trim($_POST['title']) : null;
+$firstname = (isset($_POST['firstname']) && trim($_POST['firstname']) !== '') ? trim($_POST['firstname']) : null;
+$lastname = (isset($_POST['lastname']) && trim($_POST['lastname']) !== '') ? trim($_POST['lastname']) : null;
+$fullname = (isset($_POST['fullname']) && trim($_POST['fullname']) !== '') ? trim($_POST['fullname']) : null;
+$certificate_name = (isset($_POST['certificate_name']) && trim($_POST['certificate_name']) !== '') ? trim($_POST['certificate_name']) : null;
+$dob = (isset($_POST['dob']) && trim($_POST['dob']) !== '') ? trim($_POST['dob']) : null;
+$gender = (isset($_POST['gender']) && trim($_POST['gender']) !== '') ? trim($_POST['gender']) : null;
+$nationality = (isset($_POST['nationality']) && trim($_POST['nationality']) !== '') ? trim($_POST['nationality']) : null;
+$permanent_addr = (isset($_POST['permanent_address']) && trim($_POST['permanent_address']) !== '') ? trim($_POST['permanent_address']) : null;
+$current_addr = (isset($_POST['current_address']) && trim($_POST['current_address']) !== '') ? trim($_POST['current_address']) : null;
+$country_code = (isset($_POST['country_code']) && trim($_POST['country_code']) !== '') ? trim($_POST['country_code']) : null;
+$mobile_local = (isset($_POST['mobile']) && trim($_POST['mobile']) !== '') ? trim($_POST['mobile']) : null;
+$email = (isset($_POST['email']) && trim($_POST['email']) !== '') ? trim($_POST['email']) : null;
+$nic = (isset($_POST['nic']) && trim($_POST['nic']) !== '') ? trim($_POST['nic']) : null;
+$program = (isset($_POST['program']) && trim($_POST['program']) !== '') ? trim($_POST['program']) : null;
+$batch = (isset($_POST['batch']) && trim($_POST['batch']) !== '') ? trim($_POST['batch']) : null;
+
+// Optional
+$home_number = isset($_POST['home_no']) ? trim($_POST['home_no']) : null;
+$office_number = isset($_POST['office_no']) ? trim($_POST['office_no']) : null;
+$emergency_contact = isset($_POST['emergency_contact']) ? trim($_POST['emergency_contact']) : null;
+$passport = isset($_POST['passport']) ? trim($_POST['passport']) : null;
+
+// -------------------------------------
+// (NEW) Collect O/L, A/L, Academic/Professional from POST but do not insert yet
+// -------------------------------------
+
+// G.C.E. O/L fields
+$ol_year = isset($_POST['ol_year']) ? trim($_POST['ol_year']) : null;
+$ol_school = isset($_POST['ol_school']) ? trim($_POST['ol_school']) : null;
+$ol_subjects = isset($_POST['ol_subjects']) && is_array($_POST['ol_subjects']) ? $_POST['ol_subjects'] : [];
+$ol_grades = isset($_POST['ol_grades']) && is_array($_POST['ol_grades']) ? $_POST['ol_grades'] : [];
+
+// G.C.E. A/L fields
+$al_year = isset($_POST['al_year']) ? trim($_POST['al_year']) : null;
+$al_school = isset($_POST['al_school']) ? trim($_POST['al_school']) : null;
+$al_subjects = isset($_POST['al_subjects']) && is_array($_POST['al_subjects']) ? $_POST['al_subjects'] : [];
+$al_grades = isset($_POST['al_grades']) && is_array($_POST['al_grades']) ? $_POST['al_grades'] : [];
+
+// Academic/Professional Qualifications
+$acad_qualification = (isset($_POST['acad_qualification']) && is_array($_POST['acad_qualification'])) ? $_POST['acad_qualification'] : [];
+$acad_institution = (isset($_POST['acad_institution']) && is_array($_POST['acad_institution'])) ? $_POST['acad_institution'] : [];
+$acad_year = (isset($_POST['acad_year']) && is_array($_POST['acad_year'])) ? $_POST['acad_year'] : [];
+$acad_other = (isset($_POST['acad_other']) && is_array($_POST['acad_other'])) ? $_POST['acad_other'] : [];
+$other_qualifications = isset($_POST['other_qualifications']) ? $_POST['other_qualifications'] : null; // changed: do not trim yet, allow array or string
+
+// -------------------------------------
+// Validate mobile number (digits only, 6-15)
+$mobile_clean = preg_replace('/[^\d]/', '', $mobile_local);
+if (!preg_match('/^[0-9]{6,15}$/', $mobile_clean)) {
+    echo "<script>alert('Invalid mobile format. Enter digits only (6-15 numbers), no spaces or leading zeros.'); window.history.back();</script>";
+    exit();
+}
+$mobile_clean = ltrim($mobile_clean, '0');
+$full_mobile = $country_code . $mobile_clean;
+
+// Validate that at least one of NIC or Passport is provided
+if (empty($nic) && empty($passport)) {
+    echo "<script>alert('Please provide either NIC or Passport number. Both cannot be empty.'); window.history.back();</script>";
+    exit();
+}
+
+// Prepare O/L and A/L
+$ol_results = [];
+if (!empty($ol_subjects) && is_array($ol_subjects)) {
+    for ($i = 0; $i < count($ol_subjects); $i++) {
+        $subject = isset($ol_subjects[$i]) ? trim($ol_subjects[$i]) : null;
+        $grade = isset($ol_grades[$i]) ? trim($ol_grades[$i]) : null;
+        if ($subject && $grade) {
+            $ol_results[] = [
+                'subject' => $subject,
+                'grade' => $grade,
+                'year' => $ol_year,
+                'school' => $ol_school
+            ];
+        }
+    }
+}
+
+$al_results = [];
+if (!empty($al_subjects) && is_array($al_subjects)) {
+    for ($i = 0; $i < count($al_subjects); $i++) {
+        $subject = isset($al_subjects[$i]) ? trim($al_subjects[$i]) : null;
+        $grade = isset($al_grades[$i]) ? trim($al_grades[$i]) : null;
+        if ($subject && $grade) {
+            $al_results[] = [
+                'subject' => $subject,
+                'grade' => $grade,
+                'year' => $al_year,
+                'school' => $al_school
+            ];
+        }
+    }
+}
+
+// Prepare academic_qualifications for correct loop
+$academic_results = [];
+if (!empty($acad_qualification) && is_array($acad_qualification)) {
+    for ($i = 0; $i < count($acad_qualification); $i++) {
+        $qualification = isset($acad_qualification[$i]) ? trim($acad_qualification[$i]) : '';
+        $institution = isset($acad_institution[$i]) ? trim($acad_institution[$i]) : '';
+        $year = isset($acad_year[$i]) ? trim($acad_year[$i]) : '';
+        $notes = isset($acad_other[$i]) ? trim($acad_other[$i]) : '';
+        // Only store if at least one present (so user can leave empty fields)
+        if ($qualification || $institution || $year || $notes) {
+            $academic_results[] = [
+                'qualification' => $qualification,
+                'institution' => $institution,
+                'year' => $year,
+                'notes' => $notes
+            ];
+        }
+    }
+}
+
+// Prepare other_qualifications as an array; handle multi or single string
+$other_qual_results = [];
+if (!empty($other_qualifications)) {
+    // If post is array
+    if (is_array($other_qualifications)) {
+        foreach ($other_qualifications as $other) {
+            $detail = trim($other);
+            if ($detail !== '')
+                $other_qual_results[] = $detail;
+        }
+    } else {
+        $detail = trim($other_qualifications);
+        if ($detail !== '')
+            $other_qual_results[] = $detail;
+    }
+}
+
+// -------------------------------------
+// Check NIC Exists (no duplicate applicants)
+// -------------------------------------
+try {
+    $checkStmt = $conn->prepare("SELECT id FROM students_temporary_registration WHERE nic = ? LIMIT 1");
+    if (!$checkStmt) {
+        throw new Exception("NIC check prepare failed: " . $conn->error);
+    }
+    $checkStmt->bind_param("s", $nic);
+    $checkStmt->execute();
+    $checkResult = $checkStmt->get_result();
+    if ($checkResult->num_rows > 0) {
+        echo "<script>
+            alert('You are already registered! Please contact bms.ac.lk/contact');
+            window.location.href='https://www.bms.ac.lk/Contact-US';
+        </script>";
+        exit();
+    }
+} catch (Exception $e) {
+    error_log("NIC CHECK ERROR: " . $e->getMessage());
+    echo "<script>alert('System error (NIC Check). Please try again later.'); window.history.back();</script>";
+    exit();
+}
+
+// -------------------------------------
+// Insert New Registration (full field list)
+// -------------------------------------
+try {
+    $temp_id = generateTempID($nic, $passport);
+    $token = bin2hex(random_bytes(16));
+    $created_at = date('Y-m-d H:i:s');
+    $approved = 0;
+    $approved_by = NULL;
+
+    // The 'program' and 'batch' are direct radio selects
+    $stmt = $conn->prepare("
+        INSERT INTO students_temporary_registration 
+        (`temp_id`, `token`, `title`, `firstname`, `lastname`, `fullname`, `certificate_name`, `dob`, `gender`, `nationality`, 
+        `permanent_address`, `current_address`, `mobile`, `home_number`, `office_number`, `emergency_contact`, 
+        `nic`, `passport`, `email`, `program`, `batch`, `std_entered_batch`, `created_at`, `approved`, `approved_by`)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+
+    if (!$stmt) {
+        throw new Exception("Insert prepare failed: " . $conn->error);
+    }
+
+    $stmt->bind_param(
+        "sssssssssssssssssssssssis",
+        $temp_id,
+        $token,
+        $title,
+        $firstname,
+        $lastname,
+        $fullname,
+        $certificate_name,
+        $dob,
+        $gender,
+        $nationality,
+        $permanent_addr,
+        $current_addr,
+        $full_mobile,
+        $home_number,
+        $office_number,
+        $emergency_contact,
+        $nic,
+        $passport,
+        $email,
+        $program,
+        $batch,              // system-selected batch (ID)
+        $batch,              // std_entered_batch (applicant's entered batch value; here, treated same as $batch)
+        $created_at,
+        $approved,
+        $approved_by
+    );
+
+    if (!$stmt->execute()) {
+        throw new Exception("Insert execute failed: " . $stmt->error);
+    }
+} catch (Exception $e) {
+    error_log("DB INSERT ERROR: " . $e->getMessage());
+    echo "<script>alert('System error during registration. Please try again later.'); window.history.back();</script>";
+    exit();
+}
+
+// Retrieve the newly inserted registration_id for use in sub-table insertion
+$registration_id = $stmt->insert_id;
+
+// Insert O/L results
+if (!empty($ol_results)) {
+    $ol_stmt = $conn->prepare("INSERT INTO student_ol_results (temp_id, registration_id, subject, grade, exam_year, school) VALUES (?, ?, ?, ?, ?, ?)");
+    foreach ($ol_results as $ol) {
+        $ol_stmt->bind_param(
+            "sissss",
+            $temp_id,
+            $registration_id,
+            $ol['subject'],
+            $ol['grade'],
+            $ol['year'],
+            $ol['school']
+        );
+        $ol_stmt->execute();
+    }
+    $ol_stmt->close();
+}
+
+// Insert A/L results
+if (!empty($al_results)) {
+    $al_stmt = $conn->prepare("INSERT INTO student_al_results (temp_id, registration_id, subject, grade, exam_year, school) VALUES (?, ?, ?, ?, ?, ?)");
+    foreach ($al_results as $al) {
+        $al_stmt->bind_param(
+            "sissss",
+            $temp_id,
+            $registration_id,
+            $al['subject'],
+            $al['grade'],
+            $al['year'],
+            $al['school']
+        );
+        $al_stmt->execute();
+    }
+    $al_stmt->close();
+}
+
+// -------------- CORRECT: Academic & Other Qualifications Insert ---------------
+
+// Insert academic qualifications (student_academic_qualifications)
+if (!empty($academic_results)) {
+    $acad_stmt = $conn->prepare("INSERT INTO student_academic_qualifications (temp_id, registration_id, qualification, institution, year, notes) VALUES (?, ?, ?, ?, ?, ?)");
+    if (!$acad_stmt) {
+        error_log("Academic qualifications prepare failed: " . $conn->error);
+    } else {
+        foreach ($academic_results as $acad) {
+            $qualification = $acad['qualification'];
+            $institution = $acad['institution'];
+            $year = $acad['year'];
+            $notes = $acad['notes'];
+            $acad_stmt->bind_param(
+                "sissss",
+                $temp_id,
+                $registration_id,
+                $qualification,
+                $institution,
+                $year,
+                $notes
+            );
+            if (!$acad_stmt->execute()) {
+                error_log("Academic qualifications execute failed: " . $acad_stmt->error . " / " . json_encode($acad));
+            }
+        }
+        $acad_stmt->close();
+    }
+}
+
+// Insert other qualifications (student_other_qualifications)
+if (!empty($other_qual_results)) {
+    $other_stmt = $conn->prepare("INSERT INTO student_other_qualifications (temp_id, registration_id, details) VALUES (?, ?, ?)");
+    if (!$other_stmt) {
+        error_log("Other qualifications prepare failed: " . $conn->error);
+    } else {
+        foreach ($other_qual_results as $details) {
+            $other_stmt->bind_param(
+                "sis",
+                $temp_id,
+                $registration_id,
+                $details
+            );
+            if (!$other_stmt->execute()) {
+                error_log("Other qualifications execute failed: " . $other_stmt->error . " / " . json_encode($details));
+            }
+        }
+        $other_stmt->close();
+    }
+}
+
+
+// -------------------------------------
+// QR Code Generation (for email fallback)
+// -------------------------------------
+$qrFile = "";
+$qrURL = "";
+try {
+    $qrBaseDir = __DIR__ . "/qr";
+    if (!is_dir($qrBaseDir)) {
+        if (!mkdir($qrBaseDir, 0755, true)) {
+            error_log("Failed to create base QR folder: $qrBaseDir");
+        }
+    }
+
+    $programFolder = $qrBaseDir . "/" . preg_replace('/[^A-Za-z0-9]/', '_', $program . "-" . $batch);
+    if (!is_dir($programFolder)) {
+        if (!mkdir($programFolder, 0755, true)) {
+            error_log("Failed to create program QR folder: $programFolder");
+            $programFolder = $qrBaseDir; // Fallback to base
+        }
+    }
+
+    // Use JPG format to avoid TCPDF Alpha Channel/GD requirement
+    $qrURL = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&bgcolor=FFFFFF&margin=50&format=jpg&data=" . urlencode($temp_id);
+    $qrFile = $programFolder . "/" . $temp_id . ".jpg";
+
+    // Use cURL instead of file_get_contents for compatibility
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $qrURL);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    $qrImageData = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($qrImageData === false || $httpCode !== 200) {
+        throw new Exception("QR generation failed from API (HTTP Code: $httpCode)");
+    }
+    if (file_put_contents($qrFile, $qrImageData) === false) {
+        throw new Exception("Failed to save QR file: $qrFile - check permissions");
+    }
+} catch (Exception $e) {
+    error_log("QR ERROR: " . $e->getMessage());
+    $qrFile = "";
+}
+
+
+
+
+
+// -------------------------------------
+// PDF Generation using TCPDF (Native PHP)
+// -------------------------------------
+$pdfFile = "";
+try {
+    // 1. Prepare Output Path
+    $pdfBaseDir = __DIR__ . "/qr";
+    $folderName = preg_replace('/[^A-Za-z0-9]/', '_', $program . "-" . $batch);
+    $pdfOutputFolder = $pdfBaseDir . '/' . $folderName;
+
+    // Ensure dir exists
+    if (!is_dir($pdfOutputFolder)) {
+        if (!mkdir($pdfOutputFolder, 0755, true)) {
+            error_log("Failed to create PDF dir: $pdfOutputFolder");
+            $pdfOutputFolder = $pdfBaseDir; // Fallback
+        }
+    }
+
+    // 2. Define Filename
+    $pdfFile = $pdfOutputFolder . '/' . $temp_id . '.pdf';
+
+    // 3. Initialize TCPDF
+    // Make sure TCPDF is loaded. If installed via Composer, autoload handles it. 
+    // Otherwise, require it manually if needed, but autoload is preferred.
+
+    // Create new PDF document
+    $pdf = new \TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+
+    // Set document information
+    $pdf->SetCreator(PDF_CREATOR);
+    $pdf->SetAuthor('BMS System');
+    $pdf->SetTitle('Student Registration - ' . $temp_id);
+
+    // remove default header/footer
+    $pdf->setPrintHeader(false);
+    $pdf->setPrintFooter(true);
+
+    // set default monospaced font
+    $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
+
+    // set margins
+    $pdf->SetMargins(15, 15, 15);
+    $pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
+
+    // set image scale factor
+    $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
+
+    // Add a page
+    $pdf->AddPage();
+
+    // --- CONTENT GENERATION ---
+
+    // Styles
+    $titleStyle = 'font-family: helvetica; font-weight: bold; font-size: 18pt; color: #003366; text-align: center;';
+    $subTitleStyle = 'font-family: helvetica; font-size: 11pt; color: #666; text-align: center; margin-bottom: 20px;';
+    $sectionHeaderStyle = 'font-family: helvetica; font-weight: bold; font-size: 11pt; color: #003366; border-bottom: 1px solid #ccc; padding-top: 10px; margin-bottom: 5px;';
+    $labelStyle = 'font-weight: bold; color: #555;';
+    $valueStyle = 'color: #000;';
+
+    // Header
+    $html = '<div style="' . $titleStyle . '">BMS APPLICATION SUMMARY</div>';
+    $html .= '<div style="' . $subTitleStyle . '">Ref: ' . $temp_id . ' | Date: ' . date('Y-m-d') . '</div>';
+
+
+    // Images (Logo Left, QR Right)
+    // Use local absolute path (BEST for TCPDF)
+
+    $logoPath = dirname(__DIR__) . '/admin/uploads/company_profiles/BMSCAMPUSLOGOFINAL.jpg';
+    $logoHtml = '';
+
+    if (file_exists($logoPath)) {
+        $logoHtml = '<img src="' . $logoPath . '" height="50" />';
+    } else {
+        // Fallback if image missing
+        $logoHtml = '<div style="color:#003366; font-weight:bold; font-size:16pt;">BMS</div>';
+    }
+
+    $qrHtml = '';
+    if (file_exists($qrFile)) {
+        // QR is now .jpg, so it should work without GD
+        $qrHtml = '<img src="' . $qrFile . '" height="80" />';
+    }
+
+    $html .= '<table border="0" cellpadding="5">
+        <tr>
+            <td width="50%" align="left">' . $logoHtml . '</td>
+            <td width="50%" align="right">' . $qrHtml . '</td>
+        </tr>
+    </table>';
+
+
+    $html .= '<hr color="#e0e0e0" />';
+
+    // Helper to print rows
+    function getRow($label, $value)
+    {
+        return '<tr>
+            <td width="30%" style="font-weight:bold; color:#555;">' . $label . '</td>
+            <td width="70%" style="color:#000;">' . $value . '</td>
+        </tr>';
+    }
+
+    // --- Personal Info ---
+    $html .= '<div style="' . $sectionHeaderStyle . '">Personal Information</div>';
+    $html .= '<table border="0" cellpadding="4">';
+    $html .= getRow('Full Name', $fullname);
+    $html .= getRow('Name on Certificate', $certificate_name);
+    $html .= getRow('Date of Birth', $dob);
+    $html .= getRow('Gender', $gender);
+    $html .= getRow('Nationality', $nationality);
+    $html .= getRow('NIC / Passport', ($nic ? $nic : '-') . ' / ' . ($passport ? $passport : '-'));
+    $html .= '</table>';
+
+    // --- Contact Info ---
+    $html .= '<br><div style="' . $sectionHeaderStyle . '">Contact Information</div>';
+    $html .= '<table border="0" cellpadding="4">';
+    $html .= getRow('Address (Perm.)', $permanent_addr);
+    $html .= getRow('Address (Curr.)', $current_addr);
+    $html .= getRow('Mobile', $full_mobile);
+    $html .= getRow('Email', $email);
+    if ($home_number)
+        $html .= getRow('Home', $home_number);
+    if ($emergency_contact)
+        $html .= getRow('Emergency', $emergency_contact);
+    $html .= '</table>';
+
+    // --- Programme ---
+    $html .= '<br><div style="' . $sectionHeaderStyle . '">Programme Details</div>';
+    $html .= '<table border="0" cellpadding="4">';
+    $html .= getRow('Programme', $program);
+    // $html .= getRow('Batch', $batch);
+    $html .= '</table>';
+
+    // --- Education ---
+
+    // O/L
+    if (!empty($ol_results)) {
+        $html .= '<br><div style="' . $sectionHeaderStyle . '">G.C.E. O/L Results</div>';
+        // School info from first row
+        $school = isset($ol_results[0]['school']) ? $ol_results[0]['school'] : '-';
+        $year = isset($ol_results[0]['year']) ? $ol_results[0]['year'] : '-';
+        $html .= '<table border="0" cellpadding="4">';
+        $html .= getRow('School', $school);
+        $html .= getRow('Year', $year);
+        $html .= '</table>';
+
+        // Table
+        $html .= '<br><table border="1" cellpadding="5" cellspacing="0" style="border-collapse:collapse;">
+            <tr style="background-color:#003366; color:#fff; font-weight:bold;">
+                <td width="70%">Subject</td>
+                <td width="30%" align="center">Grade</td>
+            </tr>';
+        foreach ($ol_results as $res) {
+            $html .= '<tr><td>' . $res['subject'] . '</td><td align="center">' . $res['grade'] . '</td></tr>';
+        }
+        $html .= '</table>';
+    }
+
+    // A/L
+    if (!empty($al_results)) {
+        $html .= '<br><div style="' . $sectionHeaderStyle . '">G.C.E. A/L Results</div>';
+        $school = isset($al_results[0]['school']) ? $al_results[0]['school'] : '-';
+        $year = isset($al_results[0]['year']) ? $al_results[0]['year'] : '-';
+        $html .= '<table border="0" cellpadding="4">';
+        $html .= getRow('School', $school);
+        $html .= getRow('Year', $year);
+        $html .= '</table>';
+
+        $html .= '<br><table border="1" cellpadding="5" cellspacing="0" style="border-collapse:collapse;">
+            <tr style="background-color:#003366; color:#fff; font-weight:bold;">
+                <td width="70%">Subject</td>
+                <td width="30%" align="center">Grade</td>
+            </tr>';
+        foreach ($al_results as $res) {
+            $html .= '<tr><td>' . $res['subject'] . '</td><td align="center">' . $res['grade'] . '</td></tr>';
+        }
+        $html .= '</table>';
+    }
+
+    // Academic
+    if (!empty($academic_results)) {
+        $html .= '<br><div style="' . $sectionHeaderStyle . '">Academic/Professional Qualifications</div>';
+        $html .= '<br><table border="1" cellpadding="5" cellspacing="0" style="border-collapse:collapse;">
+            <tr style="background-color:#003366; color:#fff; font-weight:bold;">
+                <td width="40%">Qualification</td>
+                <td width="40%">Institution</td>
+                <td width="20%">Year</td>
+            </tr>';
+        foreach ($academic_results as $res) {
+            $html .= '<tr>
+                <td>' . $res['qualification'] . '</td>
+                <td>' . $res['institution'] . '</td>
+                <td>' . $res['year'] . '</td>
+            </tr>';
+        }
+        $html .= '</table>';
+    }
+
+    // Other
+    if (!empty($other_qual_results)) {
+        $html .= '<br><div style="' . $sectionHeaderStyle . '">Other Qualifications</div><ul>';
+        foreach ($other_qual_results as $res) {
+            $html .= '<li>' . $res . '</li>';
+        }
+        $html .= '</ul>';
+    }
+
+    // Write content
+    $pdf->writeHTML($html, true, false, true, false, '');
+
+    // Output PDF to file
+    $pdf->Output($pdfFile, 'F');
+} catch (Exception $e) {
+    error_log("TCPDF Generation Error: " . $e->getMessage());
+    $pdfFile = ""; // Fallback to no PDF
+}
+
+// If PDF generation failed, and QR was generated, we can still proceed with QR.
+// If both failed, the email will just have text.
+
+// -------------------------------------
+// Send confirmation email with QR (PHPMailer) AND attach the QR PNG
+// -------------------------------------
+$emailSuccess = false;
+
+$emailResultMsg = "";
+
+$qrhttp = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://');
+$qrimgurl = $qrhttp . $_SERVER['HTTP_HOST'] . dirname($_SERVER['SCRIPT_NAME']) . "/" . $qrFile;
+
+if (!empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    try {
+        $mail = new PHPMailer(true);
+
+        $mail->isSMTP();
+        $mail->Host = 'smtp.office365.com';
+        $mail->SMTPAuth = true;
+        $mail->Username = 'alumni@bms.ac.lk';
+        $mail->Password = 'prcmsddbsyxymsps';
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port = 587;
+
+        $mail->setFrom('alumni@bms.ac.lk', 'BMS Registration');
+        $mail->addAddress($email, $firstname . ' ' . $lastname);
+
+        $mail->isHTML(true);
+        $mail->Subject = "BMS Online Registration";
+
+        $upload_link = "https://{$_SERVER['HTTP_HOST']}" . dirname($_SERVER['SCRIPT_NAME']) . "/upload_document.php?temp_id=" . urlencode($temp_id) . "&nic=" . urlencode($nic) . "&token=" . urlencode($token);
+        // <p>Batch ID: <strong>' . htmlspecialchars($batch) . '</strong></p>
+        // Professional Email Template
+        $bannerUrl = "https://www.bms.ac.lk/assets/images/logo-bms.png"; // Use a valid banner URL if available
+
+        $mail->Body = '
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+                .email-container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                .email-header { padding: 0; background-color: transparent; }
+                .email-header img { width: 100%; display: block; border-radius: 8px 8px 0 0; }
+                .email-body { padding: 30px; color: #333333; line-height: 1.6; }
+                .welcome-text { font-size: 20px; font-weight: bold; color: #003366; margin-bottom: 20px; text-align: center; }
+                .info-card { background-color: #f8f9fa; border-left: 4px solid #003366; padding: 15px; margin-bottom: 25px; border-radius: 4px; }
+                .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+                .info-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+                .info-label { font-weight: bold; color: #555; width: 40%; }
+                .info-value { color: #000; width: 60%; text-align: right; }
+                .cta-button { display: block; width: 220px; margin: 25px auto; padding: 12px 0; background-color: #0056b3; color: #ffffff !important; text-align: center; text-decoration: none; font-weight: bold; border-radius: 5px; font-size: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+                .cta-button:hover { background-color: #004494; }
+                .doc-list { background-color: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 15px; border-radius: 5px; font-size: 14px; margin-bottom: 20px; }
+                .doc-list ul { margin: 0; padding-left: 20px; }
+                .doc-list li { margin-bottom: 5px; }
+                .email-footer { background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 12px; color: #888; border-top: 1px solid #e0e0e0; }
+                .qr-section { text-align: center; margin: 20px 0; }
+                .qr-section img { border: 1px solid #ddd; padding: 5px; background: #fff; }
+            </style>
+        </head>
+        <body>
+            <div class="email-container">
+                <div class="email-header">
+                    <img src="https://ims.bms.ac.lk//admin/uploads/img/Registration-form-Banner.jpg" alt="BMS Banner" style="max-width: 100%; height: auto; border-radius: 8px 8px 0 0;">
+                    
+                </div>
+                
+                <div class="email-body">
+                    <div class="welcome-text">Your Registration Data Has Been Successfully Submitted</div>
+                    <p style="text-align: center;">Dear <strong>' . htmlspecialchars($firstname) . ' ' . htmlspecialchars($lastname) . '</strong>,</p>
+                    <p style="text-align: center;">Thank you for registering with BMS. Your application has been received successfully.</p>
+                    <p style="text-align: center; font-weight: bold; color: #d9534f;">Please upload the required documents to verify your registration.</p>
+
+                    <div class="doc-list">
+                        <strong>Action Required:</strong> Please upload the following documents to complete your registration:
+                        <ul style="margin-top: 10px;">
+                            <li><strong>Required:</strong> Passport size photo (Max 2MB)</li>
+                            <li><strong>Required:</strong> NIC / Passport Copy</li>
+                            <li><strong>Required:</strong> G.C.E. O/L Results Certificate</li>
+                            <li>G.C.E. A/L Results Certificate</li>
+                            <li>Degree Certificate</li>
+                            <li>Transcript</li>
+                            <li>Other Qualification 1</li>
+                            <li>Other Qualification 2</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="info-card">
+                       
+                        <div class="info-row">
+                            <span class="info-label">NIC / Passport</span>
+                            <span class="info-value">' . htmlspecialchars($nic ? $nic : $passport) . '</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Program</span>
+                            <span class="info-value">' . htmlspecialchars($program) . '</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Email</span>
+                            <span class="info-value">' . htmlspecialchars($email) . '</span>
+                        </div>
+                    </div>
+
+                    <div class="qr-section">
+                        <p style="margin-bottom: 10px; font-weight: bold; color: #555;">Your Registration QR Code</p>
+                        <img src="' . htmlspecialchars($qrURL) . '" width="150" alt="QR Code">
+                    </div>
+
+                    <a href="' . htmlspecialchars($upload_link) . '" class="cta-button">Upload Documents Now</a>
+                   
+                </div>
+
+                <div class="email-footer">
+                    &copy; ' . date("Y") . ' BMS. All rights reserved.<br>
+                    Need help? <a href="https://www.bms.ac.lk/Contact-US" style="color: #0056b3; text-decoration: none;">Contact Us</a>
+                </div>
+            </div>
+        </body>
+        </html>
+        ';
+        $mail->AltBody = "Registration Successful!\nProgram: {$program}\nBatch: {$batch}\nTemporary ID: {$temp_id}\n\n" .
+            "Upload your documents: {$upload_link}\n";
+        if (file_exists($qrFile)) {
+            $mail->addAttachment($qrFile, 'BMS-QR.png');
+        }
+        // Attach the generated PDF file if it exists
+        if (!empty($pdfFile) && file_exists($pdfFile)) {
+            $mail->addAttachment($pdfFile, $temp_id . '.pdf');
+        }
+        $mail->send();
+        $emailSuccess = true;
+        $emailResultMsg = "A confirmation email has been sent to your address. (QR code image attached)";
+    } catch (Exception $e) {
+        error_log("PHPMailer Error: " . $mail->ErrorInfo);
+        $emailResultMsg = "Could not send confirmation email. Please check your email address or contact BMS.";
+    }
+}
+
+echo "<script>
+    alert('Registration successful! The coordinator will contact you soon.');
+    window.location.href='https://www.bms.ac.lk/';
+</script>";
+
+exit();

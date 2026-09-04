@@ -1,0 +1,121 @@
+# =====================================================================
+# bms-form/.htaccess
+# Public student-facing form
+# =====================================================================
+
+
+# =====================================================================
+# 1. ALLOW PUBLIC ACCESS
+# =====================================================================
+
+<IfModule mod_authz_core.c>
+    Require all granted
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Allow from all
+</IfModule>
+
+
+# =====================================================================
+# 2. DISABLE DIRECTORY LISTING
+# =====================================================================
+
+Options -Indexes
+
+
+# =====================================================================
+# 3. URL REWRITING
+# =====================================================================
+
+<IfModule mod_rewrite.c>
+
+    RewriteEngine On
+
+
+    # -------------------------------------------------------------
+    # DO NOT REWRITE REAL FILES OR DIRECTORIES
+    # -------------------------------------------------------------
+
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+
+    # -------------------------------------------------------------
+    # SUBMIT RESPONSE
+    #
+    # Browser URL:
+    #
+    # /ims/bms-form/13/submit_response.php
+    #
+    # Internally:
+    #
+    # /ims/bms-form/submit_response.php
+    # -------------------------------------------------------------
+
+    RewriteRule ^([0-9]+)/submit_response\.php$ submit_response.php [L,QSA]
+
+
+    # -------------------------------------------------------------
+    # CLEAN FORM URL
+    #
+    # Browser URL:
+    #
+    # /ims/bms-form/13/create-powerful-online-forms
+    #
+    # Internally:
+    #
+    # /ims/bms-form/view_form.php?id=13
+    # &title=create-powerful-online-forms
+    #
+    # The PHP file will validate the slug against the database.
+    # If the slug is incorrect, PHP redirects to:
+    #
+    # https://bms.ac.lk/
+    # -------------------------------------------------------------
+
+    RewriteRule ^([0-9]+)/([A-Za-z0-9-]+)/?$ view_form.php?id=$1&title=$2 [L,QSA]
+
+
+</IfModule>
+
+
+# =====================================================================
+# 4. PUBLIC FORM FILES
+# =====================================================================
+
+<FilesMatch "^(view_form|submit_response)\.php$">
+
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Allow from all
+    </IfModule>
+
+</FilesMatch>
+
+
+# =====================================================================
+# 5. ADMIN ENDPOINTS
+# =====================================================================
+# These files must perform their own authentication/authorization
+# checks inside PHP.
+# =====================================================================
+
+<FilesMatch "^(save_form|upload_image)\.php$">
+
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Allow from all
+    </IfModule>
+
+</FilesMatch>

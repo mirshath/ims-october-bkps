@@ -1,0 +1,316 @@
+$(function () {
+  var cart = {};
+  var catalog = {};
+  var taxRate = 0.0;
+  $("#product-grid .product-img").each(function () {
+    var $e = $(this);
+    catalog[$e.data("name")] = {
+      id: $e.data("id"),
+      name: $e.data("name"),
+      price: parseFloat($e.data("price")),
+      stock: parseInt($e.data("stock"), 10),
+      image: $e.data("image"),
+    };
+  });
+  function addItem(p) {
+    var id = p.id;
+    if (!cart[id]) {
+      cart[id] = {
+        key: id,
+        id: id,
+        name: p.name,
+        price: parseFloat(p.price),
+        stock: parseInt(p.stock, 10),
+        qty: 1,
+        image: p.image,
+        free: false,
+      };
+    } else {
+      if (cart[id].qty < cart[id].stock) {
+        cart[id].qty += 1;
+      } else {
+        showAlert("Maximum stock reached for " + p.name);
+      }
+    }
+    render();
+  }
+  function removeItem(key) {
+    delete cart[key];
+    render();
+  }
+  function updateQuantity(key, qty) {
+    var item = cart[key];
+    if (!item) return;
+    if (item.free) return;
+    qty = parseInt(qty, 10);
+    if (isNaN(qty) || qty < 1) qty = 1;
+    if (qty > item.stock) {
+      qty = item.stock;
+      showAlert("Adjusted to available stock for " + item.name);
+    }
+    item.qty = qty;
+    render();
+  }
+  function applyPromotions() {
+    var tumbler = findPaidByContains("tumbler") || findPaidByContains("vacuum");
+    var teddy = findPaidByContains("teddy");
+    var penInfo = findCatalogByContains("pen");
+    var paidPen = findPaidByContains("pen");
+    var freeId = penInfo ? penInfo.id : null;
+    var freeQty = 0;
+    if (tumbler && tumbler.qty >= 1) freeQty += 1;
+    if (teddy && teddy.qty >= 2) freeQty += 2;
+    var paidPenQty = paidPen ? paidPen.qty : 0;
+    if (freeId && penInfo) {
+      var available = penInfo.stock - paidPenQty;
+      if (freeQty > available) {
+        freeQty = available;
+        showAlert("Free Wooden Pen limited by stock");
+      }
+      var freeKey = "__free_" + freeId;
+      var freeItem = cart[freeKey];
+      if (freeQty > 0) {
+        if (!freeItem) {
+          cart[freeKey] = {
+            key: freeKey,
+            id: freeId,
+            name: "Wooden Pen (Free)",
+            price: 0,
+            stock: penInfo.stock,
+            qty: freeQty,
+            image: penInfo.image,
+            free: true,
+          };
+        } else {
+          freeItem.qty = freeQty;
+        }
+      } else {
+        if (freeItem) delete cart[freeKey];
+      }
+    }
+  }
+  function findPaidByContains(term) {
+    term = String(term).toLowerCase();
+    var item = null;
+    Object.values(cart).forEach(function (i) {
+      if (!i.free && String(i.name).toLowerCase().indexOf(term) >= 0) item = i;
+    });
+    return item;
+  }
+  function render() {
+    applyPromotions();
+    renderCart();
+    renderTotals();
+    renderSummary();
+    clearAlert();
+  }
+  function renderCart() {
+    var $list = $("#cart-list");
+    $list.empty();
+    Object.values(cart).forEach(function (item) {
+      var li = $(
+        '<li class="list-group-item d-flex align-items-center justify-content-between"></li>'
+      );
+      var left = $('<div class="d-flex align-items-center gap-2"></div>');
+      left.append(
+        $("<img>")
+          .attr("src", item.image)
+          .addClass("cart-thumb")
+          .css({ width: "50px", height: "50px", objectFit: "cover" })
+      );
+      var meta = $('<div class="d-flex flex-column"></div>');
+      meta.append($('<div class="fw-semibold"></div>').text(item.name));
+      meta.append(
+        $('<div class="text-muted small"></div>').text(
+          "LKR " + format(item.price)
+        )
+      );
+      left.append(meta);
+      var right = $('<div class="d-flex align-items-center gap-2"></div>');
+      var qtyGroup = $(
+        '<div class="input-group input-group-sm" style="width:130px;"></div>'
+      );
+      var minusBtn = $(
+        '<button type="button" class="btn btn-outline-secondary">-</button>'
+      );
+      var qtyInput = $('<input type="number" class="form-control text-center">')
+        .attr("min", 1)
+        .attr("max", item.stock)
+        .val(item.qty);
+      var plusBtn = $(
+        '<button type="button" class="btn btn-outline-secondary">+</button>'
+      );
+      if (item.free) {
+        minusBtn.prop("disabled", true);
+        plusBtn.prop("disabled", true);
+        qtyInput.prop("disabled", true);
+      } else {
+        minusBtn.on("click", function () {
+          adjustQuantity(item.key, -1);
+        });
+        plusBtn.on("click", function () {
+          adjustQuantity(item.key, 1);
+        });
+        qtyInput.on("change", function () {
+          updateQuantity(item.key, $(this).val());
+        });
+      }
+      qtyGroup.append(minusBtn, qtyInput, plusBtn);
+      var subtotal = $('<div class="fw-semibold"></div>').text(
+        "LKR " + format(item.price * item.qty)
+      );
+      var removeBtn = $(
+        '<button class="btn btn-outline-danger btn-sm touch-target">Remove</button>'
+      ).on("click", function () {
+        removeItem(item.key);
+      });
+      right.append(qtyGroup).append(subtotal).append(removeBtn);
+      li.append(left).append(right);
+      $list.append(li.hide().fadeIn(150));
+    });
+    if ($list.children().length === 0) {
+      $list.append(
+        '<li class="list-group-item text-center text-muted">No items in cart</li>'
+      );
+    }
+  }
+  function renderSummary() {
+    var $wrap = $("#summary-items");
+    $wrap.empty();
+    Object.values(cart).forEach(function (item) {
+      var row = LKR('<div class="d-flex justify-content-between"></div>');
+      row.append(LKR("<div></div>").text(item.name + " × " + item.qty));
+      row.append(
+        LKR("<div></div>").text("LKR" + format(item.price * item.qty))
+      );
+      $wrap.append(row);
+    });
+  }
+  function renderTotals() {
+    var subtotal = Object.values(cart).reduce(function (acc, it) {
+      return acc + it.price * it.qty;
+    }, 0);
+    var tax = subtotal * taxRate;
+    var grand = subtotal + tax;
+    $("#subtotal").text("LKR " + format(subtotal));
+    $("#tax").text("LKR " + format(tax));
+    $("#grand-total").text("LKR " + format(grand));
+  }
+  function format(n) {
+    return parseFloat(n).toFixed(2);
+  }
+  function showAlert(msg) {
+    $("#cart-alert").text(msg);
+  }
+  function clearAlert() {
+    $("#cart-alert").text("");
+  }
+  function getPayload() {
+    return {
+      items: Object.values(cart)
+        .filter(function (i) {
+          return !i.free;
+        })
+        .map(function (i) {
+          return { id: i.id, name: i.name, price: i.price, qty: i.qty };
+        }),
+      totals: {
+        subtotal: parseFloat($("#subtotal").text().replace("LKR ", " ")),
+        tax: parseFloat($("#tax").text().replace("LKR ", " ")),
+        grand_total: parseFloat($("#grand-total").text().replace("LKR ", " ")),
+      },
+    };
+  }
+
+  $("#product-grid").on("click", ".product-img", function () {
+    var $el = $(this);
+    addItem({
+      id: $el.data("id"),
+      name: $el.data("name"),
+      price: $el.data("price"),
+      stock: $el.data("stock"),
+      image: $el.data("image"),
+    });
+  });
+  $("#product-grid").on("click", ".add-to-cart-btn", function () {
+    var $el = $(this);
+    addItem({
+      id: $el.data("id"),
+      name: $el.data("name"),
+      price: $el.data("price"),
+      stock: $el.data("stock"),
+      image: $el.data("image"),
+    });
+  });
+  $("#checkout-btn").on("click", function () {
+    var itemsCount = Object.keys(cart).length;
+    if (itemsCount === 0) {
+      showAlert("Add items before checkout");
+      return;
+    }
+    $("#checkout-status")
+      .removeClass()
+      .addClass("text-muted")
+      .text("Processing...");
+    $.ajax({
+      url: "checkout.php",
+      method: "POST",
+      data: JSON.stringify(getPayload()),
+      contentType: "application/json",
+      dataType: "json",
+    })
+      .done(function (res) {
+        if (res && res.success) {
+          $("#checkout-status")
+            .removeClass()
+            .addClass("text-success")
+            .text("Purchase completed");
+          try {
+            window.open(
+              "receipt.php?order_id=" + encodeURIComponent(res.order_id),
+              "_blank",
+              "width=400,height=600"
+            );
+          } catch (e) {}
+          cart = {};
+          render();
+        } else {
+          $("#checkout-status")
+            .removeClass()
+            .addClass("text-danger")
+            .text("Failed to complete purchase");
+        }
+      })
+      .fail(function () {
+        $("#checkout-status")
+          .removeClass()
+          .addClass("text-danger")
+          .text("Network or server error");
+      });
+  });
+  function findCatalogByContains(term) {
+    term = String(term).toLowerCase();
+    var found = null;
+    Object.keys(catalog).forEach(function (k) {
+      if (String(k).toLowerCase().indexOf(term) >= 0) {
+        found = catalog[k];
+      }
+    });
+    return found;
+  }
+
+  function adjustQuantity(key, delta) {
+    var item = cart[key];
+    if (!item || item.free) return;
+    var next = item.qty + delta;
+    if (next < 1) next = 1;
+    if (next > item.stock) {
+      next = item.stock;
+      showAlert("Adjusted to available stock for " + item.name);
+    }
+    if (next !== item.qty) {
+      item.qty = next;
+      render();
+    }
+  }
+});

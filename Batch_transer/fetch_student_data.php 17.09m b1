@@ -1,0 +1,54 @@
+<?php
+include("../database/connection.php");
+
+header('Content-Type: application/json');
+
+// Debug log
+error_log("Request received: " . print_r($_POST, true));
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
+    $student_code = $_POST['id'];
+
+    // Debug log
+    error_log("Student code: " . $student_code);
+
+    // Modify this query to select all details from the 'allocate_programme' table
+    $query = "SELECT ap.*, 
+              s.first_name, s.last_name, 
+              u.university_name as university, 
+              p.program_name as programme,
+              b.batch_name as batch
+              FROM allocate_programme ap
+              INNER JOIN students s ON ap.student_code = s.student_code
+              INNER JOIN universities u ON ap.university_id = u.id
+              INNER JOIN program_table p ON ap.programme_code = p.program_code
+              INNER JOIN batch_table b ON ap.batch_id = b.id
+              WHERE ap.student_code = ? 
+              ORDER BY ap.id DESC LIMIT 1";
+
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("s", $student_code);
+
+    if ($stmt->execute()) {
+        $result = $stmt->get_result();
+        if ($result->num_rows > 0) {
+            $student = $result->fetch_assoc();
+            // Debug log
+            error_log("Student found: " . print_r($student, true));
+            echo json_encode($student);
+        } else {
+            error_log("No student found for code: " . $student_code);
+            echo json_encode(['error' => 'Student not found']);
+        }
+    } else {
+        error_log("Database error: " . $stmt->error);
+        echo json_encode(['error' => 'Database error']);
+    }
+
+    $stmt->close();
+} else {
+    error_log("Invalid request received");
+    echo json_encode(['error' => 'Invalid request']);
+}
+
+$conn->close();

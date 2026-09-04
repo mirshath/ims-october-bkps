@@ -1,0 +1,32 @@
+[27-Jan-2026 11:02:53 UTC] PDF Gen Failed: Traceback (most recent call last):
+  File "/home/bmsims/public_html/After_submit_student_data.py", line 4, in <module>
+    from reportlab.lib.pagesizes import A4
+ModuleNotFoundError: No module named 'reportlab'
+
+[27-Jan-2026 11:09:54 UTC] Successfully uploaded doc0 as passport_photo_e93ac.png
+[27-Jan-2026 11:09:54 UTC] Successfully uploaded doc1 as nic_e93ac.png
+[27-Jan-2026 11:09:54 UTC] Successfully uploaded doc2 as passport_e93ac.png
+[27-Jan-2026 11:09:54 UTC] Successfully uploaded doc3 as ol_result_e93ac.png
+[27-Jan-2026 11:09:54 UTC] Successfully uploaded doc4 as al_result_e93ac.png
+[27-Jan-2026 11:09:54 UTC] Successfully uploaded degree_certificate as degree_certificate_e93ac.png
+[27-Jan-2026 11:09:54 UTC] Successfully uploaded transcript as transcript_e93ac.png
+[27-Jan-2026 11:09:54 UTC] Successfully uploaded other_qualification_1 as other_qualification_1_e93ac.png
+[27-Jan-2026 11:09:54 UTC] Successfully uploaded other_qualification_2 as other_qualification_2_e93ac.png
+[27-Jan-2026 12:41:48 UTC] PDF Gen Failed: Traceback (most recent call last):
+  File "/home/bmsims/public_html/After_submit_student_data.py", line 4, in <module>
+    from reportlab.lib.pagesizes import A4
+ModuleNotFoundError: No module named 'reportlab'
+
+[10-Feb-2026 04:00:17 UTC] Successfully uploaded doc0 as passport_photo_12859.png
+[10-Feb-2026 04:00:17 UTC] Successfully uploaded doc1 as nic_12859.jpeg
+[10-Feb-2026 04:00:17 UTC] Successfully uploaded doc2 as passport_12859.jpeg
+[10-Feb-2026 04:01:32 UTC] Successfully uploaded doc3 as ol_result_de3a4.jpeg
+[10-Feb-2026 04:02:53 UTC] Successfully uploaded doc4 as al_result_3d45d.jpeg
+[10-Feb-2026 04:02:53 UTC] Successfully uploaded degree_certificate as degree_certificate_3d45d.jpeg
+[10-Feb-2026 04:02:55 UTC] Successfully uploaded transcript as transcript_3d45d.jpeg
+[10-Feb-2026 11:01:03 UTC] Successfully uploaded doc0 as passport_photo_ff771.png
+[10-Feb-2026 11:01:05 UTC] Successfully uploaded doc1 as nic_ff771.jpeg
+[03-Apr-2026 06:14:24 UTC] Successfully uploaded doc0 as passport_photo_760d9.png
+[03-Apr-2026 06:15:37 UTC] Successfully uploaded doc0 as passport_photo_1f521.png
+[03-Apr-2026 06:15:37 UTC] Successfully uploaded doc1 as nic_1f521.jpeg
+[03-Apr-2026 06:15:38 UTC] Successfully uploaded doc2 as passport_1f521.jpeg

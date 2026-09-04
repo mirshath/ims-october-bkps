@@ -1,0 +1,509 @@
+<?php
+session_start();
+include("database/connection.php");
+include("includes/header.php");
+
+if (!isset($_SESSION['username'])) {
+    echo '<script>window.location.href = "login";</script>';
+    exit();
+}
+
+// ---------------------------- allowed Redirections ---------------------------------------------------------------- 
+// -------- Permission CHECKING TO REDIRECT TO HOME PAGE -------- 
+require_once 'PermissionChecking.php';
+// --------------------------------------------------------------------- 
+// -------------------------------------------------------------------------------------------- 
+
+$generated_links_data = [];
+
+// Fetch all generated links from the database
+$sql = "SELECT link_id, programme_id, batch_id, module_id, lecturer_id, active, created_by, created_at FROM feedback_links ORDER BY created_at DESC";
+$result = $conn->query($sql);
+
+if ($result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
+        $programme_id = $row['programme_id'];
+        $batch_id = $row['batch_id'];
+        $module_id = $row['module_id'];
+        $lecturer_id = $row['lecturer_id'];
+        $active = $row['active']; // Fetch active status
+        $created_by = $row['created_by'] ?? 'N/A'; // Fetch created_by
+
+        // Fetch programme name
+        $stmt_program = $conn->prepare("SELECT program_name FROM program_table WHERE program_code = ?");
+        $stmt_program->bind_param("s", $programme_id);
+        $stmt_program->execute();
+        $result_program = $stmt_program->get_result();
+        $program_name = $result_program->fetch_assoc()['program_name'] ?? 'N/A';
+        $stmt_program->close();
+
+        // Fetch batch name
+        $stmt_batch = $conn->prepare("SELECT batch_name FROM batch_table WHERE id = ?");
+        $stmt_batch->bind_param("s", $batch_id);
+        $stmt_batch->execute();
+        $result_batch = $stmt_batch->get_result();
+        $batch_name = $result_batch->fetch_assoc()['batch_name'] ?? 'N/A';
+        $stmt_batch->close();
+
+        // Fetch module name
+        $stmt_module = $conn->prepare("SELECT module_name FROM modules WHERE id = ?");
+        $stmt_module->bind_param("s", $module_id);
+        $stmt_module->execute();
+        $result_module = $stmt_module->get_result();
+        $module_name = $result_module->fetch_assoc()['module_name'] ?? 'N/A';
+        $stmt_module->close();
+
+        // Fetch lecturer name and full_name from admin table
+        $stmt_lecturer = $conn->prepare("SELECT l.lecturer_name as username, a.full_name 
+                                         FROM lecturer_table l 
+                                         LEFT JOIN admin a ON l.lecturer_name = a.username 
+                                         WHERE l.id = ?");
+        $stmt_lecturer->bind_param("s", $lecturer_id);
+        $stmt_lecturer->execute();
+        $result_lecturer = $stmt_lecturer->get_result();
+        $lecturer_row = $result_lecturer->fetch_assoc();
+        $lecturer_name = $lecturer_row['username'] ?? 'N/A';
+        if (!empty($lecturer_row['full_name'])) {
+            $lecturer_name .= ' (' . $lecturer_row['full_name'] . ')';
+        }
+        $stmt_lecturer->close();
+
+        $generated_links_data[] = [
+            'link_id' => $row['link_id'],
+            'programme_name' => $program_name,
+            'batch_name' => $batch_name,
+            'module_name' => $module_name,
+            'lecturer_name' => $lecturer_name,
+            'active' => $active,
+            'created_by' => $created_by,
+            'created_at' => $row['created_at']
+        ];
+    }
+}
+?>
+
+<!-- Page Wrapper -->
+<div id="wrapper">
+    <!-- Sidebar -->
+    <?php include("nav.php"); ?>
+
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+        <!-- Main Content -->
+        <div id="content">
+            <!-- Topbar -->
+            <?php include("includes/topnav.php"); ?>
+
+            <!-- Begin Page Content -->
+            <div class="p-3" style="font-size: 14px;">
+                <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                    <h4 class="h4 mb-0 text-gray-800">
+                        Student Feedback Form Link Generation
+                    </h4>
+                </div>
+
+                <!-- Form Section -->
+                <form action="" method="POST">
+                    <div class="row mb-5">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="row">
+
+                                        <!-- Programme -->
+                                        <div class="col-md-3">
+                                            <label for="programme">Programme</label>
+                                        </div>
+                                        <div class="col-md-9">
+                                            <div class="form-group mb-3">
+                                                <select name="programme_id" id="programme" class="form-control select2" style="font-size: 12px;" required>
+                                                    <option value="">Select Programme</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <!-- Batch -->
+                                        <div class="col-md-3">
+                                            <label for="batch">Batch</label>
+                                        </div>
+                                        <div class="col-md-9">
+                                            <div class="form-group mb-3">
+                                                <select name="batch_id" id="batch" class="form-control select2" style="font-size: 12px;" required>
+                                                    <option value="">Select Batch</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <!-- Module -->
+                                        <div class="col-md-3">
+                                            <label for="module">Module</label>
+                                        </div>
+                                        <div class="col-md-9">
+                                            <div class="form-group mb-3">
+                                                <select name="module_id" id="module" class="form-control select2" style="font-size: 12px;" required>
+                                                    <option value="">Select Module</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <!-- Lecturer -->
+                                        <div class="col-md-3">
+                                            <label for="lecturer">Lecturer</label>
+                                        </div>
+                                        <div class="col-md-9">
+                                            <div class="form-group mb-3">
+                                                <select name="lecturer_id" id="lecturer" class="form-control select2" style="font-size: 12px;" required>
+                                                    <option value="">Select Lecturer</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Selected Details Preview</h5>
+                                </div>
+                                <div class="card-body" id="preview-section">
+                                    <p><strong>Programme:</strong> <span id="preview-programme">N/A</span></p>
+                                    <p><strong>Batch:</strong> <span id="preview-batch">N/A</span></p>
+                                    <p><strong>Module:</strong> <span id="preview-module">N/A</span></p>
+                                    <p><strong>Lecturer:</strong> <span id="preview-lecturer">N/A</span></p>
+                                </div>
+                                <!--<div class="card-footer text-right">-->
+                                <!--    <button type="button" class="btn btn-primary" id="generate-link-btn">Generate Link</button>-->
+                                <!--</div>-->
+                                
+                                <div class="card-footer text-right" id="generate-link-footer" style="display: none;">
+                                    <button type="button" class="btn btn-primary" id="generate-link-btn">Generate Link</button>
+                                </div>
+                                <script>
+                                    function toggleGenerateButton() {
+                                        var lecturerText = document.getElementById('preview-lecturer').innerText || document.getElementById('preview-lecturer').textContent;
+                                        if (lecturerText.trim() === 'N/A' || lecturerText.trim() === 'Select Lecturer') {
+                                            document.getElementById('generate-link-footer').style.display = 'none';
+                                        } else {
+                                            document.getElementById('generate-link-footer').style.display = 'block';
+                                        }
+                                    }
+                                    // Listen for DOM changes in preview-lecturer span
+                                    const observer = new MutationObserver(toggleGenerateButton);
+                                    observer.observe(document.getElementById('preview-lecturer'), { childList: true, subtree: true, characterData: true });
+
+                                    // Also call on page load in case value is set initially
+                                    document.addEventListener('DOMContentLoaded', toggleGenerateButton);
+                                </script>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- here wanna show the data and links also  -->
+                <!-- Display Section for Generated Link -->
+                <div class="row mb-5" id="generated-link-display">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Generated Feedback Links</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-striped" id="links-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Programme</th>
+                                                <th>Batch</th>
+                                                <th>Module</th>
+                                                <th>Lecturer</th>
+                                                <th>Feedback Link</th>
+                                                <th>Active</th>
+                                                <th>Created By</th>
+                                                <th>Generated At</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php if (!empty($generated_links_data)): ?>
+                                                <?php foreach ($generated_links_data as $link_data): ?>
+                                                    <tr>
+                                                        <td><?php echo htmlspecialchars($link_data['programme_name']); ?></td>
+                                                        <td><?php echo htmlspecialchars($link_data['batch_name']); ?></td>
+                                                        <td><?php echo htmlspecialchars($link_data['module_name']); ?></td>
+                                                        <td><?php echo htmlspecialchars($link_data['lecturer_name']); ?></td>
+                                                        <td>
+                                                            <div class="input-group">
+                                                                <input type="text" class="form-control form-control-sm" value="<?php echo htmlspecialchars("http://" . $_SERVER['HTTP_HOST'] . "/g/feedback.php?id=" . $link_data['link_id']); ?>" id="link-<?php echo htmlspecialchars($link_data['link_id']); ?>" readonly>
+                                                                <div class="input-group-append">
+                                                                    <button class="btn btn-sm btn-outline-secondary copy-link-btn" type="button" data-link-id="<?php echo htmlspecialchars($link_data['link_id']); ?>">Copy</button>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <select class="form-control form-control-sm status-dropdown" data-link-id="<?php echo htmlspecialchars($link_data['link_id']); ?>">
+                                                                <option value="1" <?php echo ($link_data['active'] == 1) ? 'selected' : ''; ?>>Active</option>
+                                                                <option value="0" <?php echo ($link_data['active'] == 0) ? 'selected' : ''; ?>>Inactive</option>
+                                                            </select>
+                                                        </td>
+                                                        <td><?php echo htmlspecialchars($link_data['created_by']); ?></td>
+                                                        <td><?php echo htmlspecialchars($link_data['created_at']); ?></td>
+
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- JS Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap4.min.css">
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<script>
+    $(document).ready(function() {
+        // Initialize DataTable
+        $('#links-table').DataTable({
+            "order": [
+                [7, "desc"]
+            ], // Sort by "Generated At" column by default
+            "pageLength": 100,
+            "responsive": true
+        });
+
+        $('.select2').select2();
+
+        // Function to copy text to clipboard
+        function copyToClipboard(elementId) {
+            let copyText = document.getElementById(elementId);
+            if (copyText) {
+                copyText.select();
+                copyText.setSelectionRange(0, 99999); // For mobile devices
+                document.execCommand("copy");
+                alert("Copied the link: " + copyText.value);
+            } else {
+                alert("Could not find the link to copy.");
+            }
+        }
+
+        // Event listener for copy buttons
+        $(document).on('click', '.copy-link-btn', function() {
+            let linkId = $(this).data('link-id');
+            copyToClipboard('link-' + linkId);
+        });
+
+        // Event listener for status dropdown change
+        $(document).on('change', '.status-dropdown', function() {
+            let linkId = $(this).data('link-id');
+            let status = $(this).val();
+            let dropdown = $(this);
+
+            $.ajax({
+                url: "g/update_link_status.php",
+                method: "POST",
+                data: {
+                    link_id: linkId,
+                    active: status
+                },
+                dataType: "json",
+                success: function(response) {
+                    if (response.status === 'success') {
+                        alertify.success(response.message);
+                    } else {
+                        alertify.error('Error: ' + response.message);
+                        // Revert dropdown if error
+                        dropdown.val(status == 1 ? 0 : 1);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("AJAX Error:", status, error);
+                    console.error("Response Text:", xhr.responseText);
+                    alertify.error('An error occurred while updating the status. Status: ' + status + ', Error: ' + error);
+                    dropdown.val(status == 1 ? 0 : 1);
+                }
+            });
+        });
+
+        // Function to update the preview section
+        function updatePreview() {
+            $('#preview-programme').text($('#programme option:selected').text() || 'N/A');
+            $('#preview-batch').text($('#batch option:selected').text() || 'N/A');
+            $('#preview-module').text($('#module option:selected').text() || 'N/A');
+            $('#preview-lecturer').text($('#lecturer option:selected').text() || 'N/A');
+        }
+
+        // Fetch Programmes
+        $.ajax({
+            url: "transection_exams/fetch_programmes.php",
+            method: "GET",
+            dataType: "json",
+            success: function(data) {
+                let programmeDropdown = $('#programme');
+                programmeDropdown.empty().append('<option value="">Select Programme</option>');
+                data.forEach(function(programme) {
+                    programmeDropdown.append(`<option value="${programme.program_code}">${programme.program_name}</option>`);
+                });
+                updatePreview(); // Initial update
+            }
+        });
+
+        // Fetch Lecturers when Programme changes
+        $('#programme').change(function() {
+            let programmeId = $(this).val();
+            if (programmeId) {
+                $.ajax({
+                    url: "transection_exams/fetch_lecturers.php",
+                    method: "POST",
+                    data: {
+                        programme_id: programmeId
+                    },
+                    dataType: "json",
+                    success: function(data) {
+                        let lecturerDropdown = $('#lecturer');
+                        lecturerDropdown.empty().append('<option value="">Select Lecturer</option>');
+                        data.forEach(function(lecturer) {
+                            lecturerDropdown.append(`<option value="${lecturer.id}">${lecturer.name}</option>`);
+                        });
+                        updatePreview(); // Update preview after lecturers are loaded
+                    }
+                });
+            } else {
+                $('#lecturer').empty().append('<option value="">Select Lecturer</option>');
+                updatePreview(); // Update preview if no programme is selected
+            }
+        });
+
+        // Fetch Batches when Programme changes
+        $('#programme').change(function() {
+            let programmeId = $(this).val();
+            $.ajax({
+                url: "transection_exams/fetch_batches.php",
+                method: "POST",
+                data: {
+                    programme_id: programmeId
+                },
+                dataType: "json",
+                success: function(data) {
+                    let batchDropdown = $('#batch');
+                    batchDropdown.empty().append('<option value="">Select Batch</option>');
+                    data.forEach(function(batch) {
+                        batchDropdown.append(`<option value="${batch.id}">${batch.batch_name}</option>`);
+                    });
+                    updatePreview(); // Update preview after batches are loaded
+                }
+            });
+        });
+
+        // Fetch Modules when Batch changes
+        $('#batch').change(function() {
+            let batchId = $(this).val();
+            $.ajax({
+                url: "transection_exams/fetch_modules.php",
+                method: "POST",
+                data: {
+                    batch_id: batchId
+                },
+                dataType: "json",
+                success: function(data) {
+                    let moduleDropdown = $('#module');
+                    moduleDropdown.empty().append('<option value="">Select Module</option>');
+                    data.forEach(function(module) {
+                        moduleDropdown.append(`<option value="${module.id}">${module.name}</option>`);
+                    });
+                    updatePreview(); // Update preview after modules are loaded
+                }
+            });
+        });
+
+        // Update preview when module or lecturer changes (without fetching new data)
+        $('#module, #lecturer').change(function() {
+            updatePreview();
+        });
+
+        // Event listener for the Generate Link button
+        $('#generate-link-btn').click(function() {
+            // Here you would collect the selected values and generate the link
+            let selectedProgramme = $('#programme').val();
+            let selectedBatch = $('#batch').val();
+            let selectedModule = $('#module').val();
+            let selectedLecturer = $('#lecturer').val();
+
+            if (selectedProgramme && selectedBatch && selectedModule && selectedLecturer) {
+                $.ajax({
+                    url: "g/link.php", // Target URL
+                    method: "POST", // Or "GET", depending on how you want to handle it
+                    data: {
+                        programme_id: selectedProgramme,
+                        batch_id: selectedBatch,
+                        module_id: selectedModule,
+                        lecturer_id: selectedLecturer
+                    },
+                    dataType: "json", // Expecting JSON response from the server
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            // Fetch batch name
+                            let batch_name = $('#batch option:selected').text();
+                            // Fetch module name
+                            let module_name = $('#module option:selected').text();
+
+                            $('#display-programme-name').text(response.programme_name);
+                            $('#display-batch-name').text(batch_name);
+                            $('#display-module-name').text(module_name);
+                            $('#display-lecturer-name').text(response.lecturer_name);
+                            $('#display-feedback-link').attr('href', response.link).text(response.link);
+                            $('#generated-link-display').show();
+
+                            alert(`Link generated for ${response.programme_name} - ${response.lecturer_name}: ${response.link}`);
+                            // You can also display the link on the page, e.g., in a new div
+                            // $('#link-display-area').text(response.link).show();
+
+                            // Refresh the links table after a new link is generated
+                            location.reload(); // Simple reload to refresh the table with new data
+
+                        } else if (response.status === 'duplicate') {
+                            // Handle duplicate - link already exists
+                            let batch_name = $('#batch option:selected').text();
+                            let module_name = $('#module option:selected').text();
+
+                            $('#display-programme-name').text(response.programme_name);
+                            $('#display-batch-name').text(batch_name);
+                            $('#display-module-name').text(module_name);
+                            $('#display-lecturer-name').text(response.lecturer_name);
+                            $('#display-feedback-link').attr('href', response.link).text(response.link);
+                            $('#generated-link-display').show();
+
+                            alert(`⚠️ This feedback link already exists!\n\nProgram: ${response.programme_name}\nLecturer: ${response.lecturer_name}\n\nExisting Link: ${response.link}`);
+
+                        } else {
+                            alert('Error generating link: ' + response.message);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error("AJAX Error:", status, error);
+                        alert('An error occurred while trying to generate the link.');
+                    }
+                });
+            } else {
+                alert('Please select all fields before generating the link.');
+            }
+        });
+    });
+</script>
+
+<?php include("includes/footer.php"); ?>

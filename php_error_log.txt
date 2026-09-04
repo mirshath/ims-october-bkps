@@ -1,0 +1,41 @@
+[28-Jan-2026 08:59:42 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/allocate_student.php on line 8
+[28-Jan-2026 14:29:42 Asia/Colombo] PHP Fatal error:  Uncaught mysqli_sql_exception: Data truncated for column 'course_fee_type_GBP' at row 1 in /home/bmsims/public_html/allocate_student.php:375
+Stack trace:
+#0 /home/bmsims/public_html/allocate_student.php(375): mysqli_stmt->execute()
+#1 {main}
+  thrown in /home/bmsims/public_html/allocate_student.php on line 375
+[28-Jan-2026 09:00:01 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/allocate_student.php on line 8
+[28-Jan-2026 14:30:01 Asia/Colombo] PHP Fatal error:  Uncaught mysqli_sql_exception: Data truncated for column 'course_fee_type_GBP' at row 1 in /home/bmsims/public_html/allocate_student.php:375
+Stack trace:
+#0 /home/bmsims/public_html/allocate_student.php(375): mysqli_stmt->execute()
+#1 {main}
+  thrown in /home/bmsims/public_html/allocate_student.php on line 375
+[28-Jan-2026 09:01:07 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/allocate_student.php on line 8
+[28-Jan-2026 14:31:07 Asia/Colombo] PHP Fatal error:  Uncaught mysqli_sql_exception: Data truncated for column 'course_fee_type_GBP' at row 1 in /home/bmsims/public_html/allocate_student.php:375
+Stack trace:
+#0 /home/bmsims/public_html/allocate_student.php(375): mysqli_stmt->execute()
+#1 {main}
+  thrown in /home/bmsims/public_html/allocate_student.php on line 375
+[28-Jan-2026 09:02:11 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/allocate_student.php on line 8
+[28-Jan-2026 14:32:11 Asia/Colombo] PHP Fatal error:  Uncaught mysqli_sql_exception: Data truncated for column 'course_fee_type_GBP' at row 1 in /home/bmsims/public_html/allocate_student.php:375
+Stack trace:
+#0 /home/bmsims/public_html/allocate_student.php(375): mysqli_stmt->execute()
+#1 {main}
+  thrown in /home/bmsims/public_html/allocate_student.php on line 375
+[28-Jan-2026 09:10:38 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/allocate_student.php on line 8
+[28-Jan-2026 14:40:38 Asia/Colombo] PHP Fatal error:  Uncaught mysqli_sql_exception: Data truncated for column 'course_fee_type_GBP' at row 1 in /home/bmsims/public_html/allocate_student.php:375
+Stack trace:
+#0 /home/bmsims/public_html/allocate_student.php(375): mysqli_stmt->execute()
+#1 {main}
+  thrown in /home/bmsims/public_html/allocate_student.php on line 375
+[28-Jan-2026 09:12:37 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/allocate_student.php on line 8
+[28-Jan-2026 14:42:37 Asia/Colombo] PHP Fatal error:  Uncaught mysqli_sql_exception: Data truncated for column 'course_fee_type_GBP' at row 1 in /home/bmsims/public_html/allocate_student.php:375
+Stack trace:
+#0 /home/bmsims/public_html/allocate_student.php(375): mysqli_stmt->execute()
+#1 {main}
+  thrown in /home/bmsims/public_html/allocate_student.php on line 375
+[28-Jan-2026 09:28:31 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/allocate_student.php on line 8
+[10-Feb-2026 04:05:30 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/allocate_student.php on line 8
+[10-Feb-2026 04:48:04 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/allocate_student.php on line 8
+[10-Feb-2026 11:02:13 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/allocate_student.php on line 8
+[03-Apr-2026 06:18:27 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/allocate_student.php on line 8

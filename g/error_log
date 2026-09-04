@@ -1,0 +1,264 @@
+[27-Mar-2026 11:15:04 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 97
+[27-Mar-2026 11:20:58 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 97
+[30-Mar-2026 08:04:22 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 97
+[02-Apr-2026 04:04:43 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 97
+[02-Apr-2026 06:18:04 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 97
+[02-Apr-2026 06:22:52 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 97
+[02-Apr-2026 06:23:49 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 97
+[02-Apr-2026 06:25:00 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 97
+[02-Apr-2026 06:33:13 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 97
+[02-Apr-2026 06:34:22 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 97
+[02-Apr-2026 06:43:07 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 97
+[03-May-2026 05:02:09 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\x8F u...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[03-May-2026 05:02:15 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\x8F u...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[03-May-2026 05:02:25 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\x8F u...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[03-May-2026 05:02:30 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\x8F u...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[04-May-2026 07:42:14 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 97
+[04-May-2026 07:45:14 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 97
+[07-May-2026 07:01:56 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x92\x97' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[07-May-2026 07:02:50 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x92\x97' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[05-Jun-2026 09:37:29 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 97
+[10-Jun-2026 03:31:23 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 97
+[10-Jun-2026 03:32:40 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 97
+[12-Jun-2026 06:35:15 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 97
+[12-Jun-2026 06:37:34 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 97
+[17-Jun-2026 08:31:10 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 97
+[17-Jun-2026 08:33:15 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 97
+[17-Jun-2026 08:34:06 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 97
+[17-Jun-2026 08:48:28 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 97
+[17-Jun-2026 09:34:18 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\x8D\xF0\x9F...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[24-Jun-2026 06:06:44 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[24-Jun-2026 06:30:09 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[24-Jun-2026 07:00:08 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[24-Jun-2026 07:58:52 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[28-Jun-2026 07:16:08 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[28-Jun-2026 07:17:10 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[28-Jun-2026 07:18:05 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[28-Jun-2026 07:18:33 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[28-Jun-2026 07:18:56 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[28-Jun-2026 07:19:00 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[28-Jun-2026 07:19:32 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[28-Jun-2026 07:20:05 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[28-Jun-2026 07:20:12 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[28-Jun-2026 07:20:44 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[28-Jun-2026 07:20:57 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[28-Jun-2026 07:21:05 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[28-Jun-2026 07:21:41 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[29-Jun-2026 08:42:30 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\x8C' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[29-Jun-2026 09:00:35 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x99\x8B\xE2\x80...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[29-Jun-2026 09:00:51 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x99\x8B\xE2\x80...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[29-Jun-2026 09:01:25 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x99\x8B\xE2\x80...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[29-Jun-2026 09:01:29 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x99\x8B\xE2\x80...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[29-Jun-2026 09:02:22 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x99\x8B\xE2\x80...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[29-Jun-2026 09:02:26 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x99\x8B\xE2\x80...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[29-Jun-2026 09:03:48 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x99\x8B\xE2\x80...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[29-Jun-2026 09:03:51 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x99\x8B\xE2\x80...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[29-Jun-2026 09:05:07 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x99\x8B\xE2\x80...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[29-Jun-2026 09:44:35 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x99\x8B\xE2\x80...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[29-Jun-2026 11:58:55 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\x8C H...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[29-Jun-2026 11:59:31 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\x8C H...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[29-Jun-2026 19:09:16 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\x8C H...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[29-Jun-2026 19:36:08 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\x8C H...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[29-Jun-2026 19:36:17 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\x8C H...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[29-Jun-2026 19:37:26 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\x8C H...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[30-Jun-2026 03:42:42 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[30-Jun-2026 04:49:26 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\xA5\xB0' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[30-Jun-2026 04:49:32 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\xA5\xB0' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[30-Jun-2026 04:49:36 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\xA5\xB0' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[30-Jun-2026 04:54:16 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\x8D\xF0\x9F...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[30-Jun-2026 04:55:18 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[30-Jun-2026 05:05:07 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x8A' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[30-Jun-2026 05:05:16 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x8A' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[30-Jun-2026 05:05:29 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x8A' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[30-Jun-2026 05:05:48 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x8A' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[30-Jun-2026 05:12:01 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\xA5\xB0' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[30-Jun-2026 05:50:04 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x8A' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[30-Jun-2026 05:50:22 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x8A' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[30-Jun-2026 05:50:27 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x8A' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[30-Jun-2026 05:50:55 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x8A' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[30-Jun-2026 05:51:07 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x8A' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[30-Jun-2026 07:45:36 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\xA8\xF0\x9F...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[30-Jun-2026 08:10:10 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x8A\xF0\x9F...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[30-Jun-2026 08:10:19 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x8A\xF0\x9F...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[30-Jun-2026 09:26:07 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\x8F\xF0\x9F...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[30-Jun-2026 09:26:18 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\x8F\xF0\x9F...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[30-Jun-2026 09:26:43 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\x8F\xF0\x9F...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 06:12:18 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[01-Jul-2026 06:45:14 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\xAD' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 06:45:17 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\xAD' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 06:56:14 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[01-Jul-2026 06:57:06 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x87' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 06:57:12 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x87' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 06:57:28 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x87' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 06:57:30 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x87' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 06:57:32 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x87' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 06:57:33 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x87' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 06:57:35 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x87' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 07:00:39 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\xAD' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 07:00:50 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\xAD' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 07:03:17 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[01-Jul-2026 07:06:06 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\xAD' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 07:06:09 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[01-Jul-2026 07:06:16 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\xAD' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 07:27:06 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[01-Jul-2026 07:28:39 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[01-Jul-2026 07:30:49 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[01-Jul-2026 07:31:43 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[01-Jul-2026 07:58:14 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\x8D' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 07:58:22 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x99\x8C' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 08:05:33 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\x8F t...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 08:05:38 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\x8F t...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 08:06:49 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\x8F' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 08:07:27 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x99\x82' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 08:07:35 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x99\x82' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 08:07:42 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x99\x82' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 08:08:38 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\xAB\xB6\xF0\x9F...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 08:09:38 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\xAB\xB6\xF0\x9F...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 09:58:30 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[01-Jul-2026 09:59:36 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[01-Jul-2026 10:00:39 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[01-Jul-2026 10:13:06 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\x8D' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 10:13:11 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x91\x8D' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 10:24:06 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x8A' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 10:25:10 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x8A' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 10:29:27 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\xA2\xF0\x9F...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 10:29:39 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\xA2\xF0\x9F...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 10:30:04 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\xA2\xF0\x9F...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 10:30:39 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\xA2\xF0\x9F...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 10:31:17 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\xA2\xF0\x9F...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 10:31:23 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\xA2\xF0\x9F...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 10:31:34 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\xA2\xF0\x9F...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 10:32:57 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\xA2\xF0\x9F...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[01-Jul-2026 12:13:56 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x99\x82\xE2\x9D...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[02-Jul-2026 09:29:33 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\xAB\xB6\xF0\x9F...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[07-Jul-2026 05:53:27 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x9B\x90\xF0\x9F...' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[08-Jul-2026 09:16:34 UTC] PHP Warning:  include_once(track_engine.php): Failed to open stream: No such file or directory in /home/bmsims/public_html/database/connection.php on line 1
+[08-Jul-2026 09:16:34 UTC] PHP Warning:  include_once(): Failed opening 'track_engine.php' for inclusion (include_path='.:/opt/alt/php82/usr/share/pear:/opt/alt/php82/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bmsims/public_html/database/connection.php on line 1
+[08-Jul-2026 09:17:16 UTC] PHP Warning:  include_once(track_engine.php): Failed to open stream: No such file or directory in /home/bmsims/public_html/database/connection.php on line 1
+[08-Jul-2026 09:17:16 UTC] PHP Warning:  include_once(): Failed opening 'track_engine.php' for inclusion (include_path='.:/opt/alt/php82/usr/share/pear:/opt/alt/php82/usr/share/php:/usr/share/pear:/usr/share/php') in /home/bmsims/public_html/database/connection.php on line 1
+[10-Jul-2026 08:47:59 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\xAB\xA5' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[14-Jul-2026 04:51:43 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[14-Jul-2026 05:29:41 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x95' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[14-Jul-2026 06:33:45 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[14-Jul-2026 06:35:52 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[14-Jul-2026 06:36:35 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[14-Jul-2026 07:16:42 UTC] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in /home/bmsims/public_html/g/link.php on line 113
+[14-Jul-2026 09:08:32 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x8B' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[14-Jul-2026 09:08:35 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x8B' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[14-Jul-2026 09:08:46 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x8B' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[14-Jul-2026 09:08:49 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x8B' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[14-Jul-2026 09:08:51 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x8B' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[06-Aug-2026 08:16:52 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[06-Aug-2026 08:16:52 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 155
+[06-Aug-2026 08:17:28 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[06-Aug-2026 08:17:28 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 155
+[06-Aug-2026 08:20:44 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[06-Aug-2026 08:20:44 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 155
+[06-Aug-2026 08:24:58 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[06-Aug-2026 08:24:58 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 155
+[06-Aug-2026 08:29:43 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[06-Aug-2026 08:29:43 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 155
+[06-Aug-2026 08:33:51 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[06-Aug-2026 08:33:51 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 155
+[06-Aug-2026 08:36:15 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[06-Aug-2026 08:36:15 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 155
+[06-Aug-2026 09:10:18 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[06-Aug-2026 09:10:18 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 155
+[06-Aug-2026 09:17:21 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[06-Aug-2026 09:17:21 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 155
+[06-Aug-2026 15:02:58 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[06-Aug-2026 15:02:58 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 155
+[06-Aug-2026 16:04:37 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[06-Aug-2026 16:04:37 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 155
+[06-Aug-2026 16:19:31 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[06-Aug-2026 16:19:31 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 155
+[07-Aug-2026 03:51:05 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 03:51:05 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 155
+[07-Aug-2026 05:21:48 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 05:21:48 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 146
+[07-Aug-2026 05:53:50 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 05:53:50 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[07-Aug-2026 05:54:04 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 05:54:04 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[07-Aug-2026 05:55:18 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 05:55:18 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[07-Aug-2026 05:56:16 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 05:56:16 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[07-Aug-2026 05:59:45 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 05:59:45 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[07-Aug-2026 05:59:46 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 05:59:46 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[07-Aug-2026 06:00:48 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 06:00:48 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[07-Aug-2026 06:01:02 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 06:01:02 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[07-Aug-2026 06:08:12 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 06:08:12 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[07-Aug-2026 06:17:40 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 06:17:40 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[07-Aug-2026 06:22:08 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 06:22:08 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[07-Aug-2026 06:30:32 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 06:30:32 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[07-Aug-2026 06:33:01 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 06:33:01 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[07-Aug-2026 06:41:09 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 06:41:09 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[07-Aug-2026 06:47:56 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 06:47:56 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[07-Aug-2026 06:48:36 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 06:48:36 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[07-Aug-2026 06:55:39 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 06:55:39 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[07-Aug-2026 07:00:13 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 07:00:13 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[07-Aug-2026 07:11:10 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 07:11:10 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[07-Aug-2026 07:20:55 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 07:20:55 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[07-Aug-2026 07:47:29 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 07:47:29 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[07-Aug-2026 09:22:38 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 09:22:38 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[07-Aug-2026 10:43:57 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[07-Aug-2026 10:43:57 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[08-Aug-2026 09:33:08 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[08-Aug-2026 09:33:08 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[08-Aug-2026 09:50:11 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[08-Aug-2026 09:50:11 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[08-Aug-2026 09:53:48 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[08-Aug-2026 09:53:48 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[08-Aug-2026 09:54:01 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[08-Aug-2026 09:54:01 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[08-Aug-2026 09:55:46 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[08-Aug-2026 09:55:46 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[08-Aug-2026 09:56:48 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[08-Aug-2026 09:56:48 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[08-Aug-2026 09:57:43 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[08-Aug-2026 09:57:43 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[08-Aug-2026 09:57:44 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[08-Aug-2026 09:57:44 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[08-Aug-2026 10:00:37 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[08-Aug-2026 10:00:37 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[08-Aug-2026 10:00:44 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[08-Aug-2026 10:00:44 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[08-Aug-2026 10:01:52 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[08-Aug-2026 10:01:52 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[08-Aug-2026 10:01:59 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[08-Aug-2026 10:01:59 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[08-Aug-2026 10:39:08 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[08-Aug-2026 10:39:08 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[08-Aug-2026 10:39:13 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[08-Aug-2026 10:39:13 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[08-Aug-2026 11:48:00 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[08-Aug-2026 11:48:00 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[08-Aug-2026 12:11:59 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[08-Aug-2026 12:11:59 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[08-Aug-2026 12:25:23 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[08-Aug-2026 12:25:23 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x8A' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[08-Aug-2026 12:25:28 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[08-Aug-2026 12:25:28 UTC] Feedback submission error: Incorrect string value: '\xF0\x9F\x98\x8A' for column `bmsims_octomber_3`.`feedback`.`comments` at row 1
+[09-Aug-2026 01:34:25 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[09-Aug-2026 01:34:25 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314
+[09-Aug-2026 03:21:05 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 4
+[09-Aug-2026 03:21:05 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/bmsims/public_html/database/connection.php:1) in /home/bmsims/public_html/g/insert_student.php on line 314

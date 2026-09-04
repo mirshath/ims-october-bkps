@@ -1,0 +1,86 @@
+<?php
+session_start();
+include("../database/connection.php");
+
+// Get module ID from POST request
+$module_id = $_POST['module_id'] ?? '';
+
+if (empty($module_id)) {
+    echo json_encode([]);
+    exit();
+}
+
+// Step 1: Get the module's lecturers (comma-separated string from modules table)
+$stmt = $conn->prepare("SELECT lecturers FROM modules WHERE id = ?");
+$stmt->bind_param("s", $module_id);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows == 0) {
+    echo json_encode([]);
+    exit();
+}
+
+$module_data = $result->fetch_assoc();
+$lecturers_string = $module_data['lecturers'] ?? '';
+
+if (empty($lecturers_string)) {
+    echo json_encode([]);
+    exit();
+}
+
+// Step 2: Split the string into an array of lecturer names (unique)
+$lecturer_names = array_map('trim', explode(',', $lecturers_string));
+$lecturer_names = array_filter($lecturer_names); // Remove empty values
+$lecturer_names = array_values(array_unique($lecturer_names));
+
+if (empty($lecturer_names)) {
+    echo json_encode([]);
+    exit();
+}
+
+// Step 3: Get lecturer details (id, lecturer_name, full_name from admin table)
+// We need to build a query with placeholders for IN clause
+$placeholders = implode(',', array_fill(0, count($lecturer_names), '?'));
+$query = "SELECT MIN(l.id) AS id, l.lecturer_name, MAX(a.full_name) AS full_name 
+          FROM lecturer_table l 
+          LEFT JOIN admin a ON l.lecturer_name = a.username 
+          WHERE l.lecturer_name IN ($placeholders)
+          GROUP BY l.lecturer_name
+          ORDER BY l.lecturer_name";
+
+
+
+// Step 3: Get lecturer details (id, lecturer_name, full_name from admin table)
+// We need to build a query with placeholders for IN clause
+// $placeholders = implode(',', array_fill(0, count($lecturer_names), '?'));
+// $query = "SELECT l.id, l.lecturer_name, a.full_name 
+//           FROM lecturer_table l 
+//           LEFT JOIN admin a ON l.lecturer_name = a.username 
+//           WHERE l.lecturer_name IN ($placeholders)";
+
+
+$stmt = $conn->prepare($query);
+
+// Bind the parameters dynamically
+$types = str_repeat('s', count($lecturer_names));
+$stmt->bind_param($types, ...$lecturer_names);
+$stmt->execute();
+$result = $stmt->get_result();
+
+// Step 4: Build the response array
+$lecturers = [];
+while ($row = $result->fetch_assoc()) {
+    $display_name = $row['lecturer_name'];
+    if (!empty($row['full_name'])) {
+        $display_name .= ' (' . $row['full_name'] . ')';
+    }
+    $lecturers[] = [
+        'id' => $row['id'],
+        'name' => $display_name
+    ];
+}
+
+// Return JSON response
+header('Content-Type: application/json');
+echo json_encode($lecturers);

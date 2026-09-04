@@ -1,0 +1,13 @@
+RewriteEngine On
+
+# Allow only whitelisted PHP files in this folder.
+# Works on localhost (/ims/g/...) and production subdomain (/g/...).
+RewriteCond %{REQUEST_URI} !/(feedback|insert_student|update_link_status|link|check_session|create_final_year_form)\.php$ [NC]
+
+RewriteRule ^(.*)$ https://www.bms.ac.lk/ [R=302,L]
+
+# feedback.php must have id
+RewriteCond %{REQUEST_URI} /feedback\.php$ [NC]
+RewriteCond %{QUERY_STRING} !^id=.+$
+RewriteRule ^feedback\.php$ https://www.bms.ac.lk/ [R=302,L]
+

@@ -1,0 +1,547 @@
+<?php
+require_once __DIR__ . '/../includes/auth.php';
+require_admin();
+$assetBase = '../';
+require_once __DIR__ . '/../includes/db.php';
+$mysqli = get_db();
+if (!$mysqli) {
+    die('DB connect failed');
+}
+
+// ------------------ Helpers ------------------
+function input_get($k, $def = null)
+{
+    return isset($_GET[$k]) ? $_GET[$k] : $def;
+}
+
+function validate_ymd($d)
+{
+    // Accept YYYY-MM-DD only
+    return preg_match('/^\d{4}-\d{2}-\d{2}$/', $d);
+}
+
+function csv_export_and_exit($filename, $headers, $rows)
+{
+    // Output CSV with BOM for Excel
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    $out = fopen('php://output', 'w');
+    fprintf($out, "\xEF\xBB\xBF");
+    fputcsv($out, $headers);
+    foreach ($rows as $row) {
+        // ensure scalar values only
+        $flat = [];
+        foreach ($row as $v) $flat[] = is_array($v) ? json_encode($v) : $v;
+        fputcsv($out, $flat);
+    }
+    fclose($out);
+    exit;
+}
+
+function esc($s)
+{
+    return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
+}
+
+// ------------------ Reports list ------------------
+$reports = [
+    'daily_sales'     => 'Daily Sales Report',
+    'monthly_sales'   => 'Monthly Sales Report',
+    'detailed_sales'  => 'Detailed Sales Report',
+    'best_selling'    => 'Best-selling Products',
+    'product_sales'   => 'Product Sales (range)',
+    'low_selling'     => 'Low-selling Products',
+    'current_stock'   => 'Current Stock',
+    'low_stock'       => 'Low Stock Alert',
+    'inventory_value' => 'Inventory Valuation',
+    'staff_sales'     => 'Sales by Staff',
+    'free_items'      => 'Free Items (price = 0)',
+    'avg_basket'      => 'Average Basket Size (items/order)',
+    'hourly_sales'    => 'Hourly Sales (today)',
+];
+
+// ------------------ Inputs & default filters ------------------
+$report = input_get('report', 'daily_sales');
+$from  = input_get('from', date('Y-m-01'));
+$to    = input_get('to', date('Y-m-d'));
+$product_id = input_get('product_id', '');
+$created_by = input_get('created_by', '');
+$export = input_get('export', '');
+
+if (!validate_ymd($from)) $from = date('Y-m-01');
+if (!validate_ymd($to))   $to   = date('Y-m-d');
+
+$from_ts = $from . ' 00:00:00';
+$to_ts   = $to   . ' 23:59:59';
+
+// escape small inputs
+$product_id_esc = $mysqli->real_escape_string($product_id);
+$created_by_esc = $mysqli->real_escape_string($created_by);
+
+// prepare containers
+$headers = [];
+$rows = [];
+$totalInventoryValue = null;
+
+// ------------------ Queries by report ------------------
+switch ($report) {
+
+    case 'daily_sales':
+        $sql = "
+            SELECT DATE(o.created_at) AS date,
+                   COUNT(o.id) AS orders_count,
+                   SUM(o.subtotal) AS subtotal,
+                   SUM(o.tax) AS tax,
+                   SUM(o.total) AS total,
+                   ROUND(AVG(o.total),2) AS avg_order
+            FROM orders o
+            WHERE o.created_at BETWEEN ? AND ?
+            GROUP BY DATE(o.created_at)
+            ORDER BY DATE(o.created_at) DESC
+        ";
+        $stmt = $mysqli->prepare($sql);
+        $stmt->bind_param('ss', $from_ts, $to_ts);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($r = $res->fetch_assoc()) $rows[] = $r;
+        $headers = ['Date', 'Orders', 'Subtotal', 'Tax', 'Total', 'Avg Order'];
+        $stmt->close();
+        break;
+
+    case 'monthly_sales':
+        $sql = "
+            SELECT DATE_FORMAT(o.created_at, '%Y-%m') AS month,
+                   COUNT(o.id) AS orders_count,
+                   SUM(o.total) AS total
+            FROM orders o
+            WHERE o.created_at BETWEEN ? AND ?
+            GROUP BY DATE_FORMAT(o.created_at, '%Y-%m')
+            ORDER BY DATE_FORMAT(o.created_at, '%Y-%m') DESC
+        ";
+        $stmt = $mysqli->prepare($sql);
+        $stmt->bind_param('ss', $from_ts, $to_ts);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($r = $res->fetch_assoc()) $rows[] = $r;
+        $headers = ['Month', 'Orders', 'Total'];
+        $stmt->close();
+        break;
+
+    case 'detailed_sales':
+        $sql = "
+            SELECT o.id AS order_id, o.created_at, o.created_by, o.subtotal, o.tax, o.total,
+                   GROUP_CONCAT(CONCAT(p.name,' (',oi.qty,' x ',FORMAT(oi.price,2),')') SEPARATOR ' | ') AS items
+            FROM orders o
+            LEFT JOIN order_items oi ON oi.order_id = o.id
+            LEFT JOIN products p ON p.id = oi.product_id
+            WHERE o.created_at BETWEEN ? AND ?
+            GROUP BY o.id
+            ORDER BY o.created_at DESC
+        ";
+        $stmt = $mysqli->prepare($sql);
+        $stmt->bind_param('ss', $from_ts, $to_ts);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($r = $res->fetch_assoc()) $rows[] = $r;
+        $headers = ['Order ID', 'Created At', 'Created By', 'Subtotal', 'Tax', 'Total', 'Items'];
+        $stmt->close();
+        break;
+
+    case 'best_selling':
+        $sql = "
+            SELECT p.id AS product_id, p.name, SUM(oi.qty) AS total_qty, SUM(oi.qty * oi.price) AS revenue
+            FROM order_items oi
+            JOIN products p ON p.id = oi.product_id
+            JOIN orders o ON o.id = oi.order_id
+            WHERE o.created_at BETWEEN ? AND ?
+        ";
+        if ($product_id_esc !== '') {
+            $sql .= " AND p.id = '" . $product_id_esc . "' ";
+        }
+        $sql .= " GROUP BY p.id ORDER BY total_qty DESC LIMIT 100";
+        $stmt = $mysqli->prepare($sql);
+        $stmt->bind_param('ss', $from_ts, $to_ts);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($r = $res->fetch_assoc()) $rows[] = $r;
+        $headers = ['Product ID', 'Product', 'Qty Sold', 'Revenue'];
+        $stmt->close();
+        break;
+
+    case 'product_sales':
+        $sql = "SELECT p.id AS product_id, p.name, COALESCE(SUM(oi.qty),0) AS qty_sold, COALESCE(SUM(oi.qty*oi.price),0) AS revenue FROM products p LEFT JOIN order_items oi ON oi.product_id = p.id LEFT JOIN orders o ON o.id = oi.order_id AND o.created_at BETWEEN ? AND ?";
+        if ($product_id_esc !== '') {
+            $sql .= " WHERE p.id = '" . $product_id_esc . "' ";
+        }
+        $sql .= " GROUP BY p.id ORDER BY qty_sold DESC";
+        $stmt = $mysqli->prepare($sql);
+        $stmt->bind_param('ss', $from_ts, $to_ts);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($r = $res->fetch_assoc()) $rows[] = $r;
+        $headers = ['Product ID', 'Product', 'Qty Sold', 'Revenue'];
+        $stmt->close();
+        break;
+
+    case 'low_selling':
+        $sql = "
+            SELECT p.id AS product_id, p.name,
+                   COALESCE(SUM(oi.qty),0) AS qty_sold
+            FROM products p
+            LEFT JOIN order_items oi ON oi.product_id = p.id
+            LEFT JOIN orders o ON o.id = oi.order_id AND o.created_at BETWEEN ? AND ?
+            GROUP BY p.id
+            HAVING qty_sold <= 5
+            ORDER BY qty_sold ASC
+        ";
+        $stmt = $mysqli->prepare($sql);
+        $stmt->bind_param('ss', $from_ts, $to_ts);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($r = $res->fetch_assoc()) $rows[] = $r;
+        $headers = ['Product ID', 'Product', 'Qty Sold (in range)'];
+        $stmt->close();
+        break;
+
+    case 'current_stock':
+        $sql = "SELECT p.id AS product_id, p.name, p.price, p.stock, p.image, p.created_at, COALESCE(SUM(oi.qty),0) AS qty_sold FROM products p LEFT JOIN order_items oi ON oi.product_id = p.id LEFT JOIN orders o ON o.id = oi.order_id AND o.created_at BETWEEN ? AND ? GROUP BY p.id ORDER BY p.name";
+        $stmt = $mysqli->prepare($sql);
+        $stmt->bind_param('ss', $from_ts, $to_ts);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($r = $res->fetch_assoc()) $rows[] = $r;
+        $headers = ['Product ID', 'Name', 'Price', 'Stock', 'Image', 'Created At', 'Sold (in range)'];
+        $stmt->close();
+        break;
+
+    case 'low_stock':
+        $threshold = intval(input_get('threshold', 10));
+        $sql = "SELECT id AS product_id, name, price, stock FROM products WHERE stock <= ? ORDER BY stock ASC";
+        $stmt = $mysqli->prepare($sql);
+        $stmt->bind_param('i', $threshold);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($r = $res->fetch_assoc()) $rows[] = $r;
+        $headers = ['Product ID', 'Name', 'Price', 'Stock'];
+        $stmt->close();
+        break;
+
+    case 'inventory_value':
+        $sql = "SELECT id AS product_id, name, price, stock, ROUND(price * stock,2) AS stock_value FROM products ORDER BY stock_value DESC";
+        $res = $mysqli->query($sql);
+        $totalInventoryValue = 0.0;
+        while ($r = $res->fetch_assoc()) {
+            $rows[] = $r;
+            $totalInventoryValue += floatval($r['stock_value']);
+        }
+        $headers = ['Product ID', 'Name', 'Price', 'Stock', 'Stock Value'];
+        break;
+
+    case 'staff_sales':
+        $sql = "
+            SELECT o.created_by AS staff, COUNT(o.id) AS orders_count, SUM(o.total) AS total_sales, ROUND(AVG(o.total),2) AS avg_order
+            FROM orders o
+            WHERE o.created_at BETWEEN ? AND ?
+        ";
+        if ($created_by_esc !== '') {
+            $sql .= " AND o.created_by = '" . $created_by_esc . "' ";
+        }
+        $sql .= " GROUP BY o.created_by ORDER BY total_sales DESC";
+        $stmt = $mysqli->prepare($sql);
+        $stmt->bind_param('ss', $from_ts, $to_ts);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($r = $res->fetch_assoc()) $rows[] = $r;
+        $headers = ['Staff', 'Orders', 'Total Sales', 'Avg Order'];
+        $stmt->close();
+        break;
+
+    case 'free_items':
+        $sql = "
+            SELECT p.id AS product_id, p.name, COUNT(oi.id) AS free_count, SUM(oi.qty) AS qty_total
+            FROM order_items oi
+            JOIN products p ON p.id = oi.product_id
+            JOIN orders o ON o.id = oi.order_id
+            WHERE oi.price = 0 AND o.created_at BETWEEN ? AND ?
+            GROUP BY p.id
+            ORDER BY qty_total DESC
+        ";
+        $stmt = $mysqli->prepare($sql);
+        $stmt->bind_param('ss', $from_ts, $to_ts);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($r = $res->fetch_assoc()) $rows[] = $r;
+        $headers = ['Product ID', 'Product', 'Free Rows (orders)', 'Free Qty Given'];
+        $stmt->close();
+        break;
+
+    case 'avg_basket':
+        $sql = "
+            SELECT ROUND(SUM(oi.qty) / COUNT(DISTINCT oi.order_id),2) AS avg_items_per_order,
+                   SUM(oi.qty) AS total_items,
+                   COUNT(DISTINCT oi.order_id) AS orders_count
+            FROM order_items oi
+            JOIN orders o ON o.id = oi.order_id
+            WHERE o.created_at BETWEEN ? AND ?
+        ";
+        $stmt = $mysqli->prepare($sql);
+        $stmt->bind_param('ss', $from_ts, $to_ts);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($r = $res->fetch_assoc()) $rows[] = $r;
+        $headers = ['Avg Items/Order', 'Total Items', 'Orders Count'];
+        $stmt->close();
+        break;
+
+    case 'hourly_sales':
+        $day = input_get('day', date('Y-m-d'));
+        if (!validate_ymd($day)) $day = date('Y-m-d');
+        $start = $day . ' 00:00:00';
+        $end   = $day . ' 23:59:59';
+        $sql = "
+            SELECT HOUR(o.created_at) AS hour,
+                   COUNT(o.id) AS orders_count,
+                   SUM(o.total) AS total_sales
+            FROM orders o
+            WHERE o.created_at BETWEEN ? AND ?
+            GROUP BY HOUR(o.created_at)
+            ORDER BY hour ASC
+        ";
+        $stmt = $mysqli->prepare($sql);
+        $stmt->bind_param('ss', $start, $end);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($r = $res->fetch_assoc()) $rows[] = $r;
+        $headers = ['Hour (0-23)', 'Orders', 'Total Sales'];
+        $stmt->close();
+        break;
+
+    default:
+        // unknown report: empty
+        $rows = [];
+        $headers = [];
+        break;
+}
+
+// ------------------ CSV Export ------------------
+if ($export === 'csv') {
+    $filename = $report . '_' . date('Ymd_His') . '.csv';
+    if ($report === 'inventory_value' && $totalInventoryValue !== null) {
+        $rows[] = ['TOTAL', '', '', '', number_format($totalInventoryValue, 2)];
+    }
+    csv_export_and_exit($filename, $headers, $rows);
+}
+
+// ------------------ Fetch auxiliary lists (products, staff) ------------------
+$productsList = [];
+$res = $mysqli->query("SELECT id, name FROM products ORDER BY name");
+while ($r = $res->fetch_assoc()) $productsList[] = $r;
+
+$staffList = [];
+$res2 = $mysqli->query("SELECT DISTINCT created_by FROM orders ORDER BY created_by");
+while ($r = $res2->fetch_assoc()) if (!empty($r['created_by'])) $staffList[] = $r['created_by'];
+
+// ------------------ HTML Output ------------------
+?>
+<?php require __DIR__ . '/../templates/header.php'; ?>
+
+<div class="container-fluid py-3">
+<div class="row">
+    <div class="col-12 d-md-none mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <div class="fw-semibold">Reports Menu</div>
+                <div class="text-muted small">Tap to switch reports</div>
+            </div>
+            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#reportSidebar" aria-controls="reportSidebar" aria-expanded="false">
+                Menu
+            </button>
+        </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside class="col-12 col-md-3 col-lg-2 mb-3 collapse d-md-block" id="reportSidebar">
+        <div class="card sidebar shadow-sm h-100">
+            <div class="card-body p-2">
+                <h5 class="card-title">Reports</h5>
+                <div class="list-group">
+                    <?php foreach ($reports as $key => $label): ?>
+                        <a class="list-group-item list-group-item-action <?= $report === $key ? 'active' : '' ?>"
+                            href="?report=<?= urlencode($key) ?>&from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>">
+                            <?= esc($label) ?>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+
+
+    </aside>
+
+    <!-- MAIN -->
+    <main class="col-12 col-md-9 col-lg-10">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex flex-column flex-md-row mb-3 gap-2 align-items-md-center">
+                    <h4 class="mb-0 me-md-auto"><?= esc($reports[$report] ?? 'Report') ?></h4>
+                    <a href="index.php" class="btn btn-outline-secondary w-100 w-md-auto">Back to Dashboard</a>
+                </div>
+
+                <!-- Filters -->
+                <form class="row g-2 align-items-end mb-4" method="get">
+                    <input type="hidden" name="report" value="<?= esc($report) ?>">
+                    <div class="col-12 col-sm-6 col-md-auto">
+                        <label class="form-label small mb-0">From</label>
+                        <input class="form-control form-control-sm" type="date" name="from" value="<?= esc($from) ?>">
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-auto">
+                        <label class="form-label small mb-0">To</label>
+                        <input class="form-control form-control-sm" type="date" name="to" value="<?= esc($to) ?>">
+                    </div>
+
+                    <?php if (in_array($report, ['best_selling', 'product_sales'])): ?>
+                        <div class="col-12 col-md-auto">
+                            <label class="form-label small mb-0">Product</label>
+                            <select name="product_id" class="form-select form-select-sm">
+                                <option value="">-- all --</option>
+                                <?php foreach ($productsList as $p): ?>
+                                    <option value="<?= esc($p['id']) ?>" <?= $product_id === $p['id'] ? 'selected' : '' ?>><?= esc($p['name']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($report === 'staff_sales'): ?>
+                        <div class="col-12 col-md-auto">
+                            <label class="form-label small mb-0">Staff</label>
+                            <select name="created_by" class="form-select form-select-sm">
+                                <option value="">-- all --</option>
+                                <?php foreach ($staffList as $s): ?>
+                                    <option value="<?= esc($s) ?>" <?= ($created_by === $s) ? 'selected' : '' ?>><?= esc($s) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($report === 'low_stock'): ?>
+                        <div class="col-6 col-sm-4 col-md-auto">
+                            <label class="form-label small mb-0">Threshold</label>
+                            <input type="number" name="threshold" value="<?= intval(input_get('threshold', 10)) ?>" class="form-control form-control-sm">
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($report === 'hourly_sales'): ?>
+                        <div class="col-12 col-sm-6 col-md-auto">
+                            <label class="form-label small mb-0">Day</label>
+                            <input type="date" name="day" value="<?= esc(input_get('day', date('Y-m-d'))) ?>" class="form-control form-control-sm">
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="col-12 col-md-auto">
+                        <label class="form-label small mb-0">&nbsp;</label>
+                        <div class="d-flex flex-column flex-sm-row gap-2">
+                            <button class="btn btn-sm btn-primary">Apply</button>
+                            <a class="btn btn-sm btn-outline-secondary" href="detailed-report.php">Reset</a>
+                            <a class="btn btn-sm btn-outline-primary" href="?report=<?= esc($report) ?>&from=<?= esc($from) ?>&to=<?= esc($to) ?>&export=csv">Export CSV</a>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Summary cards for daily_sales -->
+                <?php if ($report === 'daily_sales' && count($rows) > 0): ?>
+                    <div class="row mb-3">
+                        <div class="col-sm-4">
+                            <div class="card p-2 summary-card">
+                                <div class="h6">Total Orders</div>
+                                <div class="fs-4"><?= array_sum(array_column($rows, 'orders_count')) ?></div>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="card p-2 summary-card">
+                                <div class="h6">Total Sales</div>
+                                <div class="fs-4"><?= number_format(array_sum(array_column($rows, 'total')), 2) ?></div>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="card p-2 summary-card">
+                                <div class="h6">Avg Order</div>
+                                <?php
+                                $avg = 0;
+                                $totalOrders = array_sum(array_column($rows, 'orders_count'));
+                                $sumTotals = array_sum(array_column($rows, 'total'));
+                                if ($totalOrders) $avg = $sumTotals / $totalOrders;
+                                ?>
+                                <div class="fs-4"><?= number_format($avg, 2) ?></div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <div class="table-responsive report-table">
+                    <?php if (count($rows) === 0): ?>
+                        <div class="alert alert-warning">No records found for selected filters.</div>
+                    <?php else: ?>
+                        <?php if ($report === 'current_stock'): ?>
+                            <div class="row g-3">
+                                <?php foreach ($rows as $r): ?>
+                                    <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                                        <div class="card h-100 product-card">
+                                            <?php if (!empty($r['image']) && filter_var($r['image'], FILTER_VALIDATE_URL)): ?>
+                                                <img src="<?= esc($r['image']) ?>" class="card-img-top product-img" alt="">
+                                            <?php endif; ?>
+                                            <div class="card-body">
+                                                <div class="fw-semibold mb-1"><?= esc($r['name']) ?></div>
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <span class="badge bg-primary">LKR <?= number_format((float)$r['price'], 2) ?></span>
+                                                    <span class="badge bg-warning text-dark">Stock <?= (int)$r['stock'] ?></span>
+                                                </div>
+                                                <div class="small text-muted">Sold in range: <?= (int)($r['qty_sold'] ?? 0) ?></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
+                            <table class="table table-striped table-sm">
+                                <thead>
+                                    <tr>
+                                        <?php foreach ($headers as $h): ?>
+                                            <th><?= esc($h) ?></th>
+                                        <?php endforeach; ?>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($rows as $r): ?>
+                                        <tr>
+                                            <?php $vals = array_values($r);
+                                            for ($i = 0; $i < count($headers); $i++) {
+                                                $cell = $vals[$i] ?? '';
+                                                if (stripos($headers[$i], 'image') !== false && filter_var($cell, FILTER_VALIDATE_URL)) {
+                                                    echo "<td class='no-wrap'><img src='" . esc($cell) . "' alt='' /></td>";
+                                                } else {
+                                                    echo "<td>" . esc($cell) . "</td>";
+                                                }
+                                            } ?>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                    <?php if ($report === 'inventory_value' && $totalInventoryValue !== null): ?>
+                                        <tr class="table-success">
+                                            <td colspan="<?= max(1, count($headers) - 1) ?>"><strong>Total Inventory Value</strong></td>
+                                            <td><strong><?= number_format($totalInventoryValue, 2) ?></strong></td>
+                                        </tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+    </main>
+</div>
+</div>
+<!-- </div> -->
+<?php require __DIR__ . '/../templates/footer.php'; ?>

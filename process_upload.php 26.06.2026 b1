@@ -1,0 +1,275 @@
+<?php
+session_start();
+include("database/connection.php");
+
+if (!isset($_SESSION['username'])) {
+    echo '<script>window.location.href = "login";</script>';
+    exit();
+}
+
+$Session_username = $_SESSION['username'];
+
+if (isset($_FILES['csv_file'])) {
+    $file = $_FILES['csv_file']['tmp_name'];
+
+    $program = $_POST['program'] ?? '';
+    $batch = $_POST['batch'] ?? '';
+    $university_id = $_POST['university_id'] ?? '';
+
+    $compulsoryModules = $_POST['compulsory_modules'] ?? [];
+    $electiveModules = $_POST['elective_modules'] ?? [];
+
+    $compulsoryModulesString = !empty($compulsoryModules) ? implode(',', $compulsoryModules) : '';
+    $electiveModulesString = !empty($electiveModules) ? implode(',', $electiveModules) : '';
+
+    if (($handle = fopen($file, 'r')) !== FALSE) {
+        fgetcsv($handle); // Skip header
+
+        while (($data = fgetcsv($handle, 1000, ',')) !== FALSE) {
+
+            // ✅ Convert date (5/11/1998 → 1998-11-05)
+            $dob = null;
+            if (!empty($data[6])) {
+                $timestamp = strtotime(str_replace('/', '-', trim($data[6])));
+                $dob = $timestamp ? date('Y-m-d', $timestamp) : null;
+            }
+
+            // ✅ Insert into students table (exclude student_code — auto_increment)
+            $stmt1 = $conn->prepare("INSERT INTO students (
+                title, first_name, last_name, certificate_name, preferred_name, date_of_birth, nationality, 
+                permanent_address, current_address, mobile, telephone, emergency_contact_name, emergency_contact_number, 
+                english_ability, minimum_entry_qualification, nic, passport, personal_email, bms_email, occupation, organization, 
+                previous_organization, qualifications, active, entered_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+            $stmt1->bind_param(
+                "sssssssssssssssssssssssss",
+                $data[1],  // title
+                $data[2],  // first_name
+                $data[3],  // last_name
+                $data[4],  // certificate_name
+                $data[5],  // preferred_name
+                $dob,      // ✅ fixed date
+                $data[7],  // nationality
+                $data[8],  // permanent_address
+                $data[9],  // current_address
+                $data[10], // mobile
+                $data[11], // telephone
+                $data[12], // emergency_contact_name
+                $data[13], // emergency_contact_number
+                $data[14], // english_ability
+                $data[15], // minimum_entry_qualification
+                $data[16], // nic
+                $data[17], // passport
+                $data[18], // personal_email
+                $data[19], // bms_email
+                $data[20], // occupation
+                $data[21], // organization
+                $data[22], // previous_organization
+                $data[23], // qualifications
+                $data[24], // active
+                $Session_username
+            );
+
+            if (!$stmt1->execute()) {
+                echo "❌ Error inserting into students: " . $stmt1->error . "<br>";
+                continue;
+            }
+
+            $student_id = $conn->insert_id;
+
+            // ----------------------------------------------
+            // Insert into allocate_programme
+            // ----------------------------------------------
+            $registration_number = $data[25] ?? null;
+            $elective_subs = !empty($electiveModulesString) ? $electiveModulesString : ($data[26] ?? '');
+            $compulsory_sub = !empty($compulsoryModulesString) ? $compulsoryModulesString : ($data[27] ?? '');
+
+            if (!empty($program) && !empty($batch) && !empty($university_id)) {
+                $stmt2 = $conn->prepare("INSERT INTO allocate_programme (
+                    student_code, student_registration_id, programme_code, batch_id, university_id, 
+                    elective_subs, compulsory_sub, entered_by
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+
+                $stmt2->bind_param(
+                    "isiiisss",
+                    $student_id,
+                    $registration_number,
+                    $program,
+                    $batch,
+                    $university_id,
+                    $elective_subs,
+                    $compulsory_sub,
+                    $Session_username
+                );
+
+                if (!$stmt2->execute()) {
+                    echo "❌ Error inserting into allocate_programme: " . $stmt2->error . "<br>";
+                    continue;
+                }
+                $stmt2->close();
+            }
+
+            // ----------------------------------------------
+            // Insert into add_payment_plan_table
+            // ----------------------------------------------
+            $programme_batch = ($_POST['programme_name'] ?? '') . " - " . ($_POST['batch_name'] ?? '');
+            $course_fee_LKR = $_POST['only_course_fee'] ?? 0;
+            $registration_fee_LKR = $_POST['registration_fee'] ?? 0;
+            $courseFeeLKR_total = $_POST['course_fee_lkr'] ?? 0;
+            $university_fee_LKR = $_POST['uni_fee_lkr'] ?? 0;
+            $university_fee_GBP = $_POST['uni_fee_gbp'] ?? 0;
+            $university_fee_USD = $_POST['uni_fee_usd'] ?? 0;
+            $installment_month_LKR = $_POST['installment_no'] ?? 0;
+            $lkr_reg_date = $_POST['register_date'] ?? date('Y-m-d');
+            $lkr_reg_due_date = date('Y-m-d', strtotime($lkr_reg_date . ' +7 days'));
+            $fee_type = 'installment';
+
+            $stmt3 = $conn->prepare("INSERT INTO add_payment_plan_table (
+                student_id, programme_batch, university_fee_LKR, courseFeeLKR_total, course_fee_LKR, 
+                course_fee_type_LKR, installment_month_LKR, registration_fee_LKR,
+                university_fee_GBP, university_fee_USD, entered_by, lkr_reg_date, lkr_reg_due_date
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+            $stmt3->bind_param(
+                "isiiisiiiisss",
+                $student_id,
+                $programme_batch,
+                $university_fee_LKR,
+                $courseFeeLKR_total,
+                $course_fee_LKR,
+                $fee_type,
+                $installment_month_LKR,
+                $registration_fee_LKR,
+                $university_fee_GBP,
+                $university_fee_USD,
+                $Session_username,
+                $lkr_reg_date,
+                $lkr_reg_due_date
+            );
+
+            if (!$stmt3->execute()) {
+                echo "❌ Error inserting into add_payment_plan_table: " . $stmt3->error . "<br>";
+                continue;
+            }
+
+            $payment_plans_tb_id = $conn->insert_id;
+
+            // ----------------------------------------------
+            // Insert into installment_payment_table
+            // ----------------------------------------------
+            $stmt4 = $conn->prepare("INSERT INTO installment_payment_table (
+                payment_plans_tb_id, student_id, programme_batch, 
+                unifee_lkr_total, unifee_lkr, unifee_gbp_total, unifee_gbp, 
+                unifee_usd_total, unifee_usd, fee_type, coursefee_total, 
+                coursefee, registrationfee, discounted_percentage, dis_yes_no
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+            $discounted_percentage = 0.00;
+            $dis_yes_no = 0;
+
+            $stmt4->bind_param(
+                "iisiiiiiisiiidi",
+                $payment_plans_tb_id,
+                $student_id,
+                $programme_batch,
+                $university_fee_LKR,
+                $university_fee_LKR,
+                $university_fee_GBP,
+                $university_fee_GBP,
+                $university_fee_USD,
+                $university_fee_USD,
+                $fee_type,
+                $course_fee_LKR,
+                $course_fee_LKR,
+                $registration_fee_LKR,
+                $discounted_percentage,
+                $dis_yes_no
+            );
+
+            if (!$stmt4->execute()) {
+                echo "❌ Installment Payment Insert Error: " . $stmt4->error . "<br>";
+                continue;
+            }
+
+            $installment_payment_table_id = $conn->insert_id;
+
+            // ----------------------------------------------
+            // Insert into installment_details_table
+            // ----------------------------------------------
+            $installments = (int)$installment_month_LKR;
+            $per_installment = $installments > 0 ? $course_fee_LKR / $installments : 0;
+            $start_date = new DateTime($lkr_reg_date);
+
+            $stmt5 = $conn->prepare("INSERT INTO installment_details_table (
+                installment_payment_table_id, student_id, programme_batch, 
+                installment_numbers, devided_values, installment_amount, 
+                discount_type, discount_value, due_date, remark, entered_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+            for ($i = 1; $i <= $installments; $i++) {
+                $due_date = (clone $start_date)->modify("+$i month")->format('Y-m-d');
+                $installment_label = "installment_$i";
+                $discount_type = 'N/A';
+                $discount_value = 0;
+                $remark = '';
+
+                $stmt5->bind_param(
+                    "isssddsisss",
+                    $installment_payment_table_id,
+                    $student_id,
+                    $programme_batch,
+                    $installment_label,
+                    $per_installment,
+                    $per_installment,
+                    $discount_type,
+                    $discount_value,
+                    $due_date,
+                    $remark,
+                    $Session_username
+                );
+
+                if (!$stmt5->execute()) {
+                    echo "❌ Installment Details Insert Error: " . $stmt5->error . "<br>";
+                    break;
+                }
+            }
+
+            // ----------------------------------------------
+            // Insert into payment_withheld_table
+            // ----------------------------------------------
+            $stmt6 = $conn->prepare("INSERT INTO payment_withheld_table (
+                student_code, program_id, batch_id, payment_status
+            ) VALUES (?, ?, ?, ?)");
+
+            $program_id = (int)$program;
+            $batch_id = (int)$batch;
+            $payment_status = 'withheld';
+
+            $stmt6->bind_param("siis", $student_id, $program_id, $batch_id, $payment_status);
+
+            if (!$stmt6->execute()) {
+                echo "❌ Error inserting into payment_withheld_table: " . $stmt6->error . "<br>";
+            }
+
+            // ✅ Close all prepared statements
+            $stmt1->close();
+            $stmt3->close();
+            $stmt4->close();
+            $stmt5->close();
+            $stmt6->close();
+        }
+
+        fclose($handle);
+        echo "<script>alert('✅ Student Data Imported Successfully');</script>";
+        echo '<script>window.location.href = "uploadStudents";</script>';
+        exit;
+    } else {
+        echo "❌ Error opening the file.";
+    }
+} else {
+    echo "⚠️ No file uploaded.";
+}
+
+$conn->close();
+?>

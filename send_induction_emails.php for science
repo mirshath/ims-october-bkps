@@ -1,0 +1,321 @@
+<?php
+session_start();
+header('Content-Type: application/json');
+
+require 'vendor/autoload.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+include 'database/connection.php';
+$emailSentBy = $_SESSION['username'] ?? 'System';
+$programme = $_POST['programme'] ?? '';
+
+// Mode 1: Get total
+if (isset($_POST['get_total'])) {
+    if ($programme) {
+        $stmt = $conn->prepare("SELECT COUNT(*) as cnt FROM induction_students WHERE email_sent=0 AND email IS NOT NULL AND programme=?");
+        $stmt->bind_param("s", $programme);
+        $stmt->execute();
+        $res = $stmt->get_result()->fetch_assoc();
+        $total = $res['cnt'];
+    } else {
+        $res = $conn->query("SELECT COUNT(*) as cnt FROM induction_students WHERE email_sent=0 AND email IS NOT NULL")->fetch_assoc();
+        $total = $res['cnt'];
+    }
+    echo json_encode(['total' => $total]);
+    exit;
+}
+
+// Mode 2: Send 1 email
+if (isset($_POST['send_one'])) {
+    // Fetch 1 student
+    if ($programme) {
+        $stmt = $conn->prepare("SELECT * FROM induction_students WHERE email_sent=0 AND email IS NOT NULL AND programme=? LIMIT 1");
+        $stmt->bind_param("s", $programme);
+        $stmt->execute();
+        $result = $stmt->get_result();
+    } else {
+        $result = $conn->query("SELECT * FROM induction_students WHERE email_sent=0 AND email IS NOT NULL LIMIT 1");
+    }
+
+    if ($row = $result->fetch_assoc()) {
+        $mail = new PHPMailer(true);
+        try {
+            $mail->isSMTP();
+            $mail->Host = 'smtp.office365.com';
+            $mail->SMTPAuth = true;
+            $mail->Username = 'noreply@bms.ac.lk';
+            $mail->Password = 'Lox51527';
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port = 587;
+
+            $mail->setFrom('noreply@bms.ac.lk', 'Business Management School');
+            $mail->addAddress($row['email'], $row['full_name']);
+
+            $mail->isHTML(true);
+            $mail->Subject = 'Induction Programme Invitation';
+
+            // Generate QR code using NIC (inline)
+            $studentQR = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&bgcolor=FFFFFF&margin=40&data=" . urlencode($row['nic']);
+
+            // Attach local image as attachment
+            $localImagePath = __DIR__ . '/admin/uploads/company_profiles/invitation.jpg'; // adjust path as needed
+
+            // if (file_exists($localImagePath)) {
+            //     $mail->addAttachment($localImagePath, 'Invitation.png'); // filename in email
+            // }
+
+            // CORRECT EMAIL BODY
+            // $mail->Body = '
+            //     <!DOCTYPE html>
+            //     <html>
+            //     <body style="margin:0;padding:0;background-color:#f4f6f8;">
+            //     <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f8;padding:20px 0;">
+            //         <tr>
+            //             <td align="center">
+            //                 <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;">
+            //                     <tr>
+            //                         <td align="center">
+            //                             <img src="https://ims.bms.ac.lk//admin/uploads/img/MSC.jpg"
+            //                                 alt="Induction Banner"
+            //                                 width="600"
+            //                                 style="display:block;width:100%;max-width:600px;height:auto;">
+            //                         </td>
+            //                     </tr>
+            //                     <tr>
+            //                         <td style="padding:32px 36px;color:#222;font-size:15px;line-height:1.6;">
+            //                             <p style="font-size:20px;font-weight:bold;color:#063970;text-align:center;margin:0 0 20px 0;">
+            //                                 Induction Programme Invitation
+            //                             </p>
+
+            //                             <p>
+            //                             Dear <strong>' . htmlspecialchars($row['full_name']) . '</strong>,
+            //                             </p>
+
+            //                             <p>
+            //                               We are pleased to invite you for the induction of MSc Cancer and Molecular Diagnostics from Teesside University (UK).<br>
+            //                             </p>
+
+            //                             <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f2f6fb; border-left:5px solid #0a66c2; margin:20px 0; border-radius:6px;">
+            //                                 <tr>
+            //                                     <td style="padding:0;">
+            //                                         <table width="100%" cellpadding="0" cellspacing="0" style="font-size:15px; color:#222;">
+            //                                             <tr>
+            //                                                 <td style="padding:10px 16px; font-weight:bold; width:32%;">Date:</td>
+            //                                                 <td style="padding:10px 16px;">Saturday, 10<sup>th</sup> January 2026</td>
+            //                                             </tr>
+            //                                             <tr>
+            //                                                 <td style="padding:10px 16px; font-weight:bold;">Time:</td>
+            //                                                 <td style="padding:10px 16px;">
+            //                                                     10.00AM to 12.00PM<br>
+            //                                                     <span style="font-size:13px; color:#0a66c2;">(Kindly be present by 9.15 am to complete registrations)</span>
+            //                                                 </td>
+            //                                             </tr>
+            //                                             <tr>
+            //                                                 <td style="padding:10px 16px; font-weight:bold;">Venue:</td>
+            //                                                 <td style="padding:10px 16px;">
+            //                                                     <a href="https://maps.app.goo.gl/tdDthwMJZnRXxd9s8" target="_blank" style="color:#0a66c2; text-decoration:underline; font-size:15px;">
+            //                                                         <img src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/icons/geo-alt-fill.svg" width="15" height="15" alt="Location" style="margin-right:5px;display:inline;vertical-align:-3px;">
+            //                                                         BMS - Colombo Graduate School
+            //                                                     </a>
+            //                                                 </td>
+            //                                             </tr>
+            //                                             <tr>
+            //                                                 <td style="padding:10px 16px; font-weight:bold;">Programme:</td>
+            //                                                 <td style="padding:10px 16px;">' . htmlspecialchars($row['programme']) . '</td>
+            //                                             </tr>
+            //                                             <tr>
+            //                                                 <td style="padding:10px 16px; font-weight:bold;">Dress Code:</td>
+            //                                                 <td style="padding:10px 16px;">
+            //                                                     BMS - Teesside T-Shirt<br>
+            //                                                     <span style="font-size:13px; color:#0a66c2;">(Please collect your T-Shirt before the Induction)</span>
+            //                                                 </td>
+            //                                             </tr>
+            //                                         </table>
+            //                                     </td>
+            //                                 </tr>
+            //                             </table>
+
+            //                             <table width="100%" cellpadding="0" cellspacing="0" style="margin:30px 0 20px 0;">
+            //                                 <tr>
+            //                                     <td align="center">
+            //                                         <p style="font-size:16px;font-weight:bold;margin:20px 0 10px 0;text-align:center;">
+            //                                             Your Attendance QR Code
+            //                                         </p>
+            //                                         <img src="' . $studentQR . '"
+            //                                             alt="QR Code"
+            //                                             width="180"
+            //                                             height="180"
+            //                                             style="display:block;border:2px solid #0a66c2;border-radius:8px;margin:0 auto;">
+            //                                     </td>
+            //                                 </tr>
+            //                             </table>
+
+            //                             <div style="border:1px solid #ffd59e;background-color:#fff4e5;margin:25px 0;border-radius:5px;">
+            //                                 <div style="padding:18px;font-size:14px;color:#333;">
+            //                                     <strong>Important:</strong>
+            //                                     <ul style="margin:8px 0 0 18px;padding:0;">
+            //                                         <li>Attendance at the Induction Programme is <strong>mandatory</strong> for all students.</li>
+            //                                         <li>The attached Invitation Agenda is provided for your reference.</li>
+            //                                         <li>For any queries, feel free to contact <b>070 400 1106</b>.</li>
+            //                                     </ul>
+            //                                 </div>
+            //                             </div>
+
+            //                             <p style="text-align:center;margin-top:25px;font-size:15px;">
+            //                             We look forward to welcoming you.
+            //                             </p>
+            //                             <p style="text-align:center;font-weight:bold;color:#063970;margin-top:10px;">
+            //                             BMS CAMPUS
+            //                             </p>
+            //                         </td>
+            //                     </tr>
+            //                     <tr>
+            //                         <td style="background-color:#f0f2f5;text-align:center;padding:14px;font-size:12px;color:#888;">
+            //                             &copy; ' . date("Y") . ' BMS CAMPUS
+            //                         </td>
+            //                     </tr>
+            //                 </table>
+            //             </td>
+            //         </tr>
+            //     </table>
+            //     </body>
+            //     </html>
+            //     ';
+            
+            
+            $mail->Body = '
+                <!DOCTYPE html>
+                <html>
+                <body style="margin:0;padding:0;background-color:#f4f6f8;">
+                <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f8;padding:20px 0;">
+                    <tr>
+                        <td align="center">
+                            <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;">
+                                <tr>
+                                    <td align="center">
+                                        <img src="https://ims.bms.ac.lk//admin/uploads/img/Science-Final-Year-Degree-2026.jpg"
+                                            alt="Induction Banner"
+                                            width="600"
+                                            style="display:block;width:100%;max-width:600px;height:auto;">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:32px 36px;color:#222;font-size:15px;line-height:1.6;">
+                                        <p style="font-size:20px;font-weight:bold;color:#063970;text-align:center;margin:0 0 20px 0;">
+                                            Induction Programme Invitation
+                                        </p>
+
+                                        <p>
+                                            Dear <strong>' . htmlspecialchars($row['full_name']) . '</strong>,
+                                        </p>
+
+                                        <p>
+                                           We are pleased to officially invite you to the Induction for the Science Final Year Degree programme offered by Northumbria University (UK).<br>
+                                        </p>
+
+                                        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f2f6fb; border-left:5px solid #0a66c2; margin:20px 0; border-radius:6px;">
+                                            <tr>
+                                                <td style="padding:0;">
+                                                    <table width="100%" cellpadding="0" cellspacing="0" style="font-size:15px; color:#222;">
+                                                        <tr>
+                                                            <td style="padding:10px 16px; font-weight:bold; width:32%;">Date:</td>
+                                                            <td style="padding:10px 16px;">Monday, 19<sup>th</sup> January 2026</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="padding:10px 16px; font-weight:bold;">Time:</td>
+                                                            <td style="padding:10px 16px;">
+                                                                10.00 AM to 03.30 PM<br>
+                                                                <span style="font-size:13px; color:#0a66c2;">(Kindly be present by 9.00 AM to complete registrations)</span>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="padding:10px 16px; font-weight:bold;">Venue:</td>
+                                                            <td style="padding:10px 16px;">
+                                                                <a href="https://maps.app.goo.gl/tdDthwMJZnRXxd9s8" target="_blank" style="color:#0a66c2; text-decoration:underline; font-size:15px;">
+                                                                    <img src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/icons/geo-alt-fill.svg" width="15" height="15" alt="Location" style="margin-right:5px;display:inline;vertical-align:-3px;">
+                                                                    BMS - Colombo Graduate School
+                                                                </a>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="padding:10px 16px; font-weight:bold;">Programme:</td>
+                                                            <td style="padding:10px 16px;">' . htmlspecialchars($row['programme']) . '</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="padding:10px 16px; font-weight:bold;">Dress Code:</td>
+                                                            <td style="padding:10px 16px;">
+                                                                Smart Casual (Gentleman, please wear shoes)<br>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                        <table width="100%" cellpadding="0" cellspacing="0" style="margin:30px 0 20px 0;">
+                                            <tr>
+                                                <td align="center">
+                                                    <p style="font-size:16px;font-weight:bold;margin:20px 0 10px 0;text-align:center;">
+                                                        Your Attendance QR Code
+                                                    </p>
+                                                    <img src="' . $studentQR . '"
+                                                        alt="QR Code"
+                                                        width="180"
+                                                        height="180"
+                                                        style="display:block;border:2px solid #0a66c2;border-radius:8px;margin:0 auto;">
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                        <div style="border:1px solid #ffd59e;background-color:#fff4e5;margin:25px 0;border-radius:5px;">
+                                            <div style="padding:18px;font-size:14px;color:#333;">
+                                                <strong>Important:</strong>
+                                                <ul style="margin:8px 0 0 18px;padding:0;">
+                                                    <li>Attendance at the Induction Programme is <strong>mandatory</strong> for all students.</li>
+                                                    <li>For any queries, feel free to contact  <b>Pethmi 070 400 1106/ Dilini 070 400 1086</b>.</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+
+                                        <p style="text-align:center;margin-top:25px;font-size:15px;">
+                                        We look forward to welcoming you.
+                                        </p>
+                                        <p style="text-align:center;font-weight:bold;color:#063970;margin-top:10px;">
+                                        BMS CAMPUS
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="background-color:#f0f2f5;text-align:center;padding:14px;font-size:12px;color:#888;">
+                                        &copy; ' . date("Y") . ' BMS CAMPUS
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+                </body>
+                </html>
+                ';
+
+            $mail->send();
+
+            $stmt2 = $conn->prepare("
+                UPDATE induction_students
+                SET email_sent=1,
+                    email_sent_time=NOW(),
+                    email_sent_by=?
+                WHERE id=?
+            ");
+            $stmt2->bind_param("si", $emailSentBy, $row['id']);
+            $stmt2->execute();
+        } catch (Exception $e) {
+            // skip failure
+        }
+    }
+
+    echo json_encode(['status' => 'sent']);
+    exit;
+}

@@ -1,0 +1,612 @@
+<?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+include("../database/connection.php");
+header('Content-Type: application/json');
+
+try {
+    // Get and decode JSON input
+    $jsonInput = file_get_contents('php://input');
+    $input = json_decode($jsonInput, true);
+
+    if (!isset($input['results']) || !is_array($input['results'])) {
+        throw new Exception('Invalid input data');
+    }
+
+    // Get description from request
+    $description = isset($input['description']) ? $input['description'] : '';
+
+    // Get program name from request
+    $programName = isset($input['program_name']) ? $input['program_name'] : 'Unknown Program';
+    // Begin transaction
+    $conn->begin_transaction();
+    // Prepare check statement
+    $checkStmt = $conn->prepare("SELECT id FROM student_results 
+            WHERE student_id = ? 
+            AND program_id = ? 
+            AND batch_id = ? 
+            AND module_id = ? 
+            AND main_component_id = ?");
+
+    // Prepare insert statement - ADDED comment and description_for_std fields
+    $insertStmt = $conn->prepare("INSERT INTO student_results 
+            (student_id, student_registration_id, program_id, batch_id, module_id, 
+            main_component_id, sub_component_id, result, 
+            full_marks, converted_marks, hd_full_marks, hd_converted_marks, hd_grade,
+            hd_resit1_full_marks, hd_resit1_converted_marks, hd_resit1_grade, comment, description_for_std) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+    // Prepare update statement - ADDED comment and description_for_std fields
+    $updateStmt = $conn->prepare("UPDATE student_results 
+            SET result = ?, 
+                resit_result_1 = ?, 
+                resit_result_2 = ?, 
+                resit_result_3 = ?, 
+                resit_result_4 = ?, 
+                full_marks = ?, 
+                converted_marks = ?, 
+                hd_full_marks = ?, 
+                hd_converted_marks = ?, 
+                hd_grade = ?,
+                hd_resit1_full_marks = ?,
+                hd_resit1_converted_marks = ?,
+                hd_resit1_grade = ?,
+                hd_resit2_full_marks = ?,
+                hd_resit2_converted_marks = ?,
+                hd_resit2_grade = ?,
+                hd_resit3_full_marks = ?,
+                hd_resit3_converted_marks = ?,
+                hd_resit3_grade = ?,
+                comment = ?,
+                description_for_std = ?
+            WHERE student_id = ? 
+            AND program_id = ? 
+            AND batch_id = ? 
+            AND module_id = ? 
+            AND main_component_id = ?");
+
+    // Prepare check statement for final_student_results
+    $checkFinalResultStmt = $conn->prepare("SELECT id FROM final_student_results 
+            WHERE student_id = ? AND module_id = ?");
+
+    // Prepare insert/update statement for final_student_results
+    $insertFinalStmt = $conn->prepare("INSERT INTO final_student_results 
+            (student_id, student_registration_id, program_id, batch_id, module_id, final_result) 
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE 
+            final_result = VALUES(final_result)");
+
+    if (!$checkStmt || !$insertStmt || !$updateStmt || !$checkFinalResultStmt || !$insertFinalStmt) {
+        throw new Exception("Failed to prepare statements");
+    }
+
+    foreach ($input['results'] as $result) {
+        // Convert empty subComponentId to NULL if needed
+        $subComponentId = isset($result['subComponentId']) && $result['subComponentId'] !== 'null' ? $result['subComponentId'] : null;
+
+        // Get comment from result data
+        $comment = isset($result['comment']) ? $result['comment'] : '';
+
+        // Bind parameters for check
+        $checkStmt->bind_param(
+            "iiiii",
+            $result['studentId'],
+            $result['programId'],
+            $result['batchId'],
+            $result['moduleId'],
+            $result['mainComponentId']
+        );
+
+        $checkStmt->execute();
+        $checkResult = $checkStmt->get_result();
+
+        if ($checkResult->num_rows > 0) {
+            // Update existing record - ADDED comment and description_for_std parameters
+            $updateStmt->bind_param(
+                "sssssssiisisssissiissiiiii",
+                $result['result'],
+                $result['resit_result_1'],
+                $result['resit_result_2'],
+                $result['resit_result_3'],
+                $result['resit_result_4'],
+                $result['fullMarks'],
+                $result['convertedMarks'],
+                $result['hd_full_marks'],
+                $result['hd_converted_marks'],
+                $result['hd_grade'],
+                $result['hd_resit1_full_marks'],
+                $result['hd_resit1_converted_marks'],
+                $result['hd_resit1_grade'],
+                $result['hd_resit2_full_marks'],
+                $result['hd_resit2_converted_marks'],
+                $result['hd_resit2_grade'],
+                $result['hd_resit3_full_marks'],
+                $result['hd_resit3_converted_marks'],
+                $result['hd_resit3_grade'],
+                $comment,
+                $description,
+                $result['studentId'],
+                $result['programId'],
+                $result['batchId'],
+                $result['moduleId'],
+                $result['mainComponentId']
+            );
+
+            if (!$updateStmt->execute()) {
+                throw new Exception("Update failed: " . $updateStmt->error);
+            }
+        } else {
+            // Insert new record if no existing record found - ADDED comment and description_for_std parameters
+            $insertStmt->bind_param(
+                "ssiiiiisssiississs",
+                $result['studentId'],
+                $result['studentRegId'],
+                $result['programId'],
+                $result['batchId'],
+                $result['moduleId'],
+                $result['mainComponentId'],
+                $subComponentId,
+                $result['result'],
+                $result['fullMarks'],
+                $result['convertedMarks'],
+                $result['hd_full_marks'],
+                $result['hd_converted_marks'],
+                $result['hd_grade'],
+                $result['hd_resit1_full_marks'],
+                $result['hd_resit1_converted_marks'],
+                $result['hd_resit1_grade'],
+                $comment,
+                $description
+            );
+
+            if (!$insertStmt->execute()) {
+                throw new Exception("Insert failed: " . $insertStmt->error);
+            }
+        }
+
+        // ------------------------------------------------------------------------------------------ 
+        // Check if the program name is 'Executive Certificate in Management'
+        if ($programName === 'Executive Certificate in Management') {
+            // Calculate final result for the module
+            $finalResult = calculateFinalResult($result['studentId'], $result['moduleId'], $conn);
+
+            // Check if final result already exists
+            $checkFinalResultStmt->bind_param("ii", $result['studentId'], $result['moduleId']);
+            $checkFinalResultStmt->execute();
+            $checkFinalResultStmt->store_result();
+
+            // Insert or update final result
+            $insertFinalStmt->bind_param(
+                "ssiiis",
+                $result['studentId'],
+                $result['studentRegId'],
+                $result['programId'],
+                $result['batchId'],
+                $result['moduleId'],
+                $finalResult
+            );
+
+            if (!$insertFinalStmt->execute()) {
+                throw new Exception("Final result insert/update failed: " . $insertFinalStmt->error);
+            }
+        } else if (
+            $programName === 'Higher Diploma in Biomedical Science' ||
+            $programName === 'Higher Diploma in Biotechnology' ||
+            $programName === 'Higher Diploma in Food Science and Nutrition' ||
+            $programName === 'Higher Diploma in Medical Biotechnology'
+        ) {
+            // Define the grade hierarchy (lower value means higher priority)
+            $gradeHierarchy = [
+                'distinction' => 1,
+                'merit' => 2,
+                'pass' => 3,
+                'pending' => 4,
+                're-sit' => 5
+            ];
+
+            // Function to determine the final result based on the grade hierarchy
+            if (!function_exists('getFinalResult')) {
+                function getFinalResult($grades, $gradeHierarchy)
+                {
+                    $finalResult = null;
+                    $lowestGradeValue = 0;
+
+                    foreach ($grades as $grade) {
+                        $currentGrade = strtolower($grade);
+                        if (isset($gradeHierarchy[$currentGrade])) {
+                            $currentGradeValue = $gradeHierarchy[$currentGrade];
+                            if ($lowestGradeValue === 0 || $currentGradeValue > $lowestGradeValue) {
+                                $lowestGradeValue = $currentGradeValue;
+                                $finalResult = $currentGrade;
+                            }
+                        }
+                    }
+
+                    return $finalResult;
+                }
+            }
+
+            // Query to get all results for this student/module combination
+            $checkExistingResults = $conn->prepare(
+                "SELECT hd_grade, hd_resit1_grade, hd_resit2_grade, hd_resit3_grade
+                FROM student_results 
+                WHERE student_id = ? 
+                AND program_id = ? 
+                AND batch_id = ? 
+                AND module_id = ?"
+            );
+
+            $checkExistingResults->bind_param(
+                "iiii",
+                $result['studentId'],
+                $result['programId'],
+                $result['batchId'],
+                $result['moduleId']
+            );
+
+            $checkExistingResults->execute();
+            $existingResults = $checkExistingResults->get_result();
+
+            // Prepare array of grades (main and resit results)
+            $grades = [];
+
+            while ($row = $existingResults->fetch_assoc()) {
+                // Check for hd_resit3_grade first, then hd_resit2_grade, then hd_resit1_grade, finally hd_grade
+                if (!empty($row['hd_resit3_grade'])) {
+                    $grades[] = $row['hd_resit3_grade'];  // Add hd_resit3_grade
+                } elseif (!empty($row['hd_resit2_grade'])) {
+                    $grades[] = $row['hd_resit2_grade'];  // Add hd_resit2_grade
+                } elseif (!empty($row['hd_resit1_grade'])) {
+                    $grades[] = $row['hd_resit1_grade'];  // Add hd_resit1_grade
+                } elseif (!empty($row['hd_grade'])) {
+                    $grades[] = $row['hd_grade'];  // Add hd_grade if no resit grade exists
+                }
+            }
+
+            // If no grades exist, fallback to the main result
+            if (empty($grades)) {
+                $grades[] = $result['result'];
+            }
+
+            // Get the final result based on the grades
+            $finalResult = getFinalResult($grades, $gradeHierarchy);
+
+            // Proceed if we have a result to save
+            if ($finalResult !== null) {
+                // Insert or update final result
+                $insertFinalStmt->bind_param(
+                    "ssiiis",
+                    $result['studentId'],
+                    $result['studentRegId'],
+                    $result['programId'],
+                    $result['batchId'],
+                    $result['moduleId'],
+                    $finalResult
+                );
+
+                if (!$insertFinalStmt->execute()) {
+                    throw new Exception("Final result insert/update failed: " . $insertFinalStmt->error);
+                }
+            }
+
+            $checkExistingResults->close();
+        } else if (
+            $programName === 'IFD (Business) - ATHE Level 3' ||
+            $programName === 'BSc (Hons) in Software Engineering' ||
+            $programName === 'BTEC Higher National Diploma in Business' ||
+            $programName === 'IFD (Applied Science) - ATHE Level 3' ||
+            $programName === 'Higher Diploma in Biomedical Science'
+        ) {
+            // Define the grade hierarchy (lower value means higher priority)
+            $gradeHierarchy = [
+                'distinction' => 1,
+                'merit' => 2,
+                'pass' => 3,
+                'resit' => 4,
+                'absent' => 5
+            ];
+
+            // Function to determine the final result based on the grade hierarchy
+            if (!function_exists('getFinalResult')) {
+                function getFinalResult($grades, $gradeHierarchy)
+                {
+                    $finalResult = null;
+                    $lowestGradeValue = 0;
+
+                    foreach ($grades as $grade) {
+                        $currentGrade = strtolower($grade);
+                        if (isset($gradeHierarchy[$currentGrade])) {
+                            $currentGradeValue = $gradeHierarchy[$currentGrade];
+                            if ($lowestGradeValue === 0 || $currentGradeValue > $lowestGradeValue) {
+                                $lowestGradeValue = $currentGradeValue;
+                                $finalResult = $currentGrade;
+                            }
+                        }
+                    }
+
+                    return $finalResult;
+                }
+            }
+
+            // Query to get all results for this student/module combination
+            $checkExistingResults = $conn->prepare(
+                "SELECT result, resit_result_1, resit_result_2, resit_result_3, resit_result_4
+                FROM student_results 
+                WHERE student_id = ? 
+                AND program_id = ? 
+                AND batch_id = ? 
+                AND module_id = ?"
+            );
+
+            $checkExistingResults->bind_param(
+                "iiii",
+                $result['studentId'],
+                $result['programId'],
+                $result['batchId'],
+                $result['moduleId']
+            );
+
+            $checkExistingResults->execute();
+            $existingResults = $checkExistingResults->get_result();
+
+            // Prepare array of grades (main and resit results)
+            $grades = [];
+
+            while ($row = $existingResults->fetch_assoc()) {
+                // Check for resit_result_4 first, then resit_result_3, then resit_result_2, then resit_result_1, finally result
+                if (!empty($row['resit_result_4'])) {
+                    $grades[] = $row['resit_result_4'];
+                } elseif (!empty($row['resit_result_3'])) {
+                    $grades[] = $row['resit_result_3'];
+                } elseif (!empty($row['resit_result_2'])) {
+                    $grades[] = $row['resit_result_2'];
+                } elseif (!empty($row['resit_result_1'])) {
+                    $grades[] = $row['resit_result_1'];
+                } else {
+                    $grades[] = $row['result'];
+                }
+            }
+
+            // If no grades exist, fallback to the main result
+            if (empty($grades)) {
+                $grades[] = $result['result'];
+            }
+
+            // Get the final result based on the grades
+            $finalResult = getFinalResult($grades, $gradeHierarchy);
+
+            // Proceed if we have a result to save
+            if ($finalResult !== null) {
+                // Insert or update final result
+                $insertFinalStmt->bind_param(
+                    "ssiiis",
+                    $result['studentId'],
+                    $result['studentRegId'],
+                    $result['programId'],
+                    $result['batchId'],
+                    $result['moduleId'],
+                    $finalResult
+                );
+
+                if (!$insertFinalStmt->execute()) {
+                    throw new Exception("Final result insert/update failed: " . $insertFinalStmt->error);
+                }
+            }
+
+            $checkExistingResults->close();
+        }
+        // -------------------------------------------------------------------------------------------
+        else if (
+            $programName === 'Graduate Diploma in Management (Level 6)'
+        ) {
+            // Define the grade hierarchy (lower value means higher priority)
+            $gradeHierarchy = [
+                'distinction' => 1,
+                'merit' => 2,
+                'pass' => 3,
+                'resit' => 4,
+                'absent' => 5
+            ];
+
+            // Function to determine the final result based on the new logic
+            if (!function_exists('getGDMFinalResult')) {
+                function getGDMFinalResult($grades, $gradeHierarchy) {
+                    // Remove empty grades
+                    $grades = array_filter($grades, function($grade) {
+                        return !empty($grade);
+                    });
+                    
+                    if (empty($grades)) {
+                        return null;
+                    }
+                    
+                    // Convert grades to lowercase for comparison
+                    $grades = array_map('strtolower', $grades);
+                    
+                    // Separate grades into categories
+                    $passGrades = ['distinction', 'merit', 'pass'];
+                    $failGrades = ['resit', 'absent'];
+                    
+                    $passResults = array_intersect($grades, $passGrades);
+                    $failResults = array_intersect($grades, $failGrades);
+                    
+                    // Case 1: If distinction/merit/pass && distinction/merit/pass → store highest hierarchy value (worst grade)
+                    if (count($passResults) >= 2) {
+                        $highestValue = 0;
+                        $finalResult = null;
+                        
+                        foreach ($passResults as $grade) {
+                            if (isset($gradeHierarchy[$grade]) && $gradeHierarchy[$grade] > $highestValue) {
+                                $highestValue = $gradeHierarchy[$grade];
+                                $finalResult = $grade;
+                            }
+                        }
+                        return $finalResult;
+                    }
+                    
+                    // Case 2: If distinction/merit/pass && resit/absent → store 'pending'
+                    if (count($passResults) >= 1 && count($failResults) >= 1) {
+                        return 'pending';
+                    }
+                    
+                    // Case 3: If resit && resit → store 'resit'
+                    if (count($failResults) >= 2 && in_array('resit', $failResults)) {
+                        return 'resit';
+                    }
+                    
+                    // Case 4: If absent && absent → store 'absent'
+                    if (count($failResults) >= 2 && in_array('absent', $failResults) && !in_array('resit', $failResults)) {
+                        return 'absent';
+                    }
+                    
+                    // Case 5: If resit && absent → store 'resit'
+                    if (in_array('resit', $failResults) && in_array('absent', $failResults)) {
+                        return 'resit';
+                    }
+                    
+                    // Default case: return the single grade if only one exists
+                    if (count($grades) == 1) {
+                        return $grades[0];
+                    }
+                    
+                    // If we have multiple grades that don't fit above cases, return the worst one
+                    $highestValue = 0;
+                    $finalResult = null;
+                    
+                    foreach ($grades as $grade) {
+                        if (isset($gradeHierarchy[$grade]) && $gradeHierarchy[$grade] > $highestValue) {
+                            $highestValue = $gradeHierarchy[$grade];
+                            $finalResult = $grade;
+                        }
+                    }
+                    
+                    return $finalResult;
+                }
+            }
+
+            // Query to get all results for this student/module combination
+            $checkExistingResults = $conn->prepare(
+                "SELECT result, resit_result_1, resit_result_2, resit_result_3, resit_result_4
+                FROM student_results 
+                WHERE student_id = ? 
+                AND program_id = ? 
+                AND batch_id = ? 
+                AND module_id = ?"
+            );
+
+            $checkExistingResults->bind_param(
+                "iiii",
+                $result['studentId'],
+                $result['programId'],
+                $result['batchId'],
+                $result['moduleId']
+            );
+
+            $checkExistingResults->execute();
+            $existingResults = $checkExistingResults->get_result();
+
+            // Prepare array of grades (main and resit results)
+            $grades = [];
+
+            while ($row = $existingResults->fetch_assoc()) {
+                // Collect all available grades for this student/module
+                if (!empty($row['result'])) {
+                    $grades[] = $row['result'];
+                }
+                if (!empty($row['resit_result_1'])) {
+                    $grades[] = $row['resit_result_1'];
+                }
+                if (!empty($row['resit_result_2'])) {
+                    $grades[] = $row['resit_result_2'];
+                }
+                if (!empty($row['resit_result_3'])) {
+                    $grades[] = $row['resit_result_3'];
+                }
+                if (!empty($row['resit_result_4'])) {
+                    $grades[] = $row['resit_result_4'];
+                }
+            }
+
+            // If no grades exist, fallback to the main result
+            if (empty($grades)) {
+                $grades[] = $result['result'];
+            }
+
+            // Get the final result based on the new GDM logic
+            $finalResult = getGDMFinalResult($grades, $gradeHierarchy);
+
+            // Proceed if we have a result to save
+            if ($finalResult !== null) {
+                // Insert or update final result
+                $insertFinalStmt->bind_param(
+                    "ssiiis",
+                    $result['studentId'],
+                    $result['studentRegId'],
+                    $result['programId'],
+                    $result['batchId'],
+                    $result['moduleId'],
+                    $finalResult
+                );
+
+                if (!$insertFinalStmt->execute()) {
+                    throw new Exception("Final result insert/update failed: " . $insertFinalStmt->error);
+                }
+            }
+
+            $checkExistingResults->close();
+        }
+        // -------------------------------------------------------------------------------------------
+    }
+
+    // Commit transaction
+    $conn->commit();
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Results and description saved successfully',
+        'program_name' => $programName,
+        'description_saved' => !empty($description)
+    ]);
+    exit;
+} catch (Exception $e) {
+    // Rollback transaction on error
+    if (isset($conn)) {
+        $conn->rollback();
+    }
+    // Log the error message
+    error_log($e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'message' => 'Error saving results. Please try again',
+        'error' => $e->getMessage()
+    ]);
+    exit;
+} finally {
+    // Close all prepared statements and connection
+    if (isset($checkStmt))
+        $checkStmt->close();
+    if (isset($insertStmt))
+        $insertStmt->close();
+    if (isset($updateStmt))
+        $updateStmt->close();
+    if (isset($checkFinalResultStmt))
+        $checkFinalResultStmt->close();
+    if (isset($insertFinalStmt))
+        $insertFinalStmt->close();
+    if (isset($conn))
+        $conn->close();
+}
+
+function calculateFinalResult($studentId, $moduleId, $conn)
+{
+    $query = "SELECT converted_marks FROM student_results WHERE student_id = ? AND module_id = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("ii", $studentId, $moduleId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $totalMarks = 0;
+    while ($row = $result->fetch_assoc()) {
+        $totalMarks += (int) $row['converted_marks'];
+    }
+    return $totalMarks;
+}

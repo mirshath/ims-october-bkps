@@ -1,0 +1,1088 @@
+<?php
+session_start();
+include("database/connection.php");
+include("includes/header.php");
+
+$session_role = $_SESSION['role'];
+
+// Assume $session_role is already set
+$disabled_m_d = ($session_role == 'manager' || $session_role == 'data_enter') ? 'disabled' : '';
+
+if (!isset($_SESSION['username'])) {
+    echo '<script>window.location.href = "login";</script>';
+}
+
+// ---------------------------- allowed Redirections ---------------------------------------------------------------- 
+// -------- Permission CHECKING TO REDIRECT TO HOME PAGE -------- 
+require_once 'PermissionChecking.php';
+// --------------------------------------------------------------------- 
+// -------------------------------------------------------------------------------------------- 
+?>
+
+
+<!-- Page Wrapper -->
+<div id="wrapper">
+    <?php include("nav.php"); ?>
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+        <!-- Main Content -->
+        <div id="content">
+            <!-- Topbar -->
+            <?php include("includes/topnav.php"); ?>
+            <!-- End of Topbar -->
+            <!-- Begin Page Content -->
+            <div class="container">
+
+                <!-- Page Heading -->
+                <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                    <h4 class="h4 mb-0 text-gray-800">Student Management</h4>
+                </div>
+
+                <?php
+                if (isset($_SESSION['success_message'])) {
+                    echo '<div class="alert alert-success alert-dismissible fade show" role="alert">
+                            ' . $_SESSION['success_message'] . '
+                          </div>';
+                    // Clear the message after displaying
+                    unset($_SESSION['success_message']);
+                }
+
+                ?>
+                <!-- Add Form -->
+                <div class="row mb-5">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header d-flex align-items-center" style="height: 60px;">
+                                <span class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                    <i class="fas fa-plus-circle"></i>
+                                </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                                <h6 class="mb-0 me-2">Add Students</h6>
+                            </div>
+
+                            <div class="card-body">
+                                <!-- Add Criteria Form -->
+                                <!-- <div class="row">
+                                    <div class="col-md-5 offset-md-6">
+                                        <div class="form-group position-relative">
+                                            <label class="form-label text-danger fw-bolder" for="search">Select Students for Edit:</label>
+                                          
+                                            <input type="text" class="form-control " id="search" name="search" placeholder="Type to search..." autocomplete="off">
+                                            <div id="search-results" class="dropdown-menu w-100" style="display: none;">
+
+                                            </div>
+                                            <hr>
+                                        </div>
+                                    </div>
+                                </div> -->
+
+
+
+
+
+
+                                <div class="row">
+                                    <div class="col-md-5 offset-md-6">
+                                        <div class="form-group position-relative">
+                                            <label class="form-label text-danger fw-bolder" for="search">Select Students for Edit:</label>
+
+                                            <input type="text" class="form-control " id="search" name="search" placeholder="Type to search..." autocomplete="off">
+                                            <div id="search-results" class="dropdown-menu w-100" style="display: none;">
+
+                                            </div>
+                                            <hr>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                                <form id="studentForm" method="post" action="save_student.php">
+
+                                    <div class="mb-3">
+                                        <!-- <label for="student_code" class="form-label">Student Code:</label> -->
+                                        <input type="hidden" id="student_code" name="student_code" class="form-control" required>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-5">
+                                            <div class=" mb-3">
+                                                <div class="row">
+                                                    <div class="col-md-3"> <label for="title" class="form-label">Title: <span class="text-danger fw-bold">*</span></label> </div>
+                                                    <div class="col">
+                                                        <select id="title" name="title" class="form-select form-control select2" required>
+                                                            <option value="Mr">Mr</option>
+                                                            <option value="Mrs">Mrs</option>
+                                                            <option value="Ms">Ms</option>
+                                                            <option value="Dr">Dr</option>
+                                                            <option value="Prof">Prof</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <div class="row">
+                                                    <div class="col-md-3"> <label for="first_name" class="form-label">First Name:<span class="text-danger fw-bold">*</span></label></div>
+                                                    <div class="col">
+                                                        <input type="text" id="first_name" name="first_name" placeholder="First Name" class="form-control" required>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <div class="row">
+                                                    <div class="col-md-3"> <label for="last_name" class="form-label">Last Name:<span class="text-danger fw-bold">*</span></label></div>
+                                                    <div class="col"> <input type="text" id="last_name" name="last_name" placeholder="Last Name" class="form-control" required></div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <div class="row">
+                                                    <div class="col-md-3"> <label for="certificate_name" class="form-label">Name for the Certificate:<span class="text-danger fw-bold">*</span></label></div>
+                                                    <div class="col">
+                                                        <input type="text" id="certificate_name" placeholder="Name for the Certificate" name="certificate_name" class="form-control" required>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <div class="row">
+                                                    <div class="col-md-3"> <label for="preferred_name" class="form-label">Preferred Name:<span class="text-danger fw-bold">*</span></label></div>
+                                                    <div class="col">
+                                                        <input type="text" id="preferred_name" placeholder="Preferred Name" name="preferred_name" class="form-control">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <div class="row">
+                                                    <div class="col-md-3"> <label for="dob" class="form-label">Date of Birth:<span class="text-danger fw-bold">*</span></label></div>
+                                                    <div class="col">
+                                                        <input type="date" id="dob" name="dob" placeholder="Date of Birth" class="form-control" required>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <label for="nationality" class="form-label">Nationality:<span class="text-danger fw-bold">*</span></label>
+                                                    </div>
+                                                    <div class="col">
+                                                        <input type="text" required id="nationality" placeholder="Nationality" name="nationality" class="form-control" required>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Permanent Address:<span class="text-danger fw-bold">*</span></label>
+                                                    </div>
+                                                    <div class="col">
+                                                        <div class="row mb-2">
+                                                            <div class="col-12">
+                                                                <input type="text" id="street_address_1" name="street_address_1" placeholder="Street Address 1" class="form-control">
+                                                            </div>
+                                                        </div>
+                                                        <div class="row mb-2">
+                                                            <div class="col-12">
+                                                                <input type="text" id="street_address_2" name="street_address_2" placeholder="Street Address 2" class="form-control">
+                                                            </div>
+                                                        </div>
+                                                        <div class="row mb-2">
+                                                            <div class="col-md-6">
+                                                                <input type="text" id="city" name="city" placeholder="City" class="form-control">
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <input type="text" id="district" name="district" placeholder="District" class="form-control">
+                                                            </div>
+                                                        </div>
+                                                        <input type="hidden" id="permanent_address" name="permanent_address">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <label for="current_address" class="form-label">Current Address:<span class="text-danger fw-bold">*</span></label>
+                                                    </div>
+                                                    <div class="col">
+                                                        <div class="mb-2">
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="checkbox" id="same_as_permanent" name="same_as_permanent">
+                                                                <label class="form-check-label" for="same_as_permanent">Same as Permanent Address</label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row mb-2">
+                                                            <div class="col-12">
+                                                                <input type="text" id="current_street_address_1" name="current_street_address_1" placeholder="Street Address 1" class="form-control">
+                                                            </div>
+                                                        </div>
+                                                        <div class="row mb-2">
+                                                            <div class="col-12">
+                                                                <input type="text" id="current_street_address_2" name="current_street_address_2" placeholder="Street Address 2" class="form-control">
+                                                            </div>
+                                                        </div>
+                                                        <div class="row mb-2">
+                                                            <div class="col-md-6">
+                                                                <input type="text" id="current_city" name="current_city" placeholder="City" class="form-control">
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <input type="text" id="current_district" name="current_district" placeholder="District" class="form-control">
+                                                            </div>
+                                                        </div>
+                                                        <input type="hidden" id="current_address" name="current_address">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <label for="mobile" class="form-label">Mobile:<span class="text-danger fw-bold">*</span></label>
+                                                    </div>
+                                                    <div class="col">
+                                                        <input type="text" id="mobile" placeholder="Mobile" name="mobile" class="form-control">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <label for="telephone" class="form-label">Telephone:<span class="text-danger fw-bold">*</span></label>
+                                                    </div>
+                                                    <div class="col"> <input type="text" id="telephone" placeholder="Telephone" name="telephone" class="form-control"></div>
+                                                </div>
+                                            </div>
+
+                                            <hr style="width: 55%;">
+                                            <div class="row d-flex">
+                                                <label for="emergency_contact_name" class="form-label">Emergency Name & Contact </label>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <div class="row">
+                                                            <div class="col-md-3">
+                                                                <label for="emergency_contact_name" class="form-label">Name:</label>
+                                                            </div>
+                                                            <div class="col">
+                                                                <input type="text" id="emergency_contact_name" placeholder="Emergency Contact Name" name="emergency_contact_name" class="form-control">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <div class="row">
+                                                            <div class="col-md-3">
+                                                                <label for="emergency_contact_number" class="form-label"> Contact:</label>
+                                                            </div>
+                                                            <div class="col">
+                                                                <input type="text" id="emergency_contact_number" placeholder="Emergency Contact Number" name="emergency_contact_number" class="form-control">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <hr style="width: 55%;">
+
+                                                <div class="col-12">
+                                                    <div class="mb-3">
+                                                        <label for="english_ability" class="form-label">English Ability:</label>
+                                                        <input type="checkbox" id="english_ability" name="english_ability" value="1">
+                                                    </div>
+                                                </div>
+                                                <hr style="width: 55%;">
+
+                                                <div class="col-12">
+                                                    <div class="mb-3">
+                                                        <label for="minimum_entry_qualification" class="form-label">Minimum Entry Qualification:</label>
+                                                        <input type="checkbox" id="minimum_entry_qualification" name="minimum_entry_qualification" value="1" checked>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-5" style="margin-left: 100px;">
+
+                                            <!-- <div class="col-md-6"> -->
+                                            <div class="mb-3">
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <label for="nic" class="form-label">NIC: <span class="text-danger fw-bold">*</span> </label>
+                                                    </div>
+                                                    <div class="col">
+                                                        <input type="text" placeholder="NIC OR Passport OR Postal ID" id="nic" name="nic" class="form-control" required>
+                                                        <div id="nic-feedback" style="color: red; font-weight: bold; display:none; margin-top: 5px;"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+
+
+                                            <!-- <div class="col-md-6"> -->
+                                            <div class="mb-3">
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <label for="passport" class="form-label">Passport:</label>
+                                                    </div>
+                                                    <div class="col">
+                                                        <input type="text" placeholder="Passport" id="passport" name="passport" class="form-control">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <label for="personal_email" class="form-label">Personal Email: <span class="text-danger fw-bold">*</span></label>
+                                                    </div>
+                                                    <div class="col">
+                                                        <input type="email" id="personal_email" placeholder="Personal Email" name="personal_email" class="form-control" required>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <label for="bms_email" class="form-label">BMS Email:</label>
+                                                    </div>
+                                                    <div class="col">
+                                                        <input type="email" id="bms_email" placeholder="BMS Email" name="bms_email" class="form-control" <?php echo ($session_role !== 'super_admin') ? 'disabled' : ''; ?>>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <label for="occupation" class="form-label">Occupation:</label>
+                                                    </div>
+                                                    <div class="col">
+                                                        <input type="text" id="occupation" placeholder="Occupation" name="occupation" class="form-control">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <label for="organization" class="form-label">Organization:</label>
+                                                    </div>
+                                                    <div class="col">
+                                                        <input type="text" id="organization" name="organization" placeholder="Organization" class="form-control">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <label for="previous_organization" class="form-label">Previous Organization:</label>
+                                                    </div>
+                                                    <div class="col">
+                                                        <input type="text" id="previous_organization" name="previous_organization" placeholder="Previous Organization" class="form-control">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3" style="line-height: 32px;">
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <label for="qualifications" class="form-label">Qualifications:<span class="text-danger fw-bold">*</span></label>
+                                                    </div>
+                                                    <div class="col">
+                                                        <div class="row d-flex">
+                                                            <div class="col-md-6">
+                                                                <div class="form-check">
+                                                                    <input class="form-check-input" type="checkbox" name="qualifications[]" value="Bachelors" id="bachelors">
+                                                                    <label class="form-check-label" for="bachelors">Bachelors</label>
+                                                                </div>
+                                                                <div class="form-check">
+                                                                    <input class="form-check-input" type="checkbox" name="qualifications[]" value="Masters" id="masters">
+                                                                    <label class="form-check-label" for="masters">Masters</label>
+                                                                </div>
+                                                                <div class="form-check">
+                                                                    <input class="form-check-input" type="checkbox" name="qualifications[]" value="Diploma" id="diploma">
+                                                                    <label class="form-check-label" for="diploma">Diploma</label>
+                                                                </div>
+                                                                <div class="form-check">
+                                                                    <input class="form-check-input" type="checkbox" name="qualifications[]" value="ECM" id="ecm">
+                                                                    <label class="form-check-label" for="ecm">ECM</label>
+                                                                </div>
+                                                                <div class="form-check">
+                                                                    <input class="form-check-input" type="checkbox" name="qualifications[]" value="AL" id="al">
+                                                                    <label class="form-check-label" for="al">A/L</label>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <div class="form-check">
+                                                                    <input class="form-check-input" type="checkbox" name="qualifications[]" value="PGDip" id="pgdip">
+                                                                    <label class="form-check-label" for="pgdip">PGDip</label>
+                                                                </div>
+                                                                <div class="form-check">
+                                                                    <input class="form-check-input" type="checkbox" name="qualifications[]" value="IFD" id="ifd">
+                                                                    <label class="form-check-label" for="ifd">IFD</label>
+                                                                </div>
+                                                                <div class="form-check">
+                                                                    <input class="form-check-input" type="checkbox" name="qualifications[]" value="OL" id="ol">
+                                                                    <label class="form-check-label" for="ol">O/L</label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <hr>
+
+                                            <!-- -------------------------------------------------------------------------------------------- -->
+                                            <div id="allocateSection">
+                                                <!-- <div class="form-group">
+                                                    <div class="row">
+                                                        <div class="col-md-4"> <label for="university">University</label></div>
+                                                        <div class="col-md-8">
+                                                            <select id="university" name="university_id" class="form-control select2">
+                                                                <option value="">-- Select University --</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div> -->
+
+                                                <div class="form-group">
+                                                    <div class="row">
+                                                        <div class="col-md-4"> <label for="programme">Programme</label></div>
+                                                        <div class="col-md-8">
+                                                            <select id="programme" name="programme_code" class="form-control select2">
+                                                                <option value="">-- Select Programme --</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <div class="row">
+                                                        <div class="col-md-4"> <label for="batch">Batch</label></div>
+                                                        <div class="col-md-8">
+                                                            <select id="batch" name="batch_id" class="form-control select2">
+                                                                <option value="">-- Select Batch --</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- New section for displaying modules -->
+                                                    <div class="row" id="modules-container" style="display: none;">
+                                                        <div class="col-md-6">
+                                                            <h6>Compulsory Modules</h6>
+                                                            <div id="compulsory-modules-container"></div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <h6>Elective Modules</h6>
+                                                            <div id="elective-modules-container"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <input type="hidden" id="programme_name" name="programme_name" value="">
+                                            <input type="hidden" id="batch_name" name="batch_name" value="">
+                                            <input type="hidden" id="course_fee_lkr" name="course_fee_lkr" value="">
+                                            <input type="hidden" id="uni_fee_gbp" name="uni_fee_gbp" value="">
+                                            <input type="hidden" id="uni_fee_usd" name="uni_fee_usd" value="">
+                                            <input type="hidden" id="uni_fee_euro" name="uni_fee_euro" value="">
+                                            <input type="hidden" id="register_date" name="register_date" value="">
+                                            <input type="hidden" id="installment_no" name="installment_no" value="">
+                                            <input type="hidden" id="installment_interval" name="installment_interval" value="">
+                                            <input type="hidden" id="registration_fee" name="registration_fee" value="">
+                                            <input type="hidden" id="only_course_fee" name="only_course_fee" value="">
+                                            <input type="hidden" id="is_final_year" name="is_final_year" value="">
+                                            <div id="final_year_installments_container"></div>
+
+                                            <!-- -------------------------------------------------------------------------------------------- -->
+                                            <hr>
+                                            <div class="mb-3 form-check">
+
+                                                <input type="checkbox" class="form-check-input" id="active" name="active" value="1" checked>
+                                                <label class="form-check-label" for="active">Active</label>
+                                            </div>
+
+                                            <div class="mb-3 form-check">
+                                                <button type="submit" class="btn btn-primary  float-right" id="sbt_btn">Submit</button>
+                                            </div>
+
+                                        </div>
+
+                                        <div id="paymentTableContainer"></div>
+                                </form>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ----------------------- -->
+                <!-- DataTables integration for Student Table -->
+                <!-- Include DataTables CSS -->
+                <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+                <div class="div mt-4 mb-4">
+                    <h3 class="my-4"><i class="fas fa-users"></i> Current Registered Students</h3>
+
+                    <div class="table-responsive mt-4">
+                        <table id="studentsDataTable" class="table table-bordered table-striped" style="width:100%">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>#</th>
+                                    <th>First Name</th>
+                                    <th>Last Name</th>
+                                    <th>Name to be appeared</th>
+                                    <th>DOB</th>
+                                    <th>Mobile</th>
+                                    <th>NIC</th>
+                                    <th>Passport</th>
+                                    <th>Personal Email</th>
+                                    <?php if ($session_role == 'super_admin'): ?>
+                                        <th>Entered By</th>
+                                    <?php endif; ?>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php
+                                // Fetch all students from 'students' table
+                                $query = "SELECT student_code, title, first_name, last_name, certificate_name, preferred_name, date_of_birth, nationality, permanent_address, current_address, mobile, telephone, emergency_contact_name, emergency_contact_number, english_ability, minimum_entry_qualification, nic, passport, personal_email, bms_email, occupation, organization, previous_organization, qualifications, active, student_status, transfer_status, remark, entered_by FROM students";
+                                $result = mysqli_query($conn, $query);
+
+                                if ($result && mysqli_num_rows($result) > 0):
+                                    $index = 1;
+                                    while ($row = mysqli_fetch_assoc($result)): ?>
+                                        <tr>
+                                            <td><?php echo $index++; ?></td>
+                                            <td><?php echo htmlspecialchars($row['first_name']); ?></td>
+                                            <td><?php echo htmlspecialchars($row['last_name']); ?></td>
+                                            <td><?php echo htmlspecialchars($row['certificate_name']); ?></td>
+                                            <td><?php echo htmlspecialchars($row['date_of_birth']); ?></td>
+                                            <td><?php echo htmlspecialchars($row['mobile']); ?></td>
+                                            <td><?php echo htmlspecialchars($row['nic']); ?></td>
+                                            <td><?php echo htmlspecialchars($row['passport']); ?></td>
+                                            <td><?php echo htmlspecialchars($row['personal_email']); ?></td>
+
+                                            <!-- <td><?php echo htmlspecialchars($row['entered_by']); ?></td> -->
+
+                                            <?php if ($session_role == 'super_admin'): ?>
+                                                <td><?php echo htmlspecialchars($row['entered_by']); ?></td>
+                                            <?php endif; ?>
+
+
+
+                                        </tr>
+                                <?php endwhile;
+                                endif;
+                                ?>
+                            </tbody>
+                        </table>
+                        <?php if (!($result && mysqli_num_rows($result) > 0)): ?>
+                            <div class="alert alert-info mt-4">No student records found.</div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <!-- DataTables JS -->
+                <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+                <script>
+                    $(document).ready(function() {
+                        $('#studentsDataTable').DataTable({
+                            "pageLength": 100,
+                            "lengthMenu": [5, 10, 25, 50, 100, 250],
+                            "order": [
+                                [0, "asc"]
+                            ],
+                            "responsive": true
+                        });
+                    });
+                </script>
+
+
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Include necessary CSS and JS for Select2 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+
+
+    <script>
+        $(document).ready(function() {
+
+            /* ===============================================
+               Initialize Select2 for all dropdowns
+            ================================================ */
+            // $('.select2').select2({
+            //     minimumResultsForSearch: Infinity // Disable search if not needed
+            // });
+
+
+            $('.select2').select2({
+                width: '100%',
+                placeholder: 'Select an option',
+                allowClear: true
+            });
+
+            $('#programme').select2({
+                width: '100%',
+                placeholder: '-- Select Programme --',
+                allowClear: true
+            });
+
+            $('#batch').select2({
+                width: '100%',
+                placeholder: '-- Select Batch --',
+                allowClear: true
+            });
+
+
+            /* ===============================================
+               NIC Validation
+               Checks if NIC is already taken and disables submit button
+            ================================================ */
+            $('#nic').on('blur', function() {
+                var nic = $(this).val().trim();
+                if (nic.length === 0) {
+                    $('#nic-feedback').hide();
+                    return;
+                }
+
+                $.ajax({
+                    url: 'check_nic.php',
+                    method: 'POST',
+                    dataType: 'json',
+                    data: {
+                        nic: nic
+                    },
+                    success: function(response) {
+                        if (response.exists) {
+                            $('#nic-feedback').text('NIC already taken').show();
+                            $('#nic').addClass('is-invalid');
+                            $('#sbt_btn').hide();
+                            // $('#allocateSection').hide();
+                        } else {
+                            $('#nic-feedback').hide();
+                            $('#nic').removeClass('is-invalid');
+                            $('#sbt_btn').show();
+                            // $('#allocateSection').show();
+                        }
+                    },
+                    error: function() {
+                        $('#nic-feedback').text('Error checking NIC').show();
+                    }
+                });
+            });
+
+            /* ===============================================
+               "Same as Permanent Address" Checkbox Handling
+               Copies permanent address to current address if checked
+            ================================================ */
+            $('#same_as_permanent').on('change', function() {
+                if ($(this).is(':checked')) {
+                    $('#current_street_address_1').val($('#street_address_1').val());
+                    $('#current_street_address_2').val($('#street_address_2').val());
+                    $('#current_city').val($('#city').val());
+                    $('#current_district').val($('#district').val());
+                    // Optional: Disable current address fields while checked
+                    // $('#current_street_address_1, #current_street_address_2, #current_city, #current_district').prop('disabled', true);
+                } else {
+                    $('#current_street_address_1, #current_street_address_2, #current_city, #current_district').prop('disabled', false);
+                }
+            });
+
+            /* ===============================================
+               Update Address Fields Before Form Submission
+               Combines street, city, district fields into single address strings
+            ================================================ */
+            $('#studentForm').on('submit', function() {
+                function combineAddress(street1, street2, city, district) {
+                    return (street1 + (street2 ? ', ' + street2 : '') + ', ' + city + ', ' + district)
+                        .replace(/,\s+,/g, ',')
+                        .replace(/^,\s+|,\s+$/g, '');
+                }
+
+                $('#permanent_address').val(
+                    combineAddress($('#street_address_1').val(), $('#street_address_2').val(), $('#city').val(), $('#district').val())
+                );
+                $('#current_address').val(
+                    combineAddress($('#current_street_address_1').val(), $('#current_street_address_2').val(), $('#current_city').val(), $('#current_district').val())
+                );
+                return true;
+            });
+
+            /* ===============================================
+               Parse Address When Editing a Student
+               Fills separate fields from stored permanent/current address
+            ================================================ */
+            function parseAddress(fullAddress, prefix) {
+                var parts = fullAddress.split(',').map(p => p.trim());
+                $('#' + prefix + 'street_address_1').val(parts[0] || '');
+                $('#' + prefix + 'street_address_2').val(parts[1] || '');
+                $('#' + prefix + 'city').val(parts[2] || '');
+                $('#' + prefix + 'district').val(parts[3] || '');
+            }
+
+            $('#search').on('change', function() {
+                setTimeout(function() {
+                    var fullAddress = $('#permanent_address').val();
+                    if (fullAddress) parseAddress(fullAddress, '');
+                    var fullCurrentAddress = $('#current_address').val();
+                    if (fullCurrentAddress) parseAddress(fullCurrentAddress, 'current_');
+
+                    // Auto-check "same as permanent" if addresses match
+                    if (fullAddress && fullCurrentAddress && fullAddress === fullCurrentAddress) {
+                        $('#same_as_permanent').prop('checked', true).trigger('change');
+                    }
+                }, 500);
+            });
+
+            /* ===============================================
+               Auto-update current address when permanent address changes
+               if "Same as Permanent Address" checkbox is checked
+            ================================================ */
+            $('#street_address_1, #street_address_2, #city, #district').on('input', function() {
+                if ($('#same_as_permanent').is(':checked')) {
+                    $('#current_street_address_1').val($('#street_address_1').val());
+                    $('#current_street_address_2').val($('#street_address_2').val());
+                    $('#current_city').val($('#city').val());
+                    $('#current_district').val($('#district').val());
+                }
+            });
+
+            /* ===============================================
+               Auto-update Certificate Name and Preferred Name
+               Based on first name and last name inputs
+            ================================================ */
+            $('#first_name, #last_name').on('input', function() {
+                var fullName = $('#first_name').val() + ' ' + $('#last_name').val();
+                if ($('#first_name').val() && $('#last_name').val()) {
+                    $('#certificate_name').val(fullName);
+                    $('#preferred_name').val(fullName);
+                }
+            });
+
+            /* ===============================================
+               Load Universities, Programmes, Batches, and Modules
+               Dynamically populate dropdowns and modules based on selection
+            ================================================ */
+            $.ajax({
+                url: 'Batch_transer/fetch_universities.php',
+                type: 'GET',
+                success: function(data) {
+                    $('#university').html(data);
+                },
+                error: function() {
+                    alert('Failed to load universities.');
+                }
+            });
+
+            // Load programmes for the current user/session when page loads
+            $.ajax({
+                url: 'Batch_transer/fetch_programs_without_uni.php',
+                type: 'POST', // prepares for future cases if needed, or use 'GET'
+                // success: function(data) {
+                //     $('#programme').html(data);
+                // },
+
+                success: function(data) {
+                    $('#programme')
+                        .html(data)
+                        .val('')
+                        .trigger('change');
+                },
+                error: function() {
+                    alert('Failed to load programmes.');
+                }
+            });
+
+            // Handler for loading batches when programme changes (without university)
+            $('#programme').on('change', function() {
+                var programId = $(this).val();
+                $('#batch').html('<option value="">-- Select Batch --</option>');
+                $('#modules-container').hide();
+
+                if (programId) {
+                    $.ajax({
+                        url: 'Batch_transer/fetch_batches_without_uni.php',
+                        type: 'POST',
+                        data: {
+                            program_id: programId
+                        },
+                        // success: function(data) {
+                        //     $('#batch').html(data);
+                        // },
+                        success: function(data) {
+                            $('#batch')
+                                .html(data)
+                                .val('')
+                                .trigger('change');
+                        },
+
+                        error: function() {
+                            alert('Failed to load batches.');
+                        }
+                    });
+
+                    // Modules loading logic may follow here if needed
+                    $.ajax({
+                        url: 'allocateProgram_files/get_modules.php',
+                        type: 'GET',
+                        data: {
+                            programme_code: programId
+                        },
+                        dataType: 'json',
+                        success: function(data) {
+                            $('#compulsory-modules-container, #elective-modules-container').empty();
+                            $('#modules-container').show();
+                            if (data.length > 0) {
+                                data.forEach(function(module) {
+                                    var html = `<div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="${module.type.toLowerCase()}_modules[]" value="${module.module_name}" ${module.type === 'Compulsory' ? 'checked' : ''}>
+                                        <label class="form-check-label">${module.module_name}</label>
+                                    </div>`;
+                                    if (module.type === 'Compulsory') {
+                                        $('#compulsory-modules-container').append(html);
+                                    } else {
+                                        $('#elective-modules-container').append(html);
+                                    }
+                                });
+                            } else {
+                                $('#modules-container').append('<p>No modules found for this programme.</p>');
+                            }
+                        },
+                        // error: function(xhr, status, error) {
+                        //     $('#modules-container').empty().append('<p>Error fetching modules.</p>');
+                        //     console.error('Error:', error);
+                        // }
+                        error: function(xhr, status, error) {
+                            $('#modules-container')
+                                .empty()
+                                .append('<p>Error fetching modules.</p>');
+
+                            console.error('Error:', error);
+                        }
+                    });
+                } else {
+                    // Reset if no programme selected
+                    // $('#batch').html('<option value="">-- Select Batch --</option>');
+                    // $('#modules-container').hide();
+                    $('#batch')
+                        .html('<option value=""></option>')
+                        .val('')
+                        .trigger('change');
+
+                    $('#modules-container').hide();
+                }
+            });
+
+
+            /* ===============================================
+               Fetch Payment Data When Programme and Batch Selected
+            ================================================ */
+            $('#programme, #batch').change(function() {
+                var programmeId = $('#programme').val();
+                var batchId = $('#batch').val();
+
+                if (programmeId && batchId) {
+                    $.ajax({
+                        url: 'fetch_payment_data.php',
+                        type: 'POST',
+                        dataType: 'json',
+                        data: {
+                            programme_id: programmeId,
+                            batch_id: batchId
+                        },
+                        success: function(response) {
+                            $('#paymentTableContainer').html(response.table || '');
+                            if (response.data) {
+                                $('#programme_name').val(response.data.program_name);
+                                $('#batch_name').val(response.data.batch_name);
+                                $('#course_fee_lkr').val(response.data.course_fee_lkr);
+                                $('#uni_fee_gbp').val(response.data.uni_fee_gbp);
+                                $('#uni_fee_usd').val(response.data.uni_fee_usd);
+                                $('#uni_fee_euro').val(response.data.uni_fee_euro);
+                                $('#register_date').val(response.data.register_date);
+                                $('#installment_no').val(response.data.installment_no);
+                                $('#installment_interval').val(response.data.installment_interval);
+                                $('#registration_fee').val(response.data.registration_fee);
+                                $('#only_course_fee').val(response.data.only_course_fee);
+                                $('#is_final_year').val(response.data.is_final_year ? '1' : '');
+
+                                // Populate final year installments container
+                                var installmentsContainer = $('#final_year_installments_container');
+                                installmentsContainer.empty();
+                                if (response.data.is_final_year && response.data.final_year_installments) {
+                                    response.data.final_year_installments.forEach(function(inst) {
+                                        installmentsContainer.append('<input type=\"hidden\" name=\"final_installment_no[]\" value=\"' + inst.installment_no + '\">');
+                                        installmentsContainer.append('<input type=\"hidden\" name=\"final_installment_date[]\" value=\"' + inst.instalment_date + '\">');
+                                        installmentsContainer.append('<input type=\"hidden\" name=\"final_installment_amount[]\" value=\"' + inst.instalment_amount + '\">');
+                                    });
+                                }
+
+                                $('#sbt_btn').show();
+                            } else {
+                                $('#programme_name, #batch_name, #course_fee_lkr, #uni_fee_gbp, #uni_fee_usd, #uni_fee_euro, #register_date, #installment_no, #installment_interval, #registration_fee, #only_course_fee, #is_final_year').val('');
+                                $('#final_year_installments_container').empty();
+                                $('#sbt_btn').hide();
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            alert('Error fetching payment data: ' + error);
+                        }
+                    });
+                } else {
+                    $('#paymentTableContainer').html('');
+                    $('#sbt_btn').hide();
+                }
+            });
+
+
+            /* ===============================================
+               Student Search Dropdown & Detail Fetch
+            ================================================ */
+            $("#allocateSection").show();
+
+            $("#search").on("input", function() {
+                var query = $(this).val();
+                if (query.length >= 2) {
+                    $.ajax({
+                        url: "search_students.php",
+                        type: "POST",
+                        data: {
+                            query: query
+                        },
+                        success: function(response) {
+                            $("#search-results").html(response).show();
+                        }
+                    });
+                } else {
+                    $("#search-results").hide();
+                }
+            });
+
+
+            $(document).on('click', '.student-item', function(e) {
+                e.preventDefault();
+
+                // Get data attributes from the selected student
+                let student = $(this).data();
+
+                let disabled = "<?php echo $disabled_m_d; ?>"; // from PHP
+
+                // Fill all fields the same way
+                $('#student_code').val(student.student_code);
+                // $('#title').val(student.title).trigger('change');
+
+                // Remove any trailing dot (.) from the title value
+                let cleanTitle = student.title ? student.title.replace(/\.$/, '') : '';
+                $('#title').val(cleanTitle).trigger('change');
+
+                $('#first_name').val(student.first_name);
+                $('#last_name').val(student.last_name);
+                $('#certificate_name').val(student.certificate_name);
+                $('#preferred_name').val(student.preferred_name);
+                $('#dob').val(student.dob);
+                $('#nationality').val(student.nationality);
+
+                $('#permanent_address').val(student.permanent_address);
+                $('#current_address').val(student.current_address);
+
+                $('#mobile').val(student.mobile);
+                $('#telephone').val(student.telephone);
+                $('#emergency_contact_name').val(student.emergency_contact_name);
+                $('#emergency_contact_number').val(student.emergency_contact_number);
+
+                $('#english_ability').prop('checked', student.english_ability == 1);
+                $('#minimum_entry_qualification').prop('checked', student.minimum_entry_qualification == 1);
+
+                $('#nic').val(student.nic);
+                $('#passport').val(student.passport);
+                $('#personal_email').val(student.personal_email);
+                $('#bms_email').val(student.bms_email);
+
+                $('#occupation').val(student.occupation);
+                $('#organization').val(student.organization);
+                $('#previous_organization').val(student.previous_organization);
+
+                // Qualifications checkboxes
+                let quals = student.qualifications ? student.qualifications.split(',') : [];
+                $('input[name="qualifications[]"]').prop('checked', false);
+                quals.forEach(function(q) {
+                    $('input[name="qualifications[]"][value="' + q + '"]').prop('checked', true);
+                });
+
+                $('#active').prop('checked', student.active == 1);
+
+                // ======== DISABLE FIELDS IF disabled ========
+                if (disabled == 'disabled') {
+                    $('#studentForm input, #studentForm select, #studentForm textarea').prop('disabled', true);
+                    $('input[name="qualifications[]"]').prop('disabled', true);
+                    $('#sbt_btn').hide();
+                } else {
+                    $('#studentForm input, #studentForm select, #studentForm textarea').prop('disabled', false);
+                    $('input[name="qualifications[]"]').prop('disabled', false);
+                    $('#sbt_btn').show();
+                }
+
+
+                $("#allocateSection").hide(); // CHANGED: hide allocate section when student selected
+                $("#search-results").hide();
+
+            });
+
+            $(document).on("click", ".dropdown-item", function() {
+                var studentCode = $(this).data("id");
+                $("#search").val($(this).text());
+                $("#search-results").hide();
+                $.ajax({
+                    url: "get_student.php",
+                    type: "POST",
+                    data: {
+                        id: studentCode
+                    },
+                    success: function(data) {
+                        var student = JSON.parse(data);
+
+                        // Hide the allocate section
+                        $("#allocateSection").hide(); // or use .css("display","none");
+
+                        var disabled = "<?php echo $disabled_m_d; ?>";
+
+                        // Fill all fields dynamically
+                        for (var key in student) {
+                            var $field = $("#" + key);
+                            $field.val(student[key]).prop("disabled", disabled);
+                            // Trigger change for Select2 dropdowns to update display
+                            if ($field.hasClass('select2')) {
+                                $field.trigger('change');
+                            }
+                        }
+
+                        // Handle checkboxes dynamically
+                        $("#english_ability, #minimum_entry_qualification, #bachelors, #masters, #diploma, #ecm, #al, #pgdip, #ifd, #ol, #active").each(function() {
+                            var id = $(this).attr('id');
+                            if (student[id] !== undefined) $(this).prop("checked", student[id] == 1 || student.qualifications?.includes(id)).prop("disabled", disabled);
+                        });
+                    }
+                });
+            });
+
+            $(document).on("click", function(event) {
+                if (!$(event.target).closest("#search, #search-results").length) {
+                    $("#search-results").hide();
+                }
+            });
+
+        });
+    </script>
+
+    </body>
+
+    </html>

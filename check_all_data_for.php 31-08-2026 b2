@@ -1,0 +1,575 @@
+<?php
+session_start();
+include("database/connection.php");
+include("includes/header.php");
+
+if (!isset($_SESSION['username'])) {
+    echo '<script>window.location.href = "login";</script>';
+    exit();
+}
+
+// ---------------------------- allowed Redirections ---------------------------------------------------------------- 
+// -------- Permission CHECKING TO REDIRECT TO HOME PAGE -------- 
+require_once 'PermissionChecking.php';
+// --------------------------------------------------------------------- 
+// -------------------------------------------------------------------------------------------- 
+
+?>
+
+<div id="wrapper">
+    <?php include("nav.php"); ?>
+    <div id="content-wrapper" class="d-flex flex-column">
+        <div id="content">
+            <?php include("includes/topnav.php"); ?>
+            <div class="p-3">
+                <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                    <h4 class="h4 mb-0 text-gray-800">Check All Data For Student</h4>
+                </div>
+
+                <div class="card mb-5">
+                    <div class="card-header d-flex align-items-center" style="height: 60px;">
+                        <span
+                            class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center"
+                            style="width: 30px; height: 30px;">
+                            <i class="fas fa-search"></i>
+                        </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                        <h6 class="mb-0 me-2 font-weight-bold">Select Student</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="student_select">Student</label>
+                                    <select id="student_select" class="form-control select2">
+                                        <option value="">Select Student</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="student_data_container" style="display: none;">
+                    <!-- Student Basic Info -->
+                    <div class="card mb-5">
+                        <div class="card-header d-flex align-items-center" style="height: 60px;">
+                            <span
+                                class="bg-primary text-white rounded-circle p-2 d-flex align-items-center justify-content-center"
+                                style="width: 30px; height: 30px;">
+                                <i class="fas fa-info-circle"></i>
+                            </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                            <h6 class="mb-0 me-2 font-weight-bold">Student Basic Info (students table)</h6>
+                        </div>
+                        <div class="card-body" id="basic_info_content"></div>
+                    </div>
+
+                    <!-- Programme Allocation -->
+                    <div class="card mb-5">
+                        <div class="card-header d-flex align-items-center" style="height: 60px;">
+                            <span
+                                class="bg-success text-white rounded-circle p-2 d-flex align-items-center justify-content-center"
+                                style="width: 30px; height: 30px;">
+                                <i class="fas fa-graduation-cap"></i>
+                            </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                            <h6 class="mb-0 me-2 font-weight-bold">Programme Allocation (allocate_programme)</h6>
+                        </div>
+                        <div class="card-body" id="allocate_programme_content"></div>
+                    </div>
+
+                    <!-- Payment Plan -->
+                    <div class="card mb-5">
+                        <div class="card-header d-flex align-items-center" style="height: 60px;">
+                            <span
+                                class="bg-info text-white rounded-circle p-2 d-flex align-items-center justify-content-center"
+                                style="width: 30px; height: 30px;">
+                                <i class="fas fa-file-invoice-dollar"></i>
+                            </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                            <h6 class="mb-0 me-2 font-weight-bold">Payment Plan (add_payment_plan_table)</h6>
+                        </div>
+                        <div class="card-body" id="payment_plan_content"></div>
+                    </div>
+
+                    <!-- Installment Summary -->
+                    <div class="card mb-5">
+                        <div class="card-header d-flex align-items-center" style="height: 60px;">
+                            <span
+                                class="bg-warning text-white rounded-circle p-2 d-flex align-items-center justify-content-center"
+                                style="width: 30px; height: 30px;">
+                                <i class="fas fa-calculator"></i>
+                            </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                            <h6 class="mb-0 me-2 font-weight-bold">Installment Summary (installment_payment_table)</h6>
+                        </div>
+                        <div class="card-body" id="installment_payment_content"></div>
+                    </div>
+
+                    <!-- Installment Details -->
+                    <div class="card mb-5">
+                        <div class="card-header d-flex align-items-center" style="height: 60px;">
+                            <span
+                                class="bg-danger text-white rounded-circle p-2 d-flex align-items-center justify-content-center"
+                                style="width: 30px; height: 30px;">
+                                <i class="fas fa-list-ol"></i>
+                            </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                            <h6 class="mb-0 me-2 font-weight-bold">Installment Details (installment_details_table)</h6>
+                        </div>
+                        <div class="card-body" id="installment_details_content"></div>
+                    </div>
+
+                    <!-- Payment Due Info -->
+                    <div class="card mb-5">
+                        <div class="card-header d-flex align-items-center" style="height: 60px;">
+                            <span
+                                class="bg-secondary text-white rounded-circle p-2 d-flex align-items-center justify-content-center"
+                                style="width: 30px; height: 30px;">
+                                <i class="fas fa-clock"></i>
+                            </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                            <h6 class="mb-0 me-2 font-weight-bold">Payment Due Info (payment_due_tables)</h6>
+                        </div>
+                        <div class="card-body" id="payment_due_content"></div>
+                    </div>
+
+                    <!-- Payment Withheld Status -->
+                    <div class="card mb-5">
+                        <div class="card-header d-flex align-items-center" style="height: 60px;">
+                            <span
+                                class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center"
+                                style="width: 30px; height: 30px;">
+                                <i class="fas fa-ban"></i>
+                            </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                            <h6 class="mb-0 me-2 font-weight-bold">Payment Withheld Status (payment_withheld_table)</h6>
+                        </div>
+                        <div class="card-body" id="payment_withheld_content"></div>
+                    </div>
+
+                    <!-- Discount Information -->
+                    <div class="card mb-5">
+                        <div class="card-header d-flex align-items-center" style="height: 60px;">
+                            <span
+                                class="bg-warning text-white rounded-circle p-2 d-flex align-items-center justify-content-center"
+                                style="width: 30px; height: 30px;">
+                                <i class="fas fa-tags"></i>
+                            </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                            <h6 class="mb-0 me-2 font-weight-bold">Discount Information</h6>
+                        </div>
+                        <div class="card-body" id="discount_info_content"></div>
+                    </div>
+
+                    <!-- Payment Wise Info (Transaction Level) -->
+                    <div class="card mb-5">
+                        <div class="card-header d-flex align-items-center" style="height: 60px;">
+                            <span
+                                class="bg-success text-white rounded-circle p-2 d-flex align-items-center justify-content-center"
+                                style="width: 30px; height: 30px;">
+                                <i class="fas fa-receipt"></i>
+                            </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                            <h6 class="mb-0 me-2 font-weight-bold">Payment Wise Info (payment_wise_info)</h6>
+                            <span id="payment_wise_info_total_badge" class="badge badge-success ms-auto" style="font-size: 0.95rem;"></span>
+                        </div>
+                        <div class="card-body" id="payment_wise_info_content"></div>
+                    </div>
+                </div>
+
+                <div id="loading_spinner" class="text-center my-5" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        // Initialize Select2
+        $('#student_select').select2({
+            placeholder: "Search and select a student",
+            allowClear: true,
+            ajax: {
+                url: 'fetch_students_all.php',
+                dataType: 'json',
+                delay: 250,
+                data: function(params) {
+                    return {
+                        search: params.term
+                    };
+                },
+                processResults: function(data) {
+                    return {
+                        results: data
+                    };
+                },
+                cache: true
+            }
+        });
+
+        $('#student_select').on('change', function() {
+            var studentCode = $(this).val();
+            if (studentCode) {
+                fetchStudentAllData(studentCode);
+            } else {
+                $('#student_data_container').hide();
+            }
+        });
+
+        function fetchStudentAllData(studentCode) {
+            $('#loading_spinner').show();
+            $('#student_data_container').hide();
+
+            $.ajax({
+                url: 'fetch_student_complete_data.php',
+                type: 'POST',
+                data: {
+                    student_code: studentCode
+                },
+                dataType: 'json',
+                success: function(response) {
+                    $('#loading_spinner').hide();
+                    if (response.success) {
+                        displayData(response.data);
+                        $('#student_data_container').show();
+                    } else {
+                        alert('Error fetching data: ' + response.message);
+                    }
+                },
+                error: function() {
+                    $('#loading_spinner').hide();
+                    alert('An error occurred while fetching student data.');
+                }
+            });
+        }
+
+        function displayData(data) {
+            // Basic Info
+            var basicInfo = data.students;
+            var basicHtml = '<div class="row">';
+            if (basicInfo) {
+                basicHtml += '<div class="col-md-3 mb-2"><strong>Name:</strong> <span class="text-dark">' + (basicInfo.first_name || '') + ' ' + (basicInfo.last_name || '') + '</span></div>';
+                basicHtml += '<div class="col-md-3 mb-2"><strong>NIC:</strong> ' + (basicInfo.nic || '-') + '</div>';
+                basicHtml += '<div class="col-md-3 mb-2"><strong>Email:</strong> ' + (basicInfo.bms_email || '-') + '</div>';
+                basicHtml += '<div class="col-md-3 mb-2"><strong>Status:</strong> <span class="badge badge-' + (basicInfo.student_status === 'active' ? 'success' : 'secondary') + '">' + (basicInfo.student_status || '-') + '</span></div>';
+                basicHtml += '<div class="col-md-3 mb-2"><strong>Code:</strong> <span class="badge badge-info">' + (basicInfo.student_code || '-') + '</span></div>';
+                basicHtml += '<div class="col-md-3 mb-2"><strong>Contact:</strong> ' + (basicInfo.contact_no || '-') + '</div>';
+                basicHtml += '<div class="col-md-3 mb-2"><strong>Address:</strong> ' + (basicInfo.address || '-') + '</div>';
+            } else {
+                basicHtml += '<div class="col-12 text-danger"><i class="fas fa-exclamation-triangle"></i> No data found in students table</div>';
+            }
+            basicHtml += '</div>';
+            $('#basic_info_content').html(basicHtml);
+
+            // Allocate Programme
+            var alloc = data.allocate_programme;
+            var allocHtml = '<div class="table-responsive"><table class="table table-hover table-sm">';
+            allocHtml += '<thead class="thead-light"><tr><th>Reg ID</th><th>Program Name</th><th>Batch Name</th><th>Status</th><th>By</th></tr></thead><tbody>';
+            if (alloc && alloc.length > 0) {
+                alloc.forEach(function(item) {
+                    var statusClass = item.status === 'active' ? 'text-success' : 'text-danger';
+                    allocHtml += '<tr>';
+                    allocHtml += '<td><strong>' + (item.student_registration_id || '-') + '</strong></td>';
+                    allocHtml += '<td>' + (item.program_name || item.programme_code || '-') + '</td>';
+                    allocHtml += '<td>' + (item.batch_name || item.batch_id || '-') + '</td>';
+                    allocHtml += '<td class="' + statusClass + ' font-weight-bold">' + (item.status || '-') + '</td>';
+                    allocHtml += '<td>' + (item.entered_by || '-') + '</td>';
+                    allocHtml += '</tr>';
+                });
+            } else {
+                allocHtml += '<tr><td colspan="5" class="text-center text-muted">No active allocations found</td></tr>';
+            }
+            allocHtml += '</tbody></table></div>';
+            $('#allocate_programme_content').html(allocHtml);
+
+            // Payment Plan
+            var plan = data.add_payment_plan_table;
+            var planHtml = '<div class="table-responsive"><table class="table table-hover table-sm">';
+            planHtml += '<thead class="thead-light"><tr><th>Prog-Batch</th><th>Reg Fee (LKR)</th><th>Course (LKR)</th><th>Uni (LKR)</th><th>Uni (GBP)</th><th>Uni (USD)</th><th>By</th></tr></thead><tbody>';
+            if (plan && plan.length > 0) {
+                plan.forEach(function(item) {
+                    planHtml += '<tr>';
+                    planHtml += '<td>' + (item.programme_batch || '-') + '</td>';
+                    planHtml += '<td class="text-rights">' + parseFloat(item.registration_fee_LKR || 0).toLocaleString() + '</td>';
+                    planHtml += '<td class="text-rights">' + parseFloat(item.courseFeeLKR_total || 0).toLocaleString() + '</td>';
+                    planHtml += '<td class="text-rights">' + parseFloat(item.university_fee_LKR || 0).toLocaleString() + '</td>';
+                    planHtml += '<td class="text-rights">' + parseFloat(item.university_fee_GBP || 0).toLocaleString() + '</td>';
+                    planHtml += '<td class="text-rights">' + parseFloat(item.university_fee_USD || 0).toLocaleString() + '</td>';
+                    planHtml += '<td>' + (item.entered_by || '-') + '</td>';
+                    planHtml += '</tr>';
+                });
+            } else {
+                planHtml += '<tr><td colspan="7" class="text-center text-muted">No payment plans found</td></tr>';
+            }
+            planHtml += '</tbody></table></div>';
+            $('#payment_plan_content').html(planHtml);
+
+            // Installment Payment
+            var instPay = data.installment_payment_table;
+            var instPayHtml = '<div class="table-responsive"><table class="table table-hover table-sm">';
+            instPayHtml += '<thead class="thead-light"><tr><th>Prog-Batch</th><th>Course Fee</th><th>Reg Fee</th><th>Uni (LKR)</th><th>Uni (GBP)</th><th>Uni (USD)</th></tr></thead><tbody>';
+            if (instPay && instPay.length > 0) {
+                instPay.forEach(function(item) {
+                    instPayHtml += '<tr>';
+                    instPayHtml += '<td>' + (item.programme_batch || '-') + '</td>';
+                    instPayHtml += '<td class="text-rights font-weight-bold text-primary">' + parseFloat(item.coursefee || 0).toLocaleString() + '</td>';
+                    instPayHtml += '<td class="text-rights">' + parseFloat(item.registrationfee || 0).toLocaleString() + '</td>';
+                    instPayHtml += '<td class="text-rights">' + parseFloat(item.unifee_lkr || 0).toLocaleString() + '</td>';
+                    instPayHtml += '<td class="text-rights">' + parseFloat(item.unifee_gbp || 0).toLocaleString() + '</td>';
+                    instPayHtml += '<td class="text-rights">' + parseFloat(item.unifee_usd || 0).toLocaleString() + '</td>';
+                    instPayHtml += '</tr>';
+                });
+            } else {
+                instPayHtml += '<tr><td colspan="6" class="text-center text-muted">No installment payment summary found</td></tr>';
+            }
+            instPayHtml += '</tbody></table></div>';
+            $('#installment_payment_content').html(instPayHtml);
+
+            // Installment Details
+            var details = data.installment_details_table;
+            var detailsHtml = '<div class="table-responsive"><table class="table table-hover table-sm">';
+            detailsHtml += '<thead class="thead-light"><tr><th>#</th><th>Prog-Batch</th><th>Balance Amount</th><th>Original Divided</th><th>Due Date</th></tr></thead><tbody>';
+            if (details && details.length > 0) {
+                details.forEach(function(item) {
+                    var amount = parseFloat(item.installment_amount || 0);
+                    var textClass = amount > 0 ? 'text-danger font-weight-bold' : 'text-success';
+                    detailsHtml += '<tr>';
+                    detailsHtml += '<td>' + (item.installment_numbers || '-') + '</td>';
+                    detailsHtml += '<td><small>' + (item.programme_batch || '-') + '</small></td>';
+                    detailsHtml += '<td class="text-rights ' + textClass + '">' + amount.toLocaleString() + '</td>';
+                    detailsHtml += '<td class="text-rights">' + parseFloat(item.devided_values || 0).toLocaleString() + '</td>';
+                    detailsHtml += '<td>' + (item.due_date || '-') + '</td>';
+                    detailsHtml += '</tr>';
+                });
+            } else {
+                detailsHtml += '<tr><td colspan="5" class="text-center text-muted">No installment details found</td></tr>';
+            }
+            detailsHtml += '</tbody></table></div>';
+            $('#installment_details_content').html(detailsHtml);
+
+            // Payment Due Info
+            var due = data.payment_due_tables;
+            var dueHtml = '<div class="table-responsive"><table class="table table-hover table-sm">';
+            dueHtml += '<thead class="thead-light"><tr><th>Prog-Batch</th><th>Remaining Balance</th><th>BMS Due Count</th><th>Uni Due Count</th><th>Method</th></tr></thead><tbody>';
+            if (due && due.length > 0) {
+                due.forEach(function(item) {
+                    var bmsDue = parseInt(item.due_count_bms_fees || 0);
+                    var uniDue = parseInt(item.due_count_uni_fees || 0);
+                    dueHtml += '<tr>';
+                    dueHtml += '<td>' + (item.programme_batch || '-') + '</td>';
+                    dueHtml += '<td class="text-rights font-weight-bold text-danger">' + parseFloat(item.remaining_full_amount || 0).toLocaleString() + '</td>';
+                    dueHtml += '<td class="text-centers"><span class="badge badge-' + (bmsDue > 0 ? 'danger' : 'success') + '">' + bmsDue + '</span></td>';
+                    dueHtml += '<td class="text-centers"><span class="badge badge-' + (uniDue > 0 ? 'danger' : 'success') + '">' + uniDue + '</span></td>';
+                    dueHtml += '<td>Method ' + (item.payment_method || '-') + '</td>';
+                    dueHtml += '</tr>';
+                });
+            } else {
+                dueHtml += '<tr><td colspan="5" class="text-center text-muted">No data found in payment_due_tables</td></tr>';
+            }
+            dueHtml += '</tbody></table></div>';
+            $('#payment_due_content').html(dueHtml);
+
+            // Withheld Status
+            var withheld = data.payment_withheld_table;
+            var withheldHtml = '<div class="table-responsive"><table class="table table-hover table-sm">';
+            withheldHtml += '<thead class="thead-light"><tr><th>Program Name</th><th>Batch Name</th><th>Payment Status</th><th>BMS Due</th><th>Uni Due</th><th>Last Payment</th></tr></thead><tbody>';
+            if (withheld && withheld.length > 0) {
+                withheld.forEach(function(item) {
+                    var isWithheld = item.payment_status === 'withheld';
+                    var statusClass = isWithheld ? 'badge badge-danger' : 'badge badge-success';
+                    var rowClass = isWithheld ? 'table-danger' : '';
+                    withheldHtml += '<tr class="' + rowClass + '">';
+                    withheldHtml += '<td>' + (item.program_name || item.program_id || '-') + '</td>';
+                    withheldHtml += '<td>' + (item.batch_name || item.batch_id || '-') + '</td>';
+                    withheldHtml += '<td><span class="' + statusClass + ' p-2">' + (item.payment_status || '-').toUpperCase() + '</span></td>';
+                    withheldHtml += '<td class="text-centers">' + (item.due_count_bms_fees || 0) + '</td>';
+                    withheldHtml += '<td class="text-centers">' + (item.due_count_uni_fees || 0) + '</td>';
+                    withheldHtml += '<td>' + (item.last_payment_date || '-') + '</td>';
+                    withheldHtml += '</tr>';
+                });
+            } else {
+                withheldHtml += '<tr><td colspan="6" class="text-center text-muted">No data found in payment_withheld_table</td></tr>';
+            }
+            withheldHtml += '</tbody></table></div>';
+            $('#payment_withheld_content').html(withheldHtml);
+
+            // ============================================================
+            // Discount Information
+            // Sources: 
+            //   1) installment_payment_table.discounted_percentage / dis_yes_no (course fee % discount, per programme_batch)
+            //   2) payment_plan_history (course fee discount type/value history)
+            //   3) payment_plan_regfee_discount (registration fee discount history)
+            // ============================================================
+            var discountHtml = '';
+            var hasAnyDiscount = false;
+
+            // 1) Course Fee % Discount (installment_payment_table)
+            var ipt = data.installment_payment_table;
+            var pctDiscountRows = (ipt || []).filter(function(item) {
+                return (parseInt(item.dis_yes_no || 0) === 1) || (parseFloat(item.discounted_percentage || 0) > 0);
+            });
+            if (pctDiscountRows.length > 0) {
+                hasAnyDiscount = true;
+                discountHtml += '<h6 class="font-weight-bold text-warning mb-2"><i class="fas fa-percentage"></i> Course Fee % Discount</h6>';
+                discountHtml += '<div class="table-responsive mb-4"><table class="table table-hover table-sm">';
+                discountHtml += '<thead class="thead-light"><tr><th>Prog-Batch</th><th>Discount Applied?</th><th>Discounted %</th><th>Course Fee (Total)</th><th>Course Fee (Current)</th><th>Est. Discount Amount</th><th>Balance to Pay</th></tr></thead><tbody>';
+                pctDiscountRows.forEach(function(item) {
+                    var pct = parseFloat(item.discounted_percentage || 0);
+                    var courseFeeTotal = parseFloat(item.coursefee_total || 0);
+                    var courseFeeCurrent = parseFloat(item.coursefee || 0);
+                    var estDiscountAmount = courseFeeTotal * (pct / 100);
+                    var balanceToPay = courseFeeTotal - estDiscountAmount;
+                    discountHtml += '<tr class="table-warning">';
+                    discountHtml += '<td>' + (item.programme_batch || '-') + '</td>';
+                    discountHtml += '<td><span class="badge badge-success">YES</span></td>';
+                    discountHtml += '<td class="font-weight-bold text-danger">' + pct.toFixed(2) + '%</td>';
+                    discountHtml += '<td class="text-rights">' + courseFeeTotal.toLocaleString() + '</td>';
+                    discountHtml += '<td class="text-rights">' + courseFeeCurrent.toLocaleString() + '</td>';
+                    discountHtml += '<td class="text-rights font-weight-bold text-success">' + estDiscountAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</td>';
+                    discountHtml += '<td class="text-rights font-weight-bold text-primary">' + balanceToPay.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</td>';
+                    discountHtml += '</tr>';
+                });
+                discountHtml += '</tbody></table></div>';
+            }
+
+            // 2) Course Fee Discount History (payment_plan_history)
+            var pph = data.payment_plan_history;
+            if (pph && pph.length > 0) {
+                hasAnyDiscount = true;
+                discountHtml += '<h6 class="font-weight-bold text-warning mb-2"><i class="fas fa-history"></i> Course Fee Discount History</h6>';
+                discountHtml += '<div class="table-responsive mb-4"><table class="table table-hover table-sm">';
+                discountHtml += '<thead class="thead-light"><tr><th>Program</th><th>Batch</th><th>Discount Type</th><th>Discount Value</th><th>Remarks</th><th>Updated By</th><th>Date</th></tr></thead><tbody>';
+                pph.forEach(function(item) {
+                    discountHtml += '<tr>';
+                    discountHtml += '<td>' + (item.program_name || item.program_id || '-') + '</td>';
+                    discountHtml += '<td>' + (item.batch_name || item.batch_id || '-') + '</td>';
+                    discountHtml += '<td><span class="badge badge-info">' + (item.discount_type || '-') + '</span></td>';
+                    discountHtml += '<td class="text-rights font-weight-bold text-success">' + parseFloat(item.discount_value || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</td>';
+                    discountHtml += '<td>' + (item.re_marks || '-') + '</td>';
+                    discountHtml += '<td>' + (item.updated_by || '-') + '</td>';
+                    discountHtml += '<td>' + (item.created_at || '-') + '</td>';
+                    discountHtml += '</tr>';
+                });
+                discountHtml += '</tbody></table></div>';
+            }
+
+            // 3) Registration Fee Discount (payment_plan_regfee_discount)
+            var prd = data.payment_plan_regfee_discount;
+            if (prd && prd.length > 0) {
+                hasAnyDiscount = true;
+                discountHtml += '<h6 class="font-weight-bold text-warning mb-2"><i class="fas fa-receipt"></i> Registration Fee Discount</h6>';
+                discountHtml += '<div class="table-responsive mb-2"><table class="table table-hover table-sm">';
+                discountHtml += '<thead class="thead-light"><tr><th>Program</th><th>Batch</th><th>Discount Type</th><th>Discount Value</th><th>Remarks</th><th>Updated By</th><th>Date</th></tr></thead><tbody>';
+                prd.forEach(function(item) {
+                    discountHtml += '<tr>';
+                    discountHtml += '<td>' + (item.program_name || item.program_id || '-') + '</td>';
+                    discountHtml += '<td>' + (item.batch_name || item.batch_id || '-') + '</td>';
+                    discountHtml += '<td><span class="badge badge-info">' + (item.d_type || '-') + '</span></td>';
+                    discountHtml += '<td class="text-rights font-weight-bold text-success">' + parseFloat(item.discount_value || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</td>';
+                    discountHtml += '<td>' + (item.remarks || '-') + '</td>';
+                    discountHtml += '<td>' + (item.updated_by || '-') + '</td>';
+                    discountHtml += '<td>' + (item.created_at || '-') + '</td>';
+                    discountHtml += '</tr>';
+                });
+                discountHtml += '</tbody></table></div>';
+            }
+
+            if (!hasAnyDiscount) {
+                discountHtml = '<div class="text-muted text-center py-3"><i class="fas fa-info-circle"></i> No discounts have been applied for this student.</div>';
+            }
+
+            $('#discount_info_content').html(discountHtml);
+
+            // Payment Wise Info (Transaction Level)
+            var pwi = data.payment_wise_info;
+            var pwiHtml = '<div class="table-responsive"><table class="table table-hover table-sm">';
+            pwiHtml += '<thead class="thead-light"><tr><th>Rcpt No</th><th>Prog-Batch</th><th>Installment</th><th>Amount</th><th>Paid Date</th><th>Type</th><th>Bank</th><th>Status</th><th>Entered By</th></tr></thead><tbody>';
+            var totalPaid = 0;
+            if (pwi && pwi.length > 0) {
+                pwi.forEach(function(item) {
+                    var statusClass = item.status === 'paid' ? 'badge badge-success' : (item.status === 'cancelled' ? 'badge badge-danger' : 'badge badge-warning');
+                    var rowClass = item.status === 'cancelled' ? 'table-danger' : '';
+                    var amount = parseFloat(item.paymentAmount || 0);
+
+                    // Only count towards the total if the payment is actually "paid" (exclude cancelled/pending)
+                    if (item.status === 'paid') {
+                        totalPaid += amount;
+                    }
+
+                    pwiHtml += '<tr class="' + rowClass + '">';
+                    pwiHtml += '<td>' + (item.rcpt_number || '-') + '</td>';
+                    pwiHtml += '<td><small>' + (item.program_batch || '-') + '</small></td>';
+                    pwiHtml += '<td>' + (item.installmentNumber || '-') + '</td>';
+                    pwiHtml += '<td class="text-rights font-weight-bold text-primary">' + amount.toLocaleString() + '</td>';
+                    pwiHtml += '<td>' + (item.paid_date || '-') + '</td>';
+                    pwiHtml += '<td>' + (item.payment_type || '-') + '</td>';
+                    pwiHtml += '<td>' + (item.bank_name || '-') + '</td>';
+                    pwiHtml += '<td><span class="' + statusClass + '">' + (item.status || '-').toUpperCase() + '</span></td>';
+                    pwiHtml += '<td>' + (item.entered_by || '-') + '</td>';
+                    pwiHtml += '</tr>';
+                    if (item.status === 'cancelled' && item.cancellation_reason) {
+                        pwiHtml += '<tr class="table-light"><td colspan="9"><small class="text-muted"><i class="fas fa-info-circle"></i> Cancelled by ' + (item.cancelled_by || '-') + ' at ' + (item.cancelled_at || '-') + ' — Reason: ' + item.cancellation_reason + '</small></td></tr>';
+                    }
+                });
+                // Total row (sum of "paid" status rows only)
+                pwiHtml += '<tr class="table-secondary font-weight-bold">';
+                pwiHtml += '<td colspan="3" class="text-right">Total Paid Amount:</td>';
+                pwiHtml += '<td class="text-rights text-success">' + totalPaid.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</td>';
+                pwiHtml += '<td colspan="5"></td>';
+                pwiHtml += '</tr>';
+            } else {
+                pwiHtml += '<tr><td colspan="9" class="text-center text-muted">No payment transactions found in payment_wise_info</td></tr>';
+            }
+            pwiHtml += '</tbody></table></div>';
+
+            // Course Fee vs Registration Fee breakdown (from add_payment_plan_table)
+            // Each row can be in LKR, GBP, or USD — detect the correct currency per programme_batch
+            // rather than summing different currencies together.
+            function getPlanFeeInfo(item) {
+                if (parseFloat(item.courseFeeLKR_total || 0) > 0 || parseFloat(item.registration_fee_LKR || 0) > 0) {
+                    return { currency: 'LKR', courseFeeTotal: parseFloat(item.courseFeeLKR_total || 0), registrationFee: parseFloat(item.registration_fee_LKR || 0) };
+                }
+                if (parseFloat(item.courseFeeGBP_total || 0) > 0 || parseFloat(item.registration_fee_GBP || 0) > 0) {
+                    return { currency: 'GBP', courseFeeTotal: parseFloat(item.courseFeeGBP_total || 0), registrationFee: parseFloat(item.registration_fee_GBP || 0) };
+                }
+                if (parseFloat(item.courseFeeUSD_total || 0) > 0 || parseFloat(item.registration_fee_USD || 0) > 0) {
+                    return { currency: 'USD', courseFeeTotal: parseFloat(item.courseFeeUSD_total || 0), registrationFee: parseFloat(item.registration_fee_USD || 0) };
+                }
+                return { currency: '-', courseFeeTotal: 0, registrationFee: 0 };
+            }
+
+            var planRows = data.add_payment_plan_table || [];
+            var feeBreakdownHtml = '<div class="table-responsive mt-3"><table class="table table-hover table-sm">';
+            feeBreakdownHtml += '<thead class="thead-light"><tr><th>Prog-Batch</th><th>Currency</th><th>Total Course Fee</th><th>Registration Fee</th></tr></thead><tbody>';
+            if (planRows.length > 0) {
+                planRows.forEach(function(item) {
+                    var feeInfo = getPlanFeeInfo(item);
+                    feeBreakdownHtml += '<tr>';
+                    feeBreakdownHtml += '<td>' + (item.programme_batch || '-') + '</td>';
+                    feeBreakdownHtml += '<td><span class="badge badge-secondary">' + feeInfo.currency + '</span></td>';
+                    feeBreakdownHtml += '<td class="text-rights font-weight-bold text-info">' + feeInfo.courseFeeTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</td>';
+                    feeBreakdownHtml += '<td class="text-rights font-weight-bold text-info">' + feeInfo.registrationFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</td>';
+                    feeBreakdownHtml += '</tr>';
+                });
+            } else {
+                feeBreakdownHtml += '<tr><td colspan="4" class="text-center text-muted">No payment plan found in add_payment_plan_table</td></tr>';
+            }
+            feeBreakdownHtml += '</tbody></table></div>';
+            pwiHtml += feeBreakdownHtml;
+
+            $('#payment_wise_info_content').html(pwiHtml);
+            $('#payment_wise_info_total_badge').text('Total Paid: ' + totalPaid.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+        }
+    });
+</script>
+
+<?php
+// include("includes/footer.php"); // Assuming footer is handled by header or at bottom
+?>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/js/select2.min.js"></script>
+<script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+
+</body>
+
+</html>

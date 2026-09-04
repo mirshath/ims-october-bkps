@@ -1,0 +1,477 @@
+$(function () {
+  var cart = {};
+  var catalog = {};
+  var taxRate = 0.0;
+
+  // Build catalog from product grid
+  $("#product-grid .product-img").each(function () {
+    var $e = $(this);
+    catalog[$e.data("name")] = {
+      id: $e.data("id"),
+      name: $e.data("name"),
+      price: parseFloat($e.data("price")),
+      stock: parseInt($e.data("stock"), 10),
+      image: $e.data("image"),
+    };
+  });
+
+  // Add item to cart
+  function addItem(p) {
+    var id = p.id;
+    if (!cart[id]) {
+      cart[id] = {
+        key: id,
+        id: id,
+        name: p.name,
+        price: parseFloat(p.price),
+        stock: parseInt(p.stock, 10),
+        qty: 1,
+        image: p.image,
+        free: false,
+      };
+    } else {
+      if (cart[id].qty < cart[id].stock) {
+        cart[id].qty += 1;
+      } else {
+        showTempMessage("Maximum stock reached for " + p.name, "danger");
+      }
+    }
+    render();
+  }
+
+  // Remove item from cart
+  function removeItem(key) {
+    delete cart[key];
+    render();
+  }
+
+  // Update item quantity
+  function updateQuantity(key, qty) {
+    var item = cart[key];
+    if (!item) return;
+    if (item.free) return;
+    qty = parseInt(qty, 10);
+    if (isNaN(qty) || qty < 1) qty = 1;
+    if (qty > item.stock) {
+      qty = item.stock;
+      showTempMessage("Adjusted to available stock for " + item.name, "danger");
+    }
+    item.qty = qty;
+    render();
+  }
+
+  // Adjust quantity by delta
+  function adjustQuantity(key, delta) {
+    var item = cart[key];
+    if (!item || item.free) return;
+    var next = item.qty + delta;
+    if (next < 1) next = 1;
+    if (next > item.stock) {
+      next = item.stock;
+      showTempMessage("Adjusted to available stock for " + item.name, "danger");
+    }
+    if (next !== item.qty) {
+      item.qty = next;
+      render();
+    }
+  }
+
+  // Apply promotional free items - THIS DOES NOT BLOCK CHECKOUT
+  function applyPromotions() {
+    var tumbler = findPaidByContains("tumbler") || findPaidByContains("vacuum");
+    var teddy = findPaidByContains("teddy");
+    var penInfo = findCatalogByContains("pen");
+    var paidPen = findPaidByContains("pen");
+    var freeId = penInfo ? penInfo.id : null;
+    var freeQty = 0;
+
+    // Promotion: 1 free pen per tumbler
+    if (tumbler && tumbler.qty >= 1) {
+      freeQty += tumbler.qty;
+    }
+
+    // Promotion: 1 free pen per teddy (starting from 2 teddies)
+    if (teddy && teddy.qty >= 2) {
+      freeQty += teddy.qty;
+    }
+
+    var paidPenQty = paidPen ? paidPen.qty : 0;
+
+    if (freeId && penInfo) {
+      var available = penInfo.stock - paidPenQty;
+
+      // Limit free pens to available stock, but DON'T show any message
+      if (freeQty > available) {
+        freeQty = available;
+      }
+
+      var freeKey = "__free_" + freeId;
+      var freeItem = cart[freeKey];
+
+      if (freeQty > 0) {
+        if (!freeItem) {
+          cart[freeKey] = {
+            key: freeKey,
+            id: freeId,
+            name: "Wooden Pen (Free)",
+            price: 0,
+            stock: penInfo.stock,
+            qty: freeQty,
+            image: penInfo.image,
+            free: true,
+          };
+        } else {
+          freeItem.qty = freeQty;
+        }
+      } else {
+        if (freeItem) delete cart[freeKey];
+      }
+    }
+  }
+
+  // Find paid item by name contains
+  function findPaidByContains(term) {
+    term = String(term).toLowerCase();
+    var item = null;
+    Object.values(cart).forEach(function (i) {
+      if (!i.free && String(i.name).toLowerCase().indexOf(term) >= 0) {
+        item = i;
+      }
+    });
+    return item;
+  }
+
+  // Find catalog item by name contains
+  function findCatalogByContains(term) {
+    term = String(term).toLowerCase();
+    var found = null;
+    Object.keys(catalog).forEach(function (k) {
+      if (String(k).toLowerCase().indexOf(term) >= 0) {
+        found = catalog[k];
+      }
+    });
+    return found;
+  }
+
+  // Main render function
+  function render() {
+    applyPromotions();
+    renderCart();
+    renderTotals();
+    renderSummary();
+  }
+
+  // Render cart items
+  function renderCart() {
+    var $list = $("#cart-list");
+    $list.empty();
+
+    Object.values(cart).forEach(function (item) {
+      var li = $(
+        '<li class="list-group-item d-flex align-items-center justify-content-between"></li>'
+      );
+
+      var left = $('<div class="d-flex align-items-center gap-2"></div>');
+      left.append(
+        $("<img>")
+          .attr("src", item.image)
+          .addClass("cart-thumb")
+          .css({ width: "50px", height: "50px", objectFit: "cover" })
+      );
+
+      var meta = $('<div class="d-flex flex-column"></div>');
+      meta.append($('<div class="fw-semibold"></div>').text(item.name));
+      meta.append(
+        $('<div class="text-muted small"></div>').text(
+          "LKR " + format(item.price)
+        )
+      );
+      left.append(meta);
+
+      var right = $('<div class="d-flex align-items-center gap-2"></div>');
+
+      var qtyGroup = $(
+        '<div class="input-group input-group-sm" style="width:130px;"></div>'
+      );
+      var minusBtn = $(
+        '<button type="button" class="btn btn-outline-secondary">-</button>'
+      );
+      var qtyInput = $('<input type="number" class="form-control text-center">')
+        .attr("min", 1)
+        .attr("max", item.stock)
+        .val(item.qty);
+      var plusBtn = $(
+        '<button type="button" class="btn btn-outline-secondary">+</button>'
+      );
+
+      if (item.free) {
+        minusBtn.prop("disabled", true);
+        plusBtn.prop("disabled", true);
+        qtyInput.prop("disabled", true);
+      } else {
+        minusBtn.on("click", function () {
+          adjustQuantity(item.key, -1);
+        });
+        plusBtn.on("click", function () {
+          adjustQuantity(item.key, 1);
+        });
+        qtyInput.on("change", function () {
+          updateQuantity(item.key, $(this).val());
+        });
+      }
+
+      qtyGroup.append(minusBtn, qtyInput, plusBtn);
+
+      var subtotal = $('<div class="fw-semibold"></div>').text(
+        "LKR " + format(item.price * item.qty)
+      );
+
+      var removeBtn = $(
+        '<button class="btn btn-outline-danger btn-sm touch-target">Remove</button>'
+      ).on("click", function () {
+        removeItem(item.key);
+      });
+
+      right.append(qtyGroup).append(subtotal).append(removeBtn);
+      li.append(left).append(right);
+      $list.append(li.hide().fadeIn(150));
+    });
+
+    if ($list.children().length === 0) {
+      $list.append(
+        '<li class="list-group-item text-center text-muted">No items in cart</li>'
+      );
+    }
+  }
+
+  // Render summary items
+  function renderSummary() {
+    var $wrap = $("#summary-items");
+    $wrap.empty();
+
+    Object.values(cart).forEach(function (item) {
+      var row = $('<div class="d-flex justify-content-between"></div>');
+      row.append($("<div></div>").text(item.name + " × " + item.qty));
+      row.append($("<div></div>").text("LKR " + format(item.price * item.qty)));
+      $wrap.append(row);
+    });
+  }
+
+  // Render totals
+  function renderTotals() {
+    var subtotal = Object.values(cart).reduce(function (acc, it) {
+      return acc + it.price * it.qty;
+    }, 0);
+    var tax = subtotal * taxRate;
+    var grand = subtotal + tax;
+
+    $("#subtotal").text("LKR " + format(subtotal));
+    $("#tax").text("LKR " + format(tax));
+    $("#grand-total").text("LKR " + format(grand));
+  }
+
+  // Format number to 2 decimals
+  function format(n) {
+    return parseFloat(n).toFixed(2);
+  }
+
+  // Show temporary message
+  function showTempMessage(msg, type) {
+    var $alert = $("#cart-alert");
+    $alert.removeClass("text-danger text-success text-warning text-info");
+
+    if (type === "success") {
+      $alert.addClass("text-success").text("✓ " + msg);
+    } else if (type === "danger") {
+      $alert.addClass("text-danger").text(msg);
+    } else if (type === "warning") {
+      $alert.addClass("text-warning").text("⚠️ " + msg);
+    } else {
+      $alert.addClass("text-info").text("ℹ️ " + msg);
+    }
+
+    setTimeout(function () {
+      $alert.text("").removeClass();
+    }, 4000);
+  }
+
+  // Get checkout payload - ONLY PAID ITEMS
+  function getPayload() {
+    var paidItems = Object.values(cart).filter(function (i) {
+      return !i.free;
+    });
+
+    var subtotal = paidItems.reduce(function (acc, i) {
+      return acc + i.price * i.qty;
+    }, 0);
+
+    var tax = subtotal * taxRate;
+    var grand = subtotal + tax;
+
+    return {
+      items: paidItems.map(function (i) {
+        return {
+          id: i.id,
+          name: i.name,
+          price: i.price,
+          qty: i.qty,
+        };
+      }),
+      totals: {
+        subtotal: parseFloat(subtotal.toFixed(2)),
+        tax: parseFloat(tax.toFixed(2)),
+        grand_total: parseFloat(grand.toFixed(2)),
+      },
+    };
+  }
+
+  // Add to cart from product image click
+  $("#product-grid").on("click", ".product-img", function () {
+    var $el = $(this);
+    addItem({
+      id: $el.data("id"),
+      name: $el.data("name"),
+      price: $el.data("price"),
+      stock: $el.data("stock"),
+      image: $el.data("image"),
+    });
+  });
+
+  // Add to cart from button click
+  $("#product-grid").on("click", ".add-to-cart-btn", function () {
+    var $el = $(this);
+    addItem({
+      id: $el.data("id"),
+      name: $el.data("name"),
+      price: $el.data("price"),
+      stock: $el.data("stock"),
+      image: $el.data("image"),
+    });
+  });
+
+  // Checkout button handler - ALWAYS PURCHASES PAID ITEMS
+  $("#checkout-btn").on("click", function () {
+    // Count only PAID items (not free items)
+    var paidItemsCount = Object.values(cart).filter(function (i) {
+      return !i.free;
+    }).length;
+
+    if (paidItemsCount === 0) {
+      showTempMessage("Please add items to cart before checkout", "danger");
+      $("#checkout-status")
+        .removeClass()
+        .addClass("text-danger")
+        .text("Cart is empty");
+      return;
+    }
+
+    // Clear all previous messages
+    $("#cart-alert").text("").removeClass();
+    $("#checkout-status").text("").removeClass();
+
+    // Show processing
+    $("#checkout-status").addClass("text-muted").text("Processing purchase...");
+    $("#checkout-btn").prop("disabled", true).text("Processing...");
+
+    var payload = getPayload();
+
+    console.log("=== CHECKOUT STARTED ===");
+    console.log("Payload being sent:", JSON.stringify(payload, null, 2));
+
+    $.ajax({
+      url: "checkout.php",
+      method: "POST",
+      data: JSON.stringify(payload),
+      contentType: "application/json",
+      dataType: "json",
+      timeout: 15000,
+    })
+      .done(function (res) {
+        console.log("=== SERVER RESPONSE ===");
+        console.log(res);
+
+        if (res && res.success) {
+          // SUCCESS - Purchase completed
+          $("#checkout-status")
+            .removeClass()
+            .addClass("text-success")
+            .text("✓ Purchase completed successfully!");
+
+          showTempMessage(
+            "Order #" + res.order_id + " placed successfully!",
+            "success"
+          );
+
+          // Try to open receipt
+          try {
+            var receiptWindow = window.open(
+              "receipt.php?order_id=" + encodeURIComponent(res.order_id),
+              "_blank",
+              "width=400,height=600"
+            );
+            if (!receiptWindow) {
+              console.log("Popup was blocked by browser");
+            }
+          } catch (e) {
+            console.log("Error opening receipt:", e);
+          }
+
+          // Clear the cart
+          cart = {};
+          render();
+
+          // Re-enable button
+          $("#checkout-btn").prop("disabled", false).text("Complete Purchase");
+
+          // Clear success message after 5 seconds
+          setTimeout(function () {
+            $("#checkout-status").text("").removeClass();
+            window.location.href = "index.php";
+          }, 3000);
+        } else {
+          // Server returned error
+          var errorMsg =
+            res && res.message ? res.message : "Purchase failed - server error";
+          console.error("Server error:", errorMsg);
+
+          $("#checkout-status")
+            .removeClass()
+            .addClass("text-danger")
+            .text("❌ " + errorMsg);
+
+          showTempMessage(errorMsg, "danger");
+          $("#checkout-btn").prop("disabled", false).text("Complete Purchase");
+        }
+      })
+      .fail(function (xhr, status, error) {
+        console.error("=== AJAX ERROR ===");
+        console.error("Status:", status);
+        console.error("Error:", error);
+        console.error("XHR:", xhr);
+
+        var errorMsg = "Unable to complete purchase. ";
+
+        if (status === "timeout") {
+          errorMsg += "Request timed out - server is slow.";
+        } else if (xhr.status === 404) {
+          errorMsg += "checkout.php not found (404).";
+        } else if (xhr.status === 500) {
+          errorMsg += "Server error (500).";
+        } else if (status === "parsererror") {
+          errorMsg += "Server returned invalid data.";
+        } else if (status === "error" && xhr.status === 0) {
+          errorMsg += "Network connection failed or CORS blocked.";
+        } else {
+          errorMsg += "Error code: " + xhr.status;
+        }
+
+        $("#checkout-status")
+          .removeClass()
+          .addClass("text-danger")
+          .text("❌ " + errorMsg);
+
+        showTempMessage(errorMsg, "danger");
+        $("#checkout-btn").prop("disabled", false).text("Complete Purchase");
+      });
+  });
+});

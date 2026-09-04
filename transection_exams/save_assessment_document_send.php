@@ -1,0 +1,195 @@
+<?php
+// Include your database connection
+include("../database/connection.php");
+
+// Start session if not already started
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Check if user is logged in
+if (!isset($_SESSION['username'])) {
+    header("Location: ../login.php");
+    exit();
+}
+
+// Get the current user
+$entered_by = $_SESSION['username'];
+
+// Check if form was submitted
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Get form data
+    $programme_id = $_POST['programme_id'];
+    $batch_id = $_POST['batch_id'];
+    $module_id = $_POST['module_id'];
+    $year_id = $_POST['year_id'];
+    $semester_id = $_POST['semester_id'];
+    $main_component_id = $_POST['main_component_id'];
+    $sub_component_id = isset($_POST['sub_component_id']) && !empty($_POST['sub_component_id']) ? $_POST['sub_component_id'] : null;
+
+    // Format the datetime correctly for MySQL
+    // $assessment_date = date('Y-m-d H:i:s', strtotime($_POST['assessment_date']));
+
+    $description = $_POST['description'];
+    $subject_body = $_POST['subject_body'] ?? '';
+
+    // Process file uploads
+    $attachments = [];
+    for ($i = 1; $i <= 4; $i++) {
+        $attachment_key = "attachment_" . $i;
+        $remove_key = "remove_attachment_" . $i;
+        $attachments[$attachment_key] = null;
+
+        // Check if we're removing this attachment
+        if (isset($_POST[$remove_key]) && $_POST[$remove_key] == '1') {
+            // If we're removing the attachment, set it to null
+            $attachments[$attachment_key] = null;
+
+            // If we're editing and there's an existing file, we could delete it from the server here
+            if (isset($_POST['id']) && !empty($_POST['id'])) {
+                $query = "SELECT $attachment_key FROM save_assessment_document_send WHERE id = ?";
+                $stmt = $conn->prepare($query);
+                $stmt->bind_param("i", $_POST['id']);
+                $stmt->execute();
+                $stmt->bind_result($existing_attachment);
+                $stmt->fetch();
+                $stmt->close();
+
+                // Optionally delete the file from the server
+                if (!empty($existing_attachment)) {
+                    $file_path = "../uploads_exam_document_assessments/" . $existing_attachment;
+                    if (file_exists($file_path)) {
+                        unlink($file_path);
+                    }
+                }
+            }
+        }
+        // Check if a file was uploaded
+        else if (isset($_FILES[$attachment_key]) && $_FILES[$attachment_key]['error'] == 0) {
+            $file_name = $_FILES[$attachment_key]['name'];
+            $file_tmp = $_FILES[$attachment_key]['tmp_name'];
+            $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+
+            // Generate a unique file name
+            $new_file_name = uniqid() . '_' . $file_name;
+            $upload_path = "../uploads_exam_assessments/" . $new_file_name;
+
+            // Move the uploaded file
+            if (move_uploaded_file($file_tmp, $upload_path)) {
+                $attachments[$attachment_key] = $new_file_name;
+            }
+        }
+        // If editing and no new file was uploaded and not removing, keep the existing file
+        else if (isset($_POST['id']) && !empty($_POST['id'])) {
+            $query = "SELECT $attachment_key FROM save_assessment_document_send WHERE id = ?";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("i", $_POST['id']);
+            $stmt->execute();
+            $stmt->bind_result($existing_attachment);
+            $stmt->fetch();
+            $stmt->close();
+
+            $attachments[$attachment_key] = $existing_attachment;
+        }
+    }
+
+    // Check if we're updating an existing record or creating a new one
+    if (isset($_POST['id']) && !empty($_POST['id'])) {
+        // Update existing record
+        $id = $_POST['id'];
+
+        $query = "UPDATE save_assessment_document_send SET 
+          programme_id = ?, 
+          batch_id = ?, 
+          module_id = ?, 
+          year_id = ?, 
+          semester_id = ?, 
+          main_component_id = ?, 
+          sub_component_id = ?, 
+          subject_body = ?,
+          description = ?, 
+          attachment_1 = ?, 
+          attachment_2 = ?, 
+          attachment_3 = ?, 
+          attachment_4 = ?, 
+          entered_by = ? 
+          WHERE id = ?";
+
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param(
+            "iiisssisssssssi",
+            $programme_id,
+            $batch_id,
+            $module_id,
+            $year_id,
+            $semester_id,
+            $main_component_id,
+            $sub_component_id,
+            $subject_body,
+            $description,
+            $attachments['attachment_1'],
+            $attachments['attachment_2'],
+            $attachments['attachment_3'],
+            $attachments['attachment_4'],
+            $entered_by,
+            $id
+        );
+    } else {
+        // Insert new record
+        $query = "INSERT INTO save_assessment_document_send (
+          programme_id, 
+          batch_id, 
+          module_id, 
+          year_id, 
+          semester_id, 
+          main_component_id, 
+          sub_component_id, 
+          subject_body,
+          description, 
+          attachment_1, 
+          attachment_2, 
+          attachment_3, 
+          attachment_4, 
+          entered_by, 
+          created_at
+        ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param(
+            "iiississssssss",
+            $programme_id,
+            $batch_id,
+            $module_id,
+            $year_id,
+            $semester_id,
+            $main_component_id,
+            $sub_component_id,
+            $subject_body,
+            $description,
+            $attachments['attachment_1'],
+            $attachments['attachment_2'],
+            $attachments['attachment_3'],
+            $attachments['attachment_4'],
+            $entered_by
+        );
+    }
+
+    // Execute the query
+    if ($stmt->execute()) {
+        // Set a session message for success
+        $_SESSION['message'] = "Assessment Document added/updated successfully.";
+        // Redirect back to the exams page
+        header("Location: ../assesmentDocumentSend.php");
+        exit();
+    } else {
+        // Redirect back to the exams page with an error message
+        header("Location: ../assesmentDocumentSend.php?error=1&msg=" . urlencode($stmt->error));
+        exit();
+    }
+
+    $stmt->close();
+} else {
+    // If not a POST request, redirect to the exams page
+    header("Location: ../assesmentDocumentSend.php");
+    exit();
+}

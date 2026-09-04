@@ -1,0 +1,38 @@
+<?php
+include("database/connection.php");
+
+if (isset($_POST['program_code'])) {
+    $program_code = mysqli_real_escape_string($conn, $_POST['program_code']);
+
+    $query = "SELECT * FROM program_table WHERE program_code = '$program_code'";
+    $result = mysqli_query($conn, $query);
+
+    if ($result && mysqli_num_rows($result) > 0) {
+        $data = mysqli_fetch_assoc($result);
+
+        // Make sure to return the payment_method value
+        $response = array(
+            'program_code' => $data['program_code'],
+            'university_id' => $data['university_id'],
+            'program_name' => $data['program_name'],
+            'prog_code' => $data['prog_code'],
+            'coordinator_name' => $data['coordinator_name'],
+            'medium' => $data['medium'],
+            'duration' => $data['duration'],
+            'course_fee_lkr' => $data['course_fee_lkr'],
+            'course_fee_gbp' => $data['course_fee_gbp'],
+            'course_fee_usd' => $data['course_fee_usd'],
+            'course_fee_euro' => $data['course_fee_euro'],
+            'payment_method' => $data['payment_method'], // This should match the option values
+            'entry_requirements' => $data['entry_requirement'],
+            'result_method' => $data['result_method'],
+            'cetegory' => $data['cetegory'] // Add category
+        );
+
+        echo json_encode($response);
+    } else {
+        echo json_encode(array('error' => 'Program not found'));
+    }
+} else {
+    echo json_encode(array('error' => 'No program code provided'));
+}

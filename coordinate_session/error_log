@@ -1,0 +1,15 @@
+[10-Mar-2026 05:20:11 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Table 'bmsims_octomber_3.tutor_session' doesn't exist in /home/bmsims/public_html/coordinate_session/fetch_sessions_by_program.php:8
+Stack trace:
+#0 /home/bmsims/public_html/coordinate_session/fetch_sessions_by_program.php(8): mysqli->query()
+#1 {main}
+  thrown in /home/bmsims/public_html/coordinate_session/fetch_sessions_by_program.php on line 8
+[10-Mar-2026 05:20:13 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Table 'bmsims_octomber_3.tutor_allocate' doesn't exist in /home/bmsims/public_html/coordinate_session/fetch_all_students_cards.php:64
+Stack trace:
+#0 /home/bmsims/public_html/coordinate_session/fetch_all_students_cards.php(64): mysqli->query()
+#1 {main}
+  thrown in /home/bmsims/public_html/coordinate_session/fetch_all_students_cards.php on line 64
+[10-Mar-2026 05:20:13 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Table 'bmsims_octomber_3.tutor_allocate' doesn't exist in /home/bmsims/public_html/coordinate_session/fetch_students.php:110
+Stack trace:
+#0 /home/bmsims/public_html/coordinate_session/fetch_students.php(110): mysqli->query()
+#1 {main}
+  thrown in /home/bmsims/public_html/coordinate_session/fetch_students.php on line 110

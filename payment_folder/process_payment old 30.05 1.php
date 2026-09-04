@@ -1,0 +1,234 @@
+<?php
+session_start();
+$Session_username = $_SESSION['username'];
+// Include database connection
+include '../database/connection.php';
+
+// Initialize POST variables with default values if not set
+$studentId = $_POST['studentId'] ?? null;
+$studentName = $_POST['studentName'] ?? '';
+$programmeBatch = $_POST['programmeBatch'] ?? '';
+$totalPayment = $_POST['totalPayment'] ?? '';
+$initialPayment = $_POST['initialPayment'] ?? null;
+$installments = $_POST['installments'] ?? null;
+$USDfeeAmount = $_POST['USDfeeAmount'] ?? null;
+$USDexchangeRate = $_POST['USDexchangeRate'] ?? null;
+$paymentLKRValue = $_POST['paymentLKRValue'] ?? null;
+$CRC = $_POST['CRC'] ?? null;
+$paidDate = $_POST['paidDate'] ?? null;
+$paymentType = $_POST['paymentType'] ?? '';
+$bankName = $_POST['bankName'] ?? '';
+$paymentDate = $_POST['paymentDate'] ?? null;
+$receiptNumber = $_POST['receiptNumber'] ?? null;
+
+
+// Check if any required data is provided (not empty or NULL)
+if (
+    $studentId || $studentName || $programmeBatch ||
+    $totalPayment || $initialPayment || $installments ||
+    $USDfeeAmount || $USDexchangeRate || $paymentLKRValue
+    || $CRC || $paidDate || $paymentType
+    || $bankName || $paymentDate || $receiptNumber
+) {
+    // Begin MySQL transaction
+    $conn->begin_transaction();
+
+    try {
+        // ---------------------------------------- PAYMENT UNI FEE INSERT AND UPDATE  USD AND GBP ----------------------------------------
+        if (!empty($USDfeeAmount) && !empty($USDexchangeRate) && !empty($paymentLKRValue)) {
+
+            $currencyType = isset($CRC) ? array_keys($CRC)[0] : '';  // Check for currency type (e.g. "USD")
+            $paidAmount = $USDfeeAmount;
+            $exchangeRate = $USDexchangeRate;
+            $LKRmoney = $paymentLKRValue;
+            $enteredBy = $Session_username;
+
+            // Insert payment record
+            $sql = "INSERT INTO payment_uni_fee (student_id, program_batch, currency_type, paid_amount, exchange_rate, LKR_money, paid_date, payment_type, bank_name, card_bank_deposit_dt, entered_by, entered_date) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("issdissssss", $studentId, $programmeBatch, $currencyType, $paidAmount, $exchangeRate, $LKRmoney, $paidDate, $paymentType, $bankName, $paymentDate, $enteredBy);
+
+            if (!$stmt->execute()) {
+                throw new Exception("Error inserting into payment_uni_fee: " . $stmt->error);
+            }
+
+            // Update the installment table based on currency type
+            if ($currencyType == 'USD') {
+                $updateQuery = "UPDATE installment_payment_table 
+                                SET unifee_usd = GREATEST(0, unifee_usd - ?) 
+                                WHERE student_id = ? AND programme_batch = ?";
+                $updateStmt = $conn->prepare($updateQuery);
+                $updateStmt->bind_param("dis", $paidAmount, $studentId, $programmeBatch);
+            } else if ($currencyType == 'GBP') {
+                $updateQuery = "UPDATE installment_payment_table 
+                                SET unifee_gbp = GREATEST(0, unifee_gbp - ?) 
+                                WHERE student_id = ? AND programme_batch = ?";
+                $updateStmt = $conn->prepare($updateQuery);
+                $updateStmt->bind_param("dis", $paidAmount, $studentId, $programmeBatch);
+            }
+
+            if (!$updateStmt->execute()) {
+                throw new Exception("Error updating installment_payment_table: " . $updateStmt->error);
+            }
+        }
+        // ---------------------------------------- PAYMENT UNI FEE INSERT AND UPDATE  USD AND GBP ----------------------------------------
+
+        // Process Installments (loop through installment array)
+        if ($installments) {
+            $totalInstallments = 0;
+
+            foreach ($installments as $installment) {
+                $installmentNumber = isset($installment['installmentNumber']) ? $installment['installmentNumber'] : '';
+                $paymentAmount = isset($installment['paymentAmount']) ? $installment['paymentAmount'] : 0;
+
+                $totalInstallments += $paymentAmount;
+
+                // Fetch current installment amount
+                $query = "SELECT installment_amount FROM installment_details_table 
+                          WHERE student_id = ? AND programme_batch = ? AND installment_numbers = ?";
+                $stmt = $conn->prepare($query);
+                $stmt->bind_param("sss", $studentId, $programmeBatch, $installmentNumber);
+                $stmt->execute();
+                $result = $stmt->get_result();
+
+                if ($row = $result->fetch_assoc()) {
+                    // Calculate remaining amount: current DB value - entered payment
+                    $currentAmount = $row['installment_amount'];
+                    $newAmount = $currentAmount - $paymentAmount;
+
+                    // Update the installment amount
+                    $updateQuery = "UPDATE installment_details_table 
+                                    SET installment_amount = ? 
+                                    WHERE student_id = ? AND programme_batch = ? AND installment_numbers = ?";
+                    $updateStmt = $conn->prepare($updateQuery);
+                    $updateStmt->bind_param("dsss", $newAmount, $studentId, $programmeBatch, $installmentNumber);
+
+                    if (!$updateStmt->execute()) {
+                        throw new Exception("Error updating installment: " . $updateStmt->error);
+                    }
+                }
+
+                // Insert data into payment_wise_info for each installment
+                $insertQuery = "INSERT INTO payment_wise_info 
+                        (student_id, program_batch, installmentNumber, paymentAmount, paid_date, payment_type, bank_name, card_bank_deposit_dt, entered_by, rcpt_number) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                $insertStmt = $conn->prepare($insertQuery);
+                $enteredBy = $Session_username;
+
+                $insertStmt->bind_param(
+                    "issdssssss",
+                    $studentId,
+                    $programmeBatch,
+                    $installmentNumber,
+                    $paymentAmount,
+                    $paidDate,
+                    $paymentType,
+                    $bankName,
+                    $paymentDate,
+                    $enteredBy,
+                    $receiptNumber
+                );
+
+                if (!$insertStmt->execute()) {
+                    throw new Exception("Error inserting into payment_wise_info: " . $insertStmt->error);
+                }
+            }
+        }
+
+        // Check if the course fee and initial fee exist before updating
+        $idQuery = "SELECT installment_payment_table_id  FROM installment_details_table 
+                     WHERE student_id = ? AND programme_batch = ?";
+        $idStmt = $conn->prepare($idQuery);
+        $idStmt->bind_param("ss", $studentId, $programmeBatch);
+        $idStmt->execute();
+        $idResult = $idStmt->get_result();
+
+        if ($idRow = $idResult->fetch_assoc()) {
+            $installmentPaymentTableId = $idRow['installment_payment_table_id']; // Get installment_payment_table_id
+
+            // Only update coursefee and registrationfee if they exist
+            $updateQuery = "UPDATE installment_payment_table SET ";
+
+            $updateParams = [];
+            $bindTypes = "";
+
+            // Update coursefee if totalInstallments exist
+            if (!empty($totalInstallments)) {
+                $updateQuery .= "coursefee = coursefee - ?, ";
+                $updateParams[] = $totalInstallments;
+                $bindTypes .= "d"; // Double for amount
+            }
+
+            // Update registrationfee if initialPayment exist
+            if (!empty($initialPayment)) {
+                $updateQuery .= "registrationfee = registrationfee - ?, ";
+                $updateParams[] = $initialPayment;
+                $bindTypes .= "d"; // Double for amount
+            }
+
+            // Remove trailing comma if no parameters were added
+            if (count($updateParams) > 0) {
+                $updateQuery = rtrim($updateQuery, ', ');
+
+                // Add the WHERE clause
+                $updateQuery .= " WHERE id = ? ";
+                $updateParams[] = $installmentPaymentTableId;
+                $bindTypes .= "i"; // Integer for ID
+
+                // Execute the update query
+                $updateStmt = $conn->prepare($updateQuery);
+                $updateStmt->bind_param($bindTypes, ...$updateParams);
+
+                if (!$updateStmt->execute()) {
+                    throw new Exception("Error updating installment payment table: " . $updateStmt->error);
+                }
+            }
+        }
+
+        // Insert initial payment details if available
+        if (!empty($initialPayment)) {
+            $insertInitialQuery = "INSERT INTO payment_wise_info 
+                                   (student_id, program_batch, installmentNumber, paymentAmount, paid_date, payment_type, bank_name, card_bank_deposit_dt, entered_by, rcpt_number) 
+                                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $insertInitialStmt = $conn->prepare($insertInitialQuery);
+            $installmentNumber = 'Initial Payment';
+
+            $insertInitialStmt->bind_param(
+                "issdssssss",
+                $studentId,
+                $programmeBatch,
+                $installmentNumber,
+                $initialPayment,
+                $_POST['paidDate'],
+                $_POST['paymentType'],
+                $_POST['bankName'],
+                $_POST['paymentDate'],
+                $Session_username,
+                $_POST['receiptNumber']
+            );
+
+            if (!$insertInitialStmt->execute()) {
+                throw new Exception("Error inserting initial payment into payment_wise_info: " . $insertInitialStmt->error);
+            }
+        }
+
+        // Commit transaction
+        $conn->commit();
+        $response = array(
+            'success' => true,
+            'message' => 'All installment details updated successfully!'
+        );
+    } catch (Exception $e) {
+        // Rollback transaction if any update fails
+        $conn->rollback();
+        $response = array(
+            'success' => false,
+            'message' => $e->getMessage()
+        );
+    }
+
+    echo json_encode($response);
+} else {
+    echo json_encode(array('success' => false, 'message' => 'Missing required data.'));
+}

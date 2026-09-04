@@ -1,0 +1,361 @@
+<?php
+session_start();
+include("database/connection.php");
+include("includes/header.php");
+
+if (!isset($_SESSION['username'])) {
+    echo '<script>window.location.href = "login";</script>';
+}
+
+$current_page = basename($_SERVER['PHP_SELF']);
+require_once 'PermissionChecking.php';
+?>
+
+<!-- Page Wrapper -->
+<div id="wrapper">
+    <!-- Sidebar -->
+    <?php include("nav.php"); ?>
+
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+        <!-- Main Content -->
+        <div id="content">
+
+            <!-- Topbar -->
+            <?php include("includes/topnav.php"); ?>
+
+            <!-- Begin Page Content -->
+            <div class="p-3">
+                <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                    <!-- <h4 class="h4 mb-0 text-gray-800">Student Wise Details - <?php echo htmlspecialchars($current_page); ?></h4> -->
+                    <h4 class="h4 mb-0 text-gray-800">Student Wise Details</h4>
+                </div>
+
+                <!-- Student Selection Form -->
+                <div class="row mb-5">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header d-flex align-items-center" style="height: 60px;">
+                                <span class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                    <i class="fas fa-search"></i>
+                                </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                                <h6 class="mb-0 me-2">Select Student</h6>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST">
+                                    <div class="form-group">
+                                        <label for="student_select">Select Student:</label>
+                                        <!-- <select id="student_select" name="student_id" class="form-control"> -->
+                                        <!-- <option value="">Select a Student</option> -->
+                                      
+                                        <select id="student_select" name="student_id" class="form-control">
+                                            <option value="">Select a Student</option>
+                                            <?php
+                                            // Fetch students and their first allocated student_registration_id if exists
+                                            $query = "SELECT s.student_code, s.first_name, s.last_name, s.nic,
+                                                    IFNULL(MIN(ap.student_registration_id), 'N/A') AS student_registration_id
+                                            FROM students s
+                                            LEFT JOIN allocate_programme ap ON s.student_code = ap.student_code
+                                            GROUP BY s.student_code, s.first_name, s.last_name, s.nic
+                                            ORDER BY s.first_name ASC";
+                                            $result = mysqli_query($conn, $query);
+                                            while ($row = mysqli_fetch_assoc($result)) {
+                                                echo "<option value='" . $row['student_code'] . "'>[" . $row['student_registration_id'] . "] "
+                                                    . $row['nic'] . " - " . $row['first_name'] . " " . $row['last_name'] . "</option>";
+                                            }
+                                            ?>
+                                        </select>
+
+                                        <button type="submit" name="submit" class="btn btn-primary mt-3">Submit</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <?php
+                if (isset($_POST['submit'])) {
+                    $student_id = $_POST['student_id'];
+
+                    if ($student_id) {
+                        // Student details
+                        $student_query = "SELECT * FROM students WHERE student_code = '$student_id'";
+                        $student_result = mysqli_query($conn, $student_query);
+                        $student_data = mysqli_fetch_assoc($student_result);
+
+                        // Program details
+                        $program_query = "SELECT ap.*, p.program_name, b.batch_name, u.university_name
+                            FROM allocate_programme ap
+                            LEFT JOIN program_table p ON ap.programme_code = p.program_code
+                            LEFT JOIN batch_table b ON ap.batch_id = b.id
+                            LEFT JOIN universities u ON ap.university_id = u.id
+                            WHERE ap.student_code = '$student_id'";
+                        $program_result = mysqli_query($conn, $program_query);
+
+                        if ($student_data) {
+                ?>
+                            <div class="row mb-5">
+                                <div class="col-md-12">
+                                    <div class="p-2 d-flex justify-content-end">
+                                        <button id="print" class="btn btn-primary">Print</button>
+                                    </div>
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h6 class="mb-0">Student Details</h6>
+                                        </div>
+                                        <div class="card-body" style="font-size: 13px;" id="st-wise_program_details">
+                                            <!-- Student Details Table -->
+                                            <div class="table-responsive mb-4">
+                                                <table class="table table-hover table-striped">
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>Student Status</td>
+                                                            <td>
+                                                                <span class="badge bg-<?php echo $student_data['active'] == 1 ? 'success' : 'danger'; ?>">
+                                                                    <?php echo $student_data['active'] == 1 ? 'Active' : 'Drop / Inactive'; ?>
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>NIC</td>
+                                                            <td><?php echo $student_data['nic']; ?></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Student Code</td>
+                                                            <td><?php echo $student_data['student_code']; ?></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Title</td>
+                                                            <td><?php echo $student_data['title']; ?></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>First Name</td>
+                                                            <td><?php echo $student_data['first_name']; ?></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Last Name</td>
+                                                            <td><?php echo $student_data['last_name']; ?></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Preferred Name</td>
+                                                            <td><?php echo $student_data['preferred_name']; ?></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Date Of Birth</td>
+                                                            <td><?php echo $student_data['date_of_birth']; ?></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Nationality</td>
+                                                            <td><?php echo $student_data['nationality']; ?></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Permanent Address</td>
+                                                            <td><?php echo $student_data['permanent_address']; ?></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Current Address</td>
+                                                            <td><?php echo $student_data['current_address']; ?></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Mobile</td>
+                                                            <td><?php echo $student_data['mobile']; ?></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Telephone</td>
+                                                            <td><?php echo $student_data['telephone']; ?></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Personal Email</td>
+                                                            <td><?php echo $student_data['personal_email']; ?></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>BMS Email</td>
+                                                            <td><?php echo $student_data['bms_email']; ?></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Occupation</td>
+                                                            <td><?php echo $student_data['occupation']; ?></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Organization</td>
+                                                            <td><?php echo $student_data['organization']; ?></td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            <!-- Program Details Table -->
+                                            <h5 class="mb-3"><strong>Program Details</strong></h5>
+                                            <div class="table-responsive mb-4">
+                                                <table class="table table-striped table-hover">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th>BMS Registration ID</th>
+                                                            <th>BMS New Registration ID</th>
+                                                            <th>Program & Batch</th>
+                                                            <th>Status</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <?php
+                                                        $row_count = 0;
+                                                        $programs = []; // Store programs to show modules later
+                                                        while ($program_data = mysqli_fetch_assoc($program_result)) {
+                                                            $row_count++;
+                                                            $programs[] = $program_data; // Store for module display
+                                                        ?>
+                                                            <tr>
+                                                                <td><?php echo $program_data['student_registration_id']; ?></td>
+                                                                <td><?php echo $program_data['new_student_registration_id']; ?></td>
+                                                                <td>
+                                                                    <?php if ($row_count === 1) { ?>
+                                                                        <strong>Program:</strong> <?php echo $program_data['program_name']; ?><br>
+                                                                        <strong>Batch:</strong> <?php echo $program_data['batch_name']; ?>
+                                                                    <?php } else { ?>
+                                                                        <strong>Transferred Program To:</strong> <?php echo $program_data['program_name']; ?><br>
+                                                                        <strong>Transferred Batch To:</strong> <?php echo $program_data['batch_name']; ?>
+                                                                    <?php } ?>
+                                                                </td>
+                                                                <td>
+                                                                    <span class="badge bg-<?php echo $program_data['status'] == 'active' ? 'success' : ($program_data['status'] == 'drop' ? 'danger' : ($program_data['status'] == 'completed' ? 'success' : 'secondary')); ?>">
+                                                                        <?= $program_data['status'] ?>
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        <?php } ?>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            <?php
+
+                                            // Filter only active programs
+                                            $active_programs = [];
+                                            foreach ($programs as $prog) {
+                                                if ($prog['status'] === 'active') {
+                                                    $active_programs[] = $prog;
+                                                }
+                                            }
+
+                                            // Loop through only active programs
+                                            foreach ($active_programs as $prog) {
+                                                $program_code = $prog['programme_code'];
+                                                $batch_id = $prog['batch_id'];
+                                                $student_code = $prog['student_code'];
+
+                                                // Fetch Compulsory Modules
+                                                $comp_sql = "SELECT module_name FROM modules WHERE programme_id = '$program_code' AND type='Compulsory'";
+                                                $comp_result = mysqli_query($conn, $comp_sql);
+
+                                                // Fetch Elective Modules
+                                                $elec_sql = "SELECT module_name FROM modules WHERE programme_id = '$program_code' AND type='Elective'";
+                                                $elec_result = mysqli_query($conn, $elec_sql);
+
+                                                // Get already selected electives
+                                                $sel_sql = "SELECT elective_subs FROM allocate_programme 
+                                                WHERE student_code='$student_code' AND programme_code='$program_code' AND batch_id='$batch_id'";
+                                                $sel_res = mysqli_query($conn, $sel_sql);
+                                                $sel_row = mysqli_fetch_assoc($sel_res);
+                                                $selected_electives = !empty($sel_row['elective_subs']) ? explode(",", $sel_row['elective_subs']) : [];
+
+                                                echo "<h5 class='mb-4'><strong>Modules for " . $prog['program_name'] . "</strong></h5>";
+
+                                                // Table layout
+                                                echo "<div class='table-responsive'>";
+                                                echo "<table class='table table-striped table-borderless'>";
+                                                echo "<thead class='table-light'><tr><th>Compulsory Modules</th><th>Elective Modules</th></tr></thead>";
+                                                echo "<tbody>";
+
+                                                // Fetch all rows for both compulsory and elective
+                                                $compulsory = mysqli_fetch_all($comp_result, MYSQLI_ASSOC);
+                                                $elective = mysqli_fetch_all($elec_result, MYSQLI_ASSOC);
+                                                $max_rows = max(count($compulsory), count($elective));
+
+                                                for ($i = 0; $i < $max_rows; $i++) {
+                                                    echo "<tr>";
+
+                                                    // Compulsory column
+                                                    if (isset($compulsory[$i])) {
+                                                        echo "<td><input type='checkbox' checked > " . $compulsory[$i]['module_name'] . "</td>";
+                                                    } else {
+                                                        echo "<td></td>";
+                                                    }
+
+                                                    // Elective column
+                                                    if (isset($elective[$i])) {
+                                                        $checked = in_array($elective[$i]['module_name'], $selected_electives) ? "checked" : "";
+                                                        echo "<td>
+                                                            <form method='post'>
+                                                                <input type='hidden' name='student_code' value='$student_code'>
+                                                                <input type='hidden' name='programme_code' value='$program_code'>
+                                                                <input type='hidden' name='batch_id' value='$batch_id'>
+                                                                <input type='checkbox' class='elective_$program_code' name='electives[]' value='" . $elective[$i]['module_name'] . "' $checked>
+                                                                " . $elective[$i]['module_name'] . "
+                                                            </form>
+                                                        </td>";
+                                                    } else {
+                                                        echo "<td></td>";
+                                                    }
+
+                                                    echo "</tr>";
+                                                }
+
+                                                echo "</tbody></table></div>";
+                                            }
+                                            // ----------
+                                            ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                <?php
+                        } else {
+                            echo "<div class='alert alert-warning'>No details found for the selected student.</div>";
+                        }
+                    } else {
+                        echo "<div class='alert alert-warning'>Please select a student.</div>";
+                    }
+                }
+                ?>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/js/select2.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet">
+
+    <script>
+        $(document).ready(function() {
+            $('#student_select').select2();
+            $('.table').DataTable({
+                retrieve: true,
+                responsive: true,
+                "pageLength": 10,
+                "ordering": true,
+                "searching": true
+            });
+        });
+
+        document.getElementById('print').addEventListener('click', function() {
+            const printContent = document.getElementById('st-wise_program_details').innerHTML;
+            const printWindow = window.open('', '', 'height=600,width=800');
+            printWindow.document.write('<html><head><title>Print</title><style>');
+            printWindow.document.write('table {width: 100%; border-collapse: collapse;}');
+            printWindow.document.write('table, th, td {border: 1px solid black;}');
+            printWindow.document.write('th, td {padding: 8px; text-align: left;}');
+            printWindow.document.write('h5 {text-align: center;}');
+            printWindow.document.write('body {font-family: Arial, sans-serif; font-size: 12px;}');
+            printWindow.document.write('</style></head><body>');
+            printWindow.document.write(printContent);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.print();
+        });
+    </script>
+</div>
+</body>
+
+</html>

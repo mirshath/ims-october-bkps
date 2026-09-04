@@ -1,0 +1,411 @@
+<?php
+session_start();
+include("database/connection.php");
+
+$Session_username = $_SESSION['username'];
+
+if (!isset($_SESSION['username'])) {
+    // header("location: login.php");
+    echo '<script>window.location.href = "login";</script>';
+    // exit();
+}
+
+
+
+// ---------------------- allowed Redirections ------------------------------
+// -------- Permission CHECKING TO REDIRECT TO HOME PAGE -------- 
+require_once 'PermissionChecking.php';
+// --------------------------------------------------------------------- 
+// ---------------------------------------------------------------------------
+
+/* =====================
+   AJAX: Get Sessions (WITH SAVED DATES)
+===================== */
+if (isset($_POST['action']) && $_POST['action'] == 'get_sessions') {
+
+    $program_code = $_POST['program_code'];
+    $tutor_id     = $_POST['tutor_id'] ?? 0;
+    $batch_id     = $_POST['batch_id'] ?? 0;
+
+    $sql = "
+        SELECT 
+            ts.session_id,
+            ts.session_name,
+            ts.session_type,
+            tsa.session_start_date,
+            tsa.session_end_date,
+            CASE 
+                WHEN tsa.allocation_id IS NULL THEN 0 
+                ELSE 1 
+            END AS allocated
+        FROM tutor_session ts
+        LEFT JOIN tutor_session_allocation tsa 
+            ON ts.session_id = tsa.session_id
+            AND tsa.program_code = '$program_code'
+            AND tsa.tutor_id = '$tutor_id'
+            AND tsa.batch_id = '$batch_id'
+        WHERE ts.program_code = '$program_code'
+    ";
+
+    $result = $conn->query($sql);
+    $rows = [];
+    while ($row = $result->fetch_assoc()) {
+        if ($row['session_start_date'] == '0000-00-00') $row['session_start_date'] = null;
+        if ($row['session_end_date'] == '0000-00-00') $row['session_end_date'] = null;
+        $rows[] = $row;
+    }
+
+    echo json_encode($rows);
+    exit();
+}
+
+/* =====================
+   Save Allocations WITH BATCH
+===================== */
+if (isset($_POST['save_allocation'])) {
+
+    $program_code = $_POST['program_code'] ?? '';
+    $tutor_id     = $_POST['tutor_id'] ?? '';
+    $batch_id     = $_POST['batch_id'] ?? '';
+    $allocated    = $_POST['allocated'] ?? [];
+    $start_dates  = $_POST['start_date'] ?? [];
+    $end_dates    = $_POST['end_date'] ?? [];
+
+    if (!$batch_id) {
+        $_SESSION['error_message'] = "Please select a batch!";
+        header("Location: " . $_SERVER['PHP_SELF']);
+        exit();
+    }
+
+    // Delete unchecked allocations
+    if (!empty($allocated)) {
+        $allocated_ids = implode(',', array_map('intval', $allocated));
+        $conn->query("
+            DELETE FROM tutor_session_allocation
+            WHERE tutor_id='$tutor_id'
+              AND program_code='$program_code'
+              AND batch_id='$batch_id'
+              AND session_id NOT IN ($allocated_ids)
+        ");
+    } else {
+        $conn->query("
+            DELETE FROM tutor_session_allocation
+            WHERE tutor_id='$tutor_id'
+              AND program_code='$program_code'
+              AND batch_id='$batch_id'
+        ");
+    }
+
+    // Insert or update allocations
+    foreach ($allocated as $session_id) {
+        $start = $start_dates[$session_id] ?? null;
+        $end   = $end_dates[$session_id] ?? null;
+
+        $check = $conn->query("
+            SELECT allocation_id FROM tutor_session_allocation
+            WHERE tutor_id='$tutor_id'
+              AND program_code='$program_code'
+              AND batch_id='$batch_id'
+              AND session_id='$session_id'
+            LIMIT 1
+        ");
+
+        if ($check->num_rows > 0) {
+            $stmt = $conn->prepare("
+                UPDATE tutor_session_allocation
+                SET session_start_date=?, session_end_date=?
+                WHERE tutor_id=? AND program_code=? AND batch_id=? AND session_id=?
+            ");
+            $stmt->bind_param(
+                "ssisii",
+                $start,
+                $end,
+                $tutor_id,
+                $program_code,
+                $batch_id,
+                $session_id
+            );
+            $stmt->execute();
+        } else {
+            $stmt = $conn->prepare("
+                INSERT INTO tutor_session_allocation
+                (tutor_id, program_code, batch_id, session_id, session_start_date, session_end_date)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->bind_param(
+                "isisss",
+                $tutor_id,
+                $program_code,
+                $batch_id,
+                $session_id,
+                $start,
+                $end
+            );
+            $stmt->execute();
+        }
+    }
+
+    $_SESSION['success_message'] = "Saved successfully!";
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit();
+}
+
+/* =====================
+   Fetch Programs & Tutors
+===================== */
+$programs = $conn->query("SELECT program_code, program_name FROM program_table");
+
+$tutors = $conn->query("SELECT id, username FROM admin WHERE role='lecture'");
+$tutor_list = [];
+while($row = $tutors->fetch_assoc()){
+    $tutor_list[$row['id']] = $row['username'];
+}
+
+/* =====================
+   Fetch Batches
+===================== */
+$batches = $conn->query("
+    SELECT bt.id AS batch_id, bt.batch_name, bt.programme, pt.program_code
+    FROM batch_table bt
+    JOIN program_table pt ON bt.programme = pt.program_code
+");
+$batch_list = [];
+while($row = $batches->fetch_assoc()){
+    $batch_list[$row['program_code']][] = $row;
+}
+
+include("includes/header.php");
+?>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tutor Session Allocation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+</head>
+<body class="bg-light">
+
+<!-- XXXX -->
+
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+        <!-- Sidebar -->
+        <?php include("nav.php"); ?>
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+            <!-- Main Content -->
+            <div id="content">
+                <!-- Topbar -->
+                <?php include("includes/topnav.php"); ?>
+
+                <!-- Begin Page Content -->
+                <div class="p-3">
+                    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                        <h4 class="h4 mb-0 text-gray-800">Update Student Status 2</h4>
+                    </div>
+
+                    <!-- Filter Form -->
+                    <!-- <div class="row mb-5">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header d-flex align-items-center" style="height: 60px;">
+                                    <span class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                        <i class="fas fa-plus-circle"></i>
+                                    </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                                    <h6 class="mb-0 me-2">Student Update</h6>
+                                </div>
+                                <div class="card-body">
+
+
+
+                                </div>
+                            </div>
+                        </div>
+                    </div> -->
+
+                    <div class="row mb-5">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header d-flex align-items-center" style="height: 60px;">
+                                    <span class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                        <i class="fas fa-plus-circle"></i>
+                                    </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                                    <h6 class="mb-0 me-2">Student Update Data</h6>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Students Table -->
+                                    <div class="table-responsive mb-4">
+                                        
+<!-- xxxx-->  
+
+<!--xxxx-->
+
+<div class="container mt-4">
+<h4 class="mb-3">Tutor Session Allocation</h4>
+
+<?php if(isset($_SESSION['success_message'])): ?>
+<div class="alert alert-success"><?= $_SESSION['success_message'] ?></div>
+<?php unset($_SESSION['success_message']); endif; ?>
+
+<?php if(isset($_SESSION['error_message'])): ?>
+<div class="alert alert-danger"><?= $_SESSION['error_message'] ?></div>
+<?php unset($_SESSION['error_message']); endif; ?>
+
+<form method="POST">
+
+<div class="row mb-3">
+    <div class="col-md-4">
+        <label>Program</label>
+        <select name="program_code" id="program" class="form-select" required>
+            <option value="">-- Select Program --</option>
+            <?php while($row = $programs->fetch_assoc()){ ?>
+                <option value="<?= $row['program_code'] ?>"><?= $row['program_name'] ?></option>
+            <?php } ?>
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label>Batch</label>
+        <select name="batch_id" id="batch" class="form-select" required>
+            <option value="">-- Select Batch --</option>
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label>Assign Tutor</label>
+        <select name="tutor_id" id="tutor" class="form-select" required>
+            <option value="">-- Select Tutor --</option>
+            <?php foreach($tutor_list as $id => $name){ ?>
+                <option value="<?= $id ?>"><?= $name ?></option>
+            <?php } ?>
+        </select>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+<div class="card-body">
+<h5>Sessions</h5>
+<table class="table table-bordered" id="sessionTable">
+    <thead class="table-dark">
+        <tr>
+            <th>Session Name</th>
+            <th>Session Type</th>
+            <th>Allocate</th>
+            <th>Session Start Time</th>
+            <th>Session End Time</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+</div>
+</div>
+
+<button type="submit" name="save_allocation" class="btn btn-success mt-3">Save Allocation</button>
+
+</form>
+
+<!--XXXX-->                              
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    
+                </div>
+            </div>
+        </div>
+
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/js/select2.min.js"></script>
+        <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
+
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/css/select2.min.css" rel="stylesheet" />
+        <link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+
+
+    </div>
+
+<!--xxxx-->
+</div>
+
+<script>
+const batches = <?php echo json_encode($batch_list); ?>;
+
+// Load batches when program changes
+$('#program').change(function() {
+    const program = $(this).val();
+    const batchDropdown = $('#batch');
+
+    batchDropdown.html('<option value="">-- Select Batch --</option>');
+
+    if(program && batches[program]) {
+        batches[program].forEach(batch => {
+            batchDropdown.append(`<option value="${batch.batch_id}">${batch.batch_name}</option>`);
+        });
+    }
+
+    $('#sessionTable tbody').html(''); // Clear sessions until batch selected
+});
+
+// Load sessions when tutor or batch changes
+$('#tutor, #batch').change(function() {
+    const program = $('#program').val();
+    const tutor   = $('#tutor').val();
+    const batch   = $('#batch').val();
+
+    if(!program || !tutor || !batch) {
+        $('#sessionTable tbody').html('');
+        return;
+    }
+
+    $.post('tutor_session.php', {
+        action: 'get_sessions',
+        program_code: program,
+        tutor_id: tutor,
+        batch_id: batch
+    }, function(data) {
+        let html = '';
+        data.forEach(row => {
+            const checked = row.allocated == 1 ? 'checked' : '';
+            const showDate = row.allocated == 1 ? '' : 'd-none';
+            html += `
+            <tr>
+                <td>${row.session_name}</td>
+                <td>${row.session_type}</td>
+                <td class="text-center">
+                    <input type="checkbox"
+                           class="form-check-input allocateSwitch"
+                           data-id="${row.session_id}"
+                           name="allocated[]"
+                           value="${row.session_id}"
+                           ${checked}>
+                </td>
+                <td>
+                    <input type="date"
+                           class="form-control start-date ${showDate}"
+                           name="start_date[${row.session_id}]"
+                           value="${row.session_start_date ?? ''}">
+                </td>
+                <td>
+                    <input type="date"
+                           class="form-control end-date ${showDate}"
+                           name="end_date[${row.session_id}]"
+                           value="${row.session_end_date ?? ''}">
+                </td>
+            </tr>`;
+        });
+        $('#sessionTable tbody').html(html);
+    }, 'json');
+});
+
+// Toggle date inputs when allocation switch changes
+$(document).on('change', '.allocateSwitch', function () {
+    const row = $(this).closest('tr');
+    row.find('.start-date, .end-date')
+       .toggleClass('d-none', !this.checked);
+});
+</script>
+
+</body>
+</html>

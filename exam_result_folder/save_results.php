@@ -1,0 +1,1215 @@
+<?php
+
+ob_start();
+
+error_reporting(E_ALL);
+
+// inline errors but still log them so JSON stays parseable.
+$isLocalhost = (
+    (isset($_SERVER['HTTP_HOST']) && stripos($_SERVER['HTTP_HOST'], 'localhost') !== false) ||
+    (isset($_SERVER['SERVER_NAME']) && stripos($_SERVER['SERVER_NAME'], 'localhost') !== false) ||
+    (isset($_SERVER['REMOTE_ADDR']) && in_array($_SERVER['REMOTE_ADDR'], ['127.0.0.1', '::1'], true))
+);
+$isProdEnv = (getenv('APP_ENV') === 'production' || getenv('ENV') === 'production');
+ini_set('display_errors', ($isLocalhost && !$isProdEnv) ? 1 : 0);
+ini_set('log_errors', 1);
+ini_set('html_errors', 0);
+
+// ---- Database connection (silent include so hosting warnings don't leak)
+@include(__DIR__ . '/../database/connection.php');
+
+// ---- Response headers (charset + no-caching help mobile / shared proxies
+//      return clean JSON instead of a cached or truncated response).
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('X-Content-Type-Options: nosniff');
+
+// ---- Ensure a valid connection before proceeding
+if (!isset($conn) || !($conn instanceof mysqli)) {
+    // Discard any buffered warnings before emitting our own safe JSON
+    while (ob_get_level() > 0) {
+        @ob_end_clean();
+    }
+    header('Content-Type: application/json; charset=utf-8', true);
+    echo json_encode([
+        'success' => false,
+        'error'   => 'Database connection failed. Please try again.'
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+//      fatal errors on empty string / default coercion.
+@mysqli_query($conn, "SET SESSION sql_mode = ''");
+@mysqli_query($conn, "SET NAMES 'utf8mb4'");
+@mysqli_query($conn, "SET CHARACTER SET utf8mb4");
+
+try {
+    // Get and decode JSON input
+    $jsonInput = file_get_contents('php://input');
+    $input = json_decode($jsonInput, true);
+
+    if (!isset($input['results']) || !is_array($input['results'])) {
+        throw new Exception('Invalid input data');
+    }
+
+    // Get description from request
+    $description = isset($input['description']) ? $input['description'] : '';
+
+    // Get program name from request
+    $programName = isset($input['program_name']) ? $input['program_name'] : 'Unknown Program';
+    // Begin transaction
+    $conn->begin_transaction();
+    // Prepare check statement
+    $checkStmt = $conn->prepare("SELECT id FROM student_results 
+            WHERE student_id = ? 
+            AND program_id = ? 
+            AND batch_id = ? 
+            AND module_id = ? 
+            AND main_component_id = ?");
+
+    // Prepare insert statement - ADDED comment and description_for_std fields
+    $insertStmt = $conn->prepare("INSERT INTO student_results 
+            (student_id, student_registration_id, program_id, batch_id, module_id, 
+            main_component_id, sub_component_id, result, 
+            full_marks, converted_marks, converted_marks_grade, hd_full_marks, hd_converted_marks, hd_grade,
+            hd_resit1_full_marks, hd_resit1_converted_marks, hd_resit1_grade,
+            hd_resit2_full_marks, hd_resit2_converted_marks, hd_resit2_grade,
+            hd_resit3_full_marks, hd_resit3_converted_marks, hd_resit3_grade,
+            comment, description_for_std) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+    // Prepare update statement - ADDED comment and description_for_std fields
+    $updateStmt = $conn->prepare("UPDATE student_results 
+            SET result = ?, 
+                resit_result_1 = ?, 
+                resit_result_2 = ?, 
+                resit_result_3 = ?, 
+                resit_result_4 = ?, 
+                full_marks = ?, 
+                converted_marks = ?, 
+                converted_marks_grade = ?,
+                ecm_r1_converted_marks = ?,
+                ecm_r1_converted_marks_grade = ?,
+                ecm_r2_converted_marks = ?, 
+                ecm_r2_converted_marks_grade = ?,
+                ecm_r3_converted_marks = ?,
+                ecm_r3_converted_marks_grade = ?,
+                ecm_r4_converted_marks = ?, 
+                ecm_r4_converted_marks_grade = ?,
+                hd_full_marks = ?, 
+                hd_converted_marks = ?, 
+                hd_grade = ?,
+                hd_resit1_full_marks = ?,
+                hd_resit1_converted_marks = ?,
+                hd_resit1_grade = ?,
+                hd_resit2_full_marks = ?,
+                hd_resit2_converted_marks = ?,
+                hd_resit2_grade = ?,
+                hd_resit3_full_marks = ?,
+                hd_resit3_converted_marks = ?,
+                hd_resit3_grade = ?,
+                comment = ?,
+                description_for_std = ?
+            WHERE student_id = ? 
+            AND program_id = ? 
+            AND batch_id = ? 
+            AND module_id = ? 
+            AND main_component_id = ?");
+
+    // Prepare insert/update statement for final_student_results.
+    // The real identity of a row is the UNIQUE KEY `unique_result`
+    // (student_id, program_id, batch_id, module_id) — see final_student_results.sql.
+    // ON DUPLICATE KEY UPDATE relies on that key, so no separate SELECT-then-decide
+    // check is needed here; MySQL/MariaDB does the check atomically. We also
+    // refresh student_registration_id on conflict so a later re-registration
+    // doesn't leave a stale value behind.
+    $insertFinalStmt = $conn->prepare("INSERT INTO final_student_results 
+            (student_id, student_registration_id, program_id, batch_id, module_id, final_result) 
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE 
+            student_registration_id = VALUES(student_registration_id),
+            final_result = VALUES(final_result)");
+
+    if (!$checkStmt || !$insertStmt || !$updateStmt || !$insertFinalStmt) {
+        throw new Exception("Failed to prepare statements");
+    }
+
+    foreach ($input['results'] as $result) {
+        // Convert IDs to integers for binding
+        $studentIdInt = (int) $result['studentId'];
+        $programIdInt = (int) $result['programId'];
+        $batchIdInt = (int) $result['batchId'];
+        $moduleIdInt = (int) $result['moduleId'];
+        $mainComponentIdInt = (int) $result['mainComponentId'];
+
+        // Convert empty subComponentId to NULL if needed
+        $subComponentId = isset($result['subComponentId']) && $result['subComponentId'] !== 'null' ? (int) $result['subComponentId'] : null;
+
+        // Get comment from result data
+        $comment = isset($result['comment']) ? $result['comment'] : '';
+
+        // Check if record exists
+        $checkStmt->bind_param(
+            "iiiii",
+            $studentIdInt,
+            $programIdInt,
+            $batchIdInt,
+            $moduleIdInt,
+            $mainComponentIdInt
+        );
+        $checkStmt->execute();
+        $checkResult = $checkStmt->get_result();
+
+        if ($checkResult->num_rows > 0) {
+            // Fetch existing record
+            $existing = $checkResult->fetch_assoc();
+
+            $fieldsToUpdate = [];
+            $params = [];
+            $types = '';
+
+            // Mapping PHP keys → DB columns
+            $fieldMapping = [
+                'result' => 'result',
+                'resit_result_1' => 'resit_result_1',
+                'resit_result_2' => 'resit_result_2',
+                'resit_result_3' => 'resit_result_3',
+                'resit_result_4' => 'resit_result_4',
+                'fullMarks' => 'full_marks',
+                'convertedMarks' => 'converted_marks',
+                'additional_input' => 'converted_marks_grade',
+
+                //additional_input_r1 use
+                'additional_input_r1' => 'ecm_r1_converted_marks_grade',
+                'additional_input_r2' => 'ecm_r2_converted_marks_grade',
+                'additional_input_r3' => 'ecm_r3_converted_marks_grade',
+                'additional_input_r4' => 'ecm_r4_converted_marks_grade',
+
+                'ecm_r1_converted_marks' => 'ecm_r1_converted_marks',
+                'ecm_r2_converted_marks' => 'ecm_r2_converted_marks',
+                'ecm_r3_converted_marks' => 'ecm_r3_converted_marks',
+                'ecm_r4_converted_marks' => 'ecm_r4_converted_marks',
+
+                'hd_full_marks' => 'hd_full_marks',
+                'hd_converted_marks' => 'hd_converted_marks',
+                'hd_grade' => 'hd_grade',
+                'hd_resit1_full_marks' => 'hd_resit1_full_marks',
+                'hd_resit1_converted_marks' => 'hd_resit1_converted_marks',
+                'hd_resit1_grade' => 'hd_resit1_grade',
+                'hd_resit2_full_marks' => 'hd_resit2_full_marks',
+                'hd_resit2_converted_marks' => 'hd_resit2_converted_marks',
+                'hd_resit2_grade' => 'hd_resit2_grade',
+                'hd_resit3_full_marks' => 'hd_resit3_full_marks',
+                'hd_resit3_converted_marks' => 'hd_resit3_converted_marks',
+                'hd_resit3_grade' => 'hd_resit3_grade',
+                'comment' => 'comment',
+                'description' => 'description_for_std'
+            ];
+
+            // Field types for bind_param
+            $fieldTypes = [
+                'result' => 's',
+                'resit_result_1' => 's',
+                'resit_result_2' => 's',
+                'resit_result_3' => 's',
+                'resit_result_4' => 's',
+                'full_marks' => 's',
+                'converted_marks' => 's',
+                'converted_marks_grade' => 's',
+                // use ecm_r1_converted_marks_grade
+                'ecm_r1_converted_marks_grade' => 's',
+                'ecm_r2_converted_marks_grade' => 's',
+                'ecm_r3_converted_marks_grade' => 's',
+                'ecm_r4_converted_marks_grade' => 's',
+
+                'ecm_r1_converted_marks' => 's',
+                'ecm_r2_converted_marks' => 's',
+                'ecm_r3_converted_marks' => 's',
+                'ecm_r4_converted_marks' => 's',
+                'hd_full_marks' => 'd',
+                'hd_converted_marks' => 's', // Changed from i to s to handle negative values safely as strings if needed, though i should work
+                'hd_grade' => 's',
+                'hd_resit1_full_marks' => 'd',
+                'hd_resit1_converted_marks' => 's', // Changed from i to s
+                'hd_resit1_grade' => 's',
+                'hd_resit2_full_marks' => 'd',
+                'hd_resit2_converted_marks' => 's', // Changed from i to s
+                'hd_resit2_grade' => 's',
+                'hd_resit3_full_marks' => 'd',
+                'hd_resit3_converted_marks' => 's', // Changed from i to s
+                'hd_resit3_grade' => 's',
+                'comment' => 's',
+                'description_for_std' => 's'
+            ];
+
+            // Compare values and prepare only changed fields
+            foreach ($fieldMapping as $jsonKey => $dbColumn) {
+                // Determine incoming value, correctly handling null and empty string
+                if ($jsonKey === 'comment') {
+                    $incomingValue = $comment;
+                } elseif ($jsonKey === 'description') {
+                    $incomingValue = $description;
+                } else {
+                    // Use array_key_exists to check if the field was even sent
+                    if (array_key_exists($jsonKey, $result)) {
+                        $incomingValue = $result[$jsonKey];
+                    } else {
+                        continue; // Skip fields not sent from frontend
+                    }
+                }
+
+                $existingValue = $existing[$dbColumn] ?? null;
+
+                // Special handling for decimal/int fields: don't update if incoming is empty string
+                $isNumericField = ($fieldTypes[$dbColumn] ?? 's') === 'd' || ($fieldTypes[$dbColumn] ?? 's') === 'i';
+                if ($isNumericField && $incomingValue === '') {
+                    $incomingValue = null;
+                }
+
+                if ($incomingValue === null && $existingValue === null) {
+                    continue;
+                } elseif ($incomingValue !== $existingValue) {
+                    $fieldsToUpdate[] = "$dbColumn = ?";
+                    $params[] = $incomingValue;
+                    $types .= $fieldTypes[$dbColumn] ?? 's';
+                }
+            }
+
+            if (!empty($fieldsToUpdate)) {
+                // Add WHERE conditions
+                $params[] = $studentIdInt;
+                $params[] = $programIdInt;
+                $params[] = $batchIdInt;
+                $params[] = $moduleIdInt;
+                $params[] = $mainComponentIdInt;
+                $types .= 'iiiii';
+
+                $sql = "UPDATE student_results SET " . implode(', ', $fieldsToUpdate) . " 
+                        WHERE student_id = ? AND program_id = ? AND batch_id = ? AND module_id = ? AND main_component_id = ?";
+
+                $stmt = $conn->prepare($sql);
+                if (!$stmt)
+                    throw new Exception("Prepare failed: " . $conn->error);
+
+                $stmt->bind_param($types, ...$params);
+                if (!$stmt->execute()) {
+                    throw new Exception("Update failed: " . $stmt->error);
+                }
+            }
+        } else {
+            // Insert new record (use correct DB column names)
+            $insertStmt->bind_param(
+                "isiiiiissssdssdssdssdssss",
+                $studentIdInt,
+                $result['studentRegId'],
+                $programIdInt,
+                $batchIdInt,
+                $moduleIdInt,
+                $mainComponentIdInt,
+                $subComponentId,
+                $result['result'],
+                $result['fullMarks'],
+                $result['convertedMarks'],
+                $result['additional_input'],
+                $result['hd_full_marks'],
+                $result['hd_converted_marks'],
+                $result['hd_grade'],
+                $result['hd_resit1_full_marks'],
+                $result['hd_resit1_converted_marks'],
+                $result['hd_resit1_grade'],
+                $result['hd_resit2_full_marks'],
+                $result['hd_resit2_converted_marks'],
+                $result['hd_resit2_grade'],
+                $result['hd_resit3_full_marks'],
+                $result['hd_resit3_converted_marks'],
+                $result['hd_resit3_grade'],
+                $comment,
+                $description
+            );
+
+            if (!$insertStmt->execute()) {
+                throw new Exception("Insert failed: " . $insertStmt->error);
+            }
+        }
+
+
+
+        // ------------------------------------------------------------------------------------------ 
+        // Check if the program name is 'Executive Certificate in Management'
+        if (
+            $programName === 'Executive Certificate in Management'
+            // $programName === 'BSc (Hons) in Software Engineering'
+        ) {
+            // ---- Realtime final_student_results for ECM.
+          
+            $finalResult = calculateFinalResult(
+                $studentIdInt,
+                $moduleIdInt,
+                $conn,
+                $programIdInt,   // 4-key WHERE: no mixing across programmes
+                $batchIdInt      // 4-key WHERE: no mixing across batches
+            );
+
+            if ($finalResult === null || trim((string)$finalResult) === '') {
+                // Build a transient student_results-shaped row from the incoming payload.
+                // Key names exactly match the SELECT column list in calculateFinalResult()
+                // so the same per-row "latest non-empty attempt" code works for both.
+                $ecmTransientRow = [
+                    'converted_marks_grade'       => $result['additional_input']    ?? null,
+                    'converted_marks'             => $result['convertedMarks']      ?? null,
+                    'ecm_r1_converted_marks_grade'=> $result['additional_input_r1'] ?? null,
+                    'ecm_r1_converted_marks'      => $result['ecm_r1_converted_marks'] ?? null,
+                    'ecm_r2_converted_marks_grade'=> $result['additional_input_r2'] ?? null,
+                    'ecm_r2_converted_marks'      => $result['ecm_r2_converted_marks'] ?? null,
+                    'ecm_r3_converted_marks_grade'=> $result['additional_input_r3'] ?? null,
+                    'ecm_r3_converted_marks'      => $result['ecm_r3_converted_marks'] ?? null,
+                    'ecm_r4_converted_marks_grade'=> $result['additional_input_r4'] ?? null,
+                    'ecm_r4_converted_marks'      => $result['ecm_r4_converted_marks'] ?? null,
+                ];
+
+                $finalResult = calculateFinalResult(
+                    $studentIdInt,
+                    $moduleIdInt,
+                    $conn,
+                    $programIdInt,
+                    $batchIdInt,
+                    [$ecmTransientRow]  // overrideRows → same decision engine, no DB roundtrip
+                );
+            }
+
+            // Only execute INSERT/ON-DUP if we actually have a value.
+            if ($finalResult !== null && trim((string)$finalResult) !== '') {
+                // Correct bind types: student_id INT, program_id/batch_id/module_id INT.
+                // Old code used "ssiiis" (strings for IDs) which works on lenient local
+                // XAMPP but silently fails on hosting strict prepared-statement wire
+                // protocol → partial saves + "Unexpected Server Response".
+                $insertFinalStmt->bind_param(
+                    "isiiis",
+                    $studentIdInt,
+                    $result['studentRegId'],
+                    $programIdInt,
+                    $batchIdInt,
+                    $moduleIdInt,
+                    $finalResult
+                );
+
+                if (!$insertFinalStmt->execute()) {
+                    throw new Exception("ECM final result insert/update failed: " . $insertFinalStmt->error);
+                }
+            }
+        } else if (
+            $programName === 'Higher Diploma in Biomedical Science' ||
+            $programName === 'Higher Diploma in Biotechnology' ||
+            $programName === 'Higher Diploma in Food Science and Nutrition' ||
+            $programName === 'BSc (Hons) in Software Engineering' ||
+            $programName === 'Higher Diploma in Medical Biotechnology'
+        ) {
+            // ✅ Check for Completed / Not Completed logic
+            $hdGrades = [
+                $result['hd_grade'] ?? '',
+                $result['hd_resit1_grade'] ?? '',
+                $result['hd_resit2_grade'] ?? '',
+                $result['hd_resit3_grade'] ?? ''
+            ];
+
+            $containsCompletion = false;
+            foreach ($hdGrades as $grade) {
+                $gradeLower = strtolower(trim($grade));
+                if ($gradeLower === 'completed' || $gradeLower === 'not completed') {
+                    $containsCompletion = true;
+                    break;
+                }
+            }
+
+            if ($containsCompletion) {
+                $finalResult = getCompletionStatus($hdGrades);
+            } else {
+                $finalResult = calculateFinalResultHD($studentIdInt, $moduleIdInt, $conn, $programIdInt, $batchIdInt);
+
+                // Realtime first-insert fallback.
+                // calculateFinalResultHD always returns an int (0 when no rows are found),
+                // so we can't use the return value alone to detect "nothing yet". Instead,
+                // peek the DB rows via the same filter: if nothing there yet, compute
+                // the latest attempt from the incoming payload directly so there is no
+                // "saving delay" on the first insert of this (student, module).
+                $hdPeekStmt = $conn->prepare(
+                    "SELECT id FROM student_results
+                     WHERE student_id = ? AND module_id = ? AND program_id = ? AND batch_id = ?
+                     LIMIT 1"
+                );
+                $hdPeekStmt->bind_param("iiii", $studentIdInt, $moduleIdInt, $programIdInt, $batchIdInt);
+                $hdPeekStmt->execute();
+                $hdPeekStmt->store_result();
+                $hdHasAnyRows = ($hdPeekStmt->num_rows > 0);
+                $hdPeekStmt->close();
+
+                if (!$hdHasAnyRows) {
+                    $latestHDMark = 0;
+                    if (isset($result['hd_resit3_converted_marks']) && $result['hd_resit3_converted_marks'] !== null && trim((string)$result['hd_resit3_converted_marks']) !== '') {
+                        $latestHDMark = $result['hd_resit3_converted_marks'];
+                    } elseif (isset($result['hd_resit2_converted_marks']) && $result['hd_resit2_converted_marks'] !== null && trim((string)$result['hd_resit2_converted_marks']) !== '') {
+                        $latestHDMark = $result['hd_resit2_converted_marks'];
+                    } elseif (isset($result['hd_resit1_converted_marks']) && $result['hd_resit1_converted_marks'] !== null && trim((string)$result['hd_resit1_converted_marks']) !== '') {
+                        $latestHDMark = $result['hd_resit1_converted_marks'];
+                    } elseif (isset($result['hd_converted_marks']) && $result['hd_converted_marks'] !== null && trim((string)$result['hd_converted_marks']) !== '') {
+                        $latestHDMark = $result['hd_converted_marks'];
+                    }
+                    $finalResult = ($latestHDMark > 0) ? $latestHDMark : 0;
+                }
+            }
+
+            // Only execute INSERT/ON-DUP if we actually have a value.
+            // NOTE: 0 is a valid sum of marks (e.g. Absent components), so do NOT skip it.
+            if ($finalResult !== null && trim((string)$finalResult) !== '') {
+                // Insert or update final result — use integer-cast IDs + correct "isiiis".
+                $insertFinalStmt->bind_param(
+                    "isiiis",
+                    $studentIdInt,
+                    $result['studentRegId'],
+                    $programIdInt,
+                    $batchIdInt,
+                    $moduleIdInt,
+                    $finalResult
+                );
+
+                if (!$insertFinalStmt->execute()) {
+                    throw new Exception("HD/BSc final result insert/update failed: " . $insertFinalStmt->error);
+                }
+            }
+        } else if (
+            $programName === 'International Foundation Diploma (Business) - ATHE Level 3' ||
+            $programName === 'BTEC Higher National Diploma in Business' ||
+            $programName === 'International Foundation Diploma (Applied Science) - ATHE Level 3'
+        ) {
+            // Component-based Overall Grade
+            // Rule: each student_results row = ONE component (all resit columns are attempts for THAT component)
+            //   - 2 rows for same (program, batch, module, student) -> Component 1, Component 2
+            //   - 3 rows for same (program, batch, module, student) -> Component 1, Component 2, Component 3
+            // For each row, pick the LATEST non-empty attempt:
+            //   resit_result_4 > resit_result_3 > resit_result_2 > resit_result_1 > result
+            // Rows are ordered by allocated_components.id so Component 1 / 2 / 3 match the module setup exactly.
+            if (!function_exists('extractFinalComponentGrade')) {
+                function extractFinalComponentGrade($row)
+                {
+                    $attempts = [
+                        $row['resit_result_4'] ?? null,
+                        $row['resit_result_3'] ?? null,
+                        $row['resit_result_2'] ?? null,
+                        $row['resit_result_1'] ?? null,
+                        $row['result']         ?? null,
+                    ];
+                    foreach ($attempts as $a) {
+                        if ($a !== null && trim($a) !== '') {
+                            return $a;
+                        }
+                    }
+                    return null;
+                }
+            }
+
+            if (!function_exists('computeComponentOverallGrade')) {
+                function computeComponentOverallGrade($componentGrades)
+                {
+                    $componentGrades = array_values(array_filter($componentGrades, function ($g) {
+                        return $g !== null && trim($g) !== '';
+                    }));
+
+                    if (empty($componentGrades)) {
+                        return null;
+                    }
+
+                    $normalized = array_map(function ($g) {
+                        return strtolower(trim($g));
+                    }, $componentGrades);
+
+                    $passGrades     = ['distinction', 'merit', 'pass'];
+                    $absentNsGrades = ['absent', 'not submitted'];
+                    $resitVariants  = ['resit', 're-sit', 're sit'];
+
+                    $passHierarchy = [
+                        'distinction' => 1,
+                        'merit'       => 2,
+                        'pass'        => 3,
+                    ];
+
+                    $hasPass     = false;
+                    $hasResit    = false;
+                    $hasAbsent   = false;
+                    $hasNs       = false;
+                    $passList    = [];
+
+                    foreach ($normalized as $g) {
+                        if (in_array($g, $passGrades, true)) {
+                            $hasPass = true;
+                            $passList[] = $g;
+                        } elseif (in_array($g, $resitVariants, true)) {
+                            $hasResit = true;
+                        } elseif ($g === 'absent') {
+                            $hasAbsent = true;
+                        } elseif ($g === 'not submitted') {
+                            $hasNs = true;
+                        }
+                    }
+
+                    $hasAbsentNs = ($hasAbsent || $hasNs);
+
+                    // Rule 1: Any Pass + any incomplete (Re-sit / Absent / Not Submitted) -> Pending
+                    if ($hasPass && ($hasResit || $hasAbsentNs)) {
+                        return 'Pending';
+                    }
+
+                    // Rule 2: All pass grades -> worst pass grade (e.g. Distinction + Pass + Merit -> Pass)
+                    if ($hasPass && !$hasResit && !$hasAbsentNs) {
+                        $worstValue = 0;
+                        $worstGrade = null;
+                        foreach ($passList as $pg) {
+                            if (isset($passHierarchy[$pg]) && $passHierarchy[$pg] > $worstValue) {
+                                $worstValue = $passHierarchy[$pg];
+                                $worstGrade = $pg;
+                            }
+                        }
+                        return $worstGrade;
+                    }
+
+                    // ---- NO PASS GRADES PRESENT BEYOND THIS POINT ----
+                    // Priority: Resit > Absent > Not Submitted, but:
+                    //   - Any Resit (alone or mixed) -> Resit
+                    //   - Uniform all-Absent -> Absent
+                    //   - Uniform all-Not Submitted -> Not Submitted
+                    //   - Mixed Absent + Not Submitted (no Resit) -> Absent / Not Submitted
+
+                    // Rule 3: Any Resit (Resit+Resit, Resit+Absent, Resit+Not Submitted, any count) -> Resit
+                    if ($hasResit) {
+                        return 'Resit';
+                    }
+
+                    // Rule 4: No Resit, only Absent present (all uniform) -> Absent
+                    if ($hasAbsent && !$hasNs) {
+                        return 'Absent';
+                    }
+
+                    // Rule 5: No Resit, only Not Submitted present (all uniform) -> Not Submitted
+                    if (!$hasAbsent && $hasNs) {
+                        return 'Not Submitted';
+                    }
+
+                    // Rule 6: No Resit, mixed Absent + Not Submitted -> Absent / Not Submitted
+                    if ($hasAbsent && $hasNs) {
+                        return 'Absent / Not Submitted';
+                    }
+
+                    // Fallback: return the latest component grade as-is (original case)
+                    return end($componentGrades);
+                }
+            }
+
+            // Gather ONE grade per row, preserving row order (allocated_components ordering -> Component 1, 2, 3)
+            $checkExistingResults = $conn->prepare(
+                "SELECT sr.result, sr.resit_result_1, sr.resit_result_2, sr.resit_result_3, sr.resit_result_4
+                 FROM student_results sr
+                 LEFT JOIN allocated_components ac 
+                        ON ac.module_id = sr.module_id 
+                       AND ac.main_component_id = sr.main_component_id
+                 WHERE sr.student_id = ? 
+                   AND sr.program_id = ? 
+                   AND sr.batch_id = ? 
+                   AND sr.module_id = ?
+                 ORDER BY COALESCE(ac.id, 99999999), sr.main_component_id ASC"
+            );
+
+            $checkExistingResults->bind_param(
+                "iiii",
+                $studentIdInt,
+                $programIdInt,
+                $batchIdInt,
+                $moduleIdInt
+            );
+
+            $checkExistingResults->execute();
+            $existingResults = $checkExistingResults->get_result();
+
+            $componentGrades = [];
+            while ($row = $existingResults->fetch_assoc()) {
+                $oneCompGrade = extractFinalComponentGrade($row);
+                if ($oneCompGrade !== null) {
+                    $componentGrades[] = $oneCompGrade;
+                }
+            }
+
+            // If nothing in DB yet (first insert for this component row), seed from the current incoming payload
+            if (empty($componentGrades)) {
+                $incomingGrade = extractFinalComponentGrade([
+                    'result'         => $result['result']         ?? null,
+                    'resit_result_1' => $result['resit_result_1'] ?? null,
+                    'resit_result_2' => $result['resit_result_2'] ?? null,
+                    'resit_result_3' => $result['resit_result_3'] ?? null,
+                    'resit_result_4' => $result['resit_result_4'] ?? null,
+                ]);
+                if ($incomingGrade !== null) {
+                    $componentGrades[] = $incomingGrade;
+                }
+            }
+
+            if (!empty($componentGrades)) {
+                $overallGrade = computeComponentOverallGrade($componentGrades);
+                if ($overallGrade !== null) {
+                    // Store the Overall Grade into the existing final_student_results.final_result column
+                    $insertFinalStmt->bind_param(
+                        "isiiis",
+                        $studentIdInt,
+                        $result['studentRegId'],
+                        $programIdInt,
+                        $batchIdInt,
+                        $moduleIdInt,
+                        $overallGrade
+                    );
+
+                    if (!$insertFinalStmt->execute()) {
+                        throw new Exception("IFD/BTEC final result insert/update failed: " . $insertFinalStmt->error);
+                    }
+                }
+            }
+
+            $checkExistingResults->close();
+        }
+        // -------------------------------------------------------------------------------------------
+        else if (
+            $programName === 'Graduate Diploma in Management (Level 6)'
+        ) {
+            // Define the grade hierarchy (lower value means higher priority)
+            $gradeHierarchy = [
+                'distinction' => 1,
+                'merit' => 2,
+                'pass' => 3,
+                'resit' => 4,
+                'absent' => 5,
+                'not submitted' => 6,
+                'pending' => 7,
+            ];
+
+            // Function to determine the final result based on the new logic
+            if (!function_exists('getGDMFinalResult')) {
+                function getGDMFinalResult($grades, $gradeHierarchy)
+                {
+                    // Remove empty grades
+                    $grades = array_filter($grades, function ($grade) {
+                        return !empty($grade);
+                    });
+
+                    if (empty($grades)) {
+                        return null;
+                    }
+
+                    // Convert grades to lowercase for comparison
+                    $grades = array_map('strtolower', $grades);
+
+                    // Separate grades into categories
+                    $passGrades = ['distinction', 'merit', 'pass'];
+                    $failGrades = ['resit', 'absent', 'not submitted'];
+
+                    $passResults = array_intersect($grades, $passGrades);
+                    $failResults = array_intersect($grades, $failGrades);
+
+                    // Case 1: If distinction/merit/pass && distinction/merit/pass → store highest hierarchy value (worst grade)
+                    if (count($passResults) >= 2) {
+                        $highestValue = 0;
+                        $finalResult = null;
+
+                        foreach ($passResults as $grade) {
+                            if (isset($gradeHierarchy[$grade]) && $gradeHierarchy[$grade] > $highestValue) {
+                                $highestValue = $gradeHierarchy[$grade];
+                                $finalResult = $grade;
+                            }
+                        }
+                        return $finalResult;
+                    }
+
+                    // Case 2: If distinction/merit/pass && resit/absent → store 'pending'
+                    if (count($passResults) >= 1 && count($failResults) >= 1) {
+                        return 'pending';
+                    }
+
+                    // Case 3: If resit && resit → store 'resit'
+                    if (count($failResults) >= 2 && in_array('resit', $failResults)) {
+                        return 'resit';
+                    }
+
+                    // Case 4: If absent && absent → store 'absent'
+                    if (count($failResults) >= 2 && in_array('absent', $failResults) && !in_array('resit', $failResults)) {
+                        return 'absent';
+                    }
+
+                    // Case 5: If resit && absent → store 'resit'
+                    if (in_array('resit', $failResults) && in_array('absent', $failResults)) {
+                        return 'resit';
+                    }
+                    // Case 6: If not submitted && not submitted → store 'not submitted'
+                    if (count($failResults) >= 2 && in_array('not submitted', $failResults) && !in_array('resit', $failResults) && !in_array('absent', $failResults)) {
+                        return 'not submitted';
+                    }
+
+                    // Case: If both "not submitted" and "resit" present → store 'resit'
+                    if (in_array('not submitted', $failResults) && in_array('resit', $failResults)) {
+                        return 'resit';
+                    }
+
+
+                    // Default case: return the single grade if only one exists
+                    if (count($grades) == 1) {
+                        return $grades[0];
+                    }
+
+                    // If we have multiple grades that don't fit above cases, return the worst one
+                    $highestValue = 0;
+                    $finalResult = null;
+
+                    foreach ($grades as $grade) {
+                        if (isset($gradeHierarchy[$grade]) && $gradeHierarchy[$grade] > $highestValue) {
+                            $highestValue = $gradeHierarchy[$grade];
+                            $finalResult = $grade;
+                        }
+                    }
+
+                    return $finalResult;
+                }
+            }
+
+            // Query to get all results for this student/module combination
+            $checkExistingResults = $conn->prepare(
+                "SELECT result, resit_result_1, resit_result_2, resit_result_3, resit_result_4
+                FROM student_results 
+                WHERE student_id = ? 
+                AND program_id = ? 
+                AND batch_id = ? 
+                AND module_id = ?"
+            );
+
+            $checkExistingResults->bind_param(
+                "iiii",
+                $studentIdInt,
+                $programIdInt,
+                $batchIdInt,
+                $moduleIdInt
+            );
+
+            $checkExistingResults->execute();
+            $existingResults = $checkExistingResults->get_result();
+
+            // Prepare array of grades (main and resit results)
+            $grades = [];
+
+            while ($row = $existingResults->fetch_assoc()) {
+                // Collect all available grades for this student/module
+                if (!empty($row['result'])) {
+                    $grades[] = $row['result'];
+                }
+                if (!empty($row['resit_result_1'])) {
+                    $grades[] = $row['resit_result_1'];
+                }
+                if (!empty($row['resit_result_2'])) {
+                    $grades[] = $row['resit_result_2'];
+                }
+                if (!empty($row['resit_result_3'])) {
+                    $grades[] = $row['resit_result_3'];
+                }
+                if (!empty($row['resit_result_4'])) {
+                    $grades[] = $row['resit_result_4'];
+                }
+            }
+
+            // If no grades exist, fallback to the main result
+            if (empty($grades)) {
+                $grades[] = $result['result'];
+            }
+
+            // Get the final result based on the new GDM logic
+            $finalResult = getGDMFinalResult($grades, $gradeHierarchy);
+
+            // Proceed if we have a result to save
+            if ($finalResult !== null) {
+                // Insert or update final result
+                $insertFinalStmt->bind_param(
+                    "isiiis",
+                    $studentIdInt,
+                    $result['studentRegId'],
+                    $programIdInt,
+                    $batchIdInt,
+                    $moduleIdInt,
+                    $finalResult
+                );
+
+                if (!$insertFinalStmt->execute()) {
+                    throw new Exception("Final result insert/update failed: " . $insertFinalStmt->error);
+                }
+            }
+
+            $checkExistingResults->close();
+        }
+        // -------------------------------------------------------------------------------------------
+    }
+
+    // Commit transaction
+    $conn->commit();
+
+    // ---- Clean buffer: discard any stray PHP warnings / notices that
+    //      would otherwise be prepended to the JSON payload and cause the
+    //      frontend "Unexpected Server Response, Please try again" error.
+    while (ob_get_level() > 0) {
+        @ob_end_clean();
+    }
+    header('Content-Type: application/json; charset=utf-8', true);
+
+    $responsePayload = json_encode([
+        'success' => true,
+        'message' => 'Results and description saved successfully',
+        'program_name' => $programName,
+        'description_saved' => !empty($description)
+    ], JSON_UNESCAPED_UNICODE);
+
+    // Explicit Content-Length prevents some shared-hosting proxies from
+    // truncating the response when output compression is toggled.
+    header('Content-Length: ' . strlen($responsePayload));
+    echo $responsePayload;
+    exit;
+} catch (Exception $e) {
+    // Rollback transaction on error
+    if (isset($conn)) {
+        try {
+            $conn->rollback();
+        } catch (Exception $_rb) {
+            // ignore rollback errors (best-effort)
+            unset($_rb);
+        }
+    }
+    // Log the error message (never sent to frontend in production)
+    @error_log('[save_results] ' . $e->getMessage());
+
+    // ---- Clean buffer before emitting error JSON
+    while (ob_get_level() > 0) {
+        @ob_end_clean();
+    }
+    header('Content-Type: application/json; charset=utf-8', true);
+
+    // On localhost (dev) we surface the real error; on hosting (prod) we
+    // return a safe generic message so details never leak and JSON stays
+    // small / clean.
+    $frontendMessage = ($isLocalhost && !$isProdEnv)
+        ? ('[Dev] ' . $e->getMessage())
+        : 'Error saving results. Please try again';
+
+    $errorPayload = json_encode([
+        'success' => false,
+        'message' => $frontendMessage,
+        'error'   => ($isLocalhost && !$isProdEnv) ? $e->getMessage() : 'server_error'
+    ], JSON_UNESCAPED_UNICODE);
+
+    header('Content-Length: ' . strlen($errorPayload));
+    echo $errorPayload;
+    exit;
+} finally {
+    // Always drop any open output buffers before cleanup so there is
+    // nothing left to leak after the response body.
+    while (ob_get_level() > 0) {
+        @ob_end_clean();
+    }
+
+    // Close all prepared statements and connection
+    if (isset($checkStmt) && $checkStmt instanceof mysqli_stmt)
+        @$checkStmt->close();
+    if (isset($insertStmt) && $insertStmt instanceof mysqli_stmt)
+        @$insertStmt->close();
+    if (isset($updateStmt) && $updateStmt instanceof mysqli_stmt)
+        @$updateStmt->close();
+    if (isset($insertFinalStmt) && $insertFinalStmt instanceof mysqli_stmt)
+        @$insertFinalStmt->close();
+    if (isset($conn) && $conn instanceof mysqli)
+        @$conn->close();
+}
+
+
+// ECM
+
+function calculateFinalResult($studentId, $moduleId, $conn, $programId = null, $batchId = null, $overrideRows = null)
+{
+    $studentIdInt = (int) $studentId;
+    $moduleIdInt  = (int) $moduleId;
+
+    // ---- Step 1: load rows
+    if (is_array($overrideRows) && !empty($overrideRows)) {
+        // Caller already built the row list (first-insert / no-delay fallback).
+        $rows = $overrideRows;
+    } else {
+        // NOTE: filter on ALL 4 keys (student/program/batch/module) so a
+       
+        $whereSql  = "WHERE student_id = ? AND module_id = ?";
+        $whereTypes = "ii";
+        $whereParams = [$studentIdInt, $moduleIdInt];
+
+        if ($programId !== null) {
+            $whereSql .= " AND program_id = ?";
+            $whereTypes .= "i";
+            $whereParams[] = (int) $programId;
+        }
+        if ($batchId !== null) {
+            $whereSql .= " AND batch_id = ?";
+            $whereTypes .= "i";
+            $whereParams[] = (int) $batchId;
+        }
+
+        $query = "SELECT 
+                    converted_marks, converted_marks_grade,
+                    ecm_r1_converted_marks, ecm_r1_converted_marks_grade,
+                    ecm_r2_converted_marks, ecm_r2_converted_marks_grade,
+                    ecm_r3_converted_marks, ecm_r3_converted_marks_grade,
+                    ecm_r4_converted_marks, ecm_r4_converted_marks_grade
+                  FROM student_results 
+                  $whereSql";
+        $stmt = $conn->prepare($query);
+        if (!$stmt) {
+            return null;
+        }
+
+        // Bind dynamic types/params using call_user_func_array (reference-safe)
+        $bindParams = [$whereTypes];
+        foreach ($whereParams as $i => $v) {
+            $bindParams[] = &$whereParams[$i]; // references required for bind_param
+        }
+        call_user_func_array([$stmt, 'bind_param'], $bindParams);
+
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $rows = [];
+        while ($row = $res->fetch_assoc()) {
+            $rows[] = $row;
+        }
+        $stmt->close();
+    }
+
+    // ---- Step 2: for each row, pick the LATEST non-empty attempt
+   
+    $grades = [];
+    $marks  = [];
+
+    $attemptOrder = [
+        ['mark' => 'ecm_r4_converted_marks',      'grade' => 'ecm_r4_converted_marks_grade'],
+        ['mark' => 'ecm_r3_converted_marks',      'grade' => 'ecm_r3_converted_marks_grade'],
+        ['mark' => 'ecm_r2_converted_marks',      'grade' => 'ecm_r2_converted_marks_grade'],
+        ['mark' => 'ecm_r1_converted_marks',      'grade' => 'ecm_r1_converted_marks_grade'],
+        ['mark' => 'converted_marks',             'grade' => 'converted_marks_grade'],
+    ];
+
+    foreach ($rows as $row) {
+        $rowGrade = null;
+        $rowMark  = null;
+
+        foreach ($attemptOrder as $att) {
+            $mRaw = $row[$att['mark']]  ?? null;
+            $gRaw = $row[$att['grade']] ?? null;
+
+            $mHas = ($mRaw !== null && trim((string)$mRaw) !== '');
+            $gHas = ($gRaw !== null && trim((string)$gRaw) !== '');
+
+            if (!$mHas && !$gHas) {
+                continue; // no data yet for this attempt, try next lower rank
+            }
+
+            // This attempt is the latest one with data → pick it for this row.
+          
+            $knownTextGrades = [
+                'pass','merit','distinction',
+                'resit','re-sit','re sit',
+                'absent','not submitted', 'not_submitted',
+                'pending','completed','not completed'
+            ];
+
+            $markTrimmed = $mHas ? trim((string)$mRaw) : '';
+            $markIsNumeric = ($markTrimmed !== '' && is_numeric($markTrimmed));
+            $markLooksLikeGrade = $mHas && !$markIsNumeric && in_array(
+                strtolower(preg_replace('/\s+/', ' ', $markTrimmed)),
+                $knownTextGrades,
+                true
+            );
+            $markTextGradeEquivalent = null;
+            if ($markLooksLikeGrade) {
+                $normalizedMarkText = strtolower(preg_replace('/\s+/', ' ', $markTrimmed));
+                if ($normalizedMarkText === 're-sit' || $normalizedMarkText === 're sit') $normalizedMarkText = 'resit';
+                if ($normalizedMarkText === 'not_submitted') $normalizedMarkText = 'not submitted';
+                // Restore pretty casing expected by Step 3 engine
+                $textGradeMap = [
+                    'pass'          => 'Pass',
+                    'merit'         => 'Merit',
+                    'distinction'   => 'Distinction',
+                    'resit'         => 'Resit',
+                    'absent'        => 'Absent',
+                    'not submitted' => 'Not Submitted',
+                    'pending'       => 'Pending',
+                    'completed'     => 'Completed',
+                    'not completed' => 'Not Completed',
+                ];
+                $markTextGradeEquivalent = $textGradeMap[$normalizedMarkText] ?? ucwords($normalizedMarkText);
+            }
+
+            // ----- Mark -----
+            if ($mHas && $markIsNumeric) {
+                $rowMark = $markTrimmed + 0; // cast to int/float safely
+            } else {
+                // Mark missing OR mark is a textual grade → use 0 (NS/Absent/Resit
+                // never contribute to sum, only pass-grades do)
+                $rowMark = 0;
+            }
+
+            // ----- Grade -----
+            if ($gHas) {
+                // Explicit grade column always takes priority if present
+                $rowGrade = (string)$gRaw;
+            } elseif ($markLooksLikeGrade) {
+                // Grade column empty but mark contains a known textual grade → use it
+                $rowGrade = $markTextGradeEquivalent;
+            } elseif ($mHas && $markIsNumeric) {
+                // Mark exists (numeric) but grade column is missing → "Pass".
+                // "Not Submitted" and "Absent" never carry numeric marks.
+                $rowGrade = 'Pass';
+            } else {
+                // Unexpected mark value (non-numeric, unrecognised text)
+                // → safest: treat as Pending so user sees anomaly
+                $rowGrade = 'Pending';
+            }
+            break; // found the latest attempt — stop falling through for this row
+        }
+
+        if ($rowGrade !== null) {
+            $grades[] = $rowGrade;
+            $marks[]  = $rowMark;
+        }
+    }
+
+    if (empty($grades)) {
+        return null; // no results found (and no overrideRows either)
+    }
+
+    // ---- Step 3: decision engine — ONE place for ECM rules.
+    // Both the live DB-read path AND the first-insert overrideRows path
+    // end up here, so the final_student_results value is 100% identical.
+
+    $passGrades    = ['Distinction', 'Merit', 'Pass'];
+    $specialGrades = ['Resit', 'Not Submitted', 'Absent'];
+
+    $uniqueGrades = array_values(array_unique($grades));
+
+    // Rule: All Resit
+    if (count($uniqueGrades) === 1 && $uniqueGrades[0] === 'Resit') {
+        return 'Resit';
+    }
+    // Rule: All Not Submitted
+    if (count($uniqueGrades) === 1 && $uniqueGrades[0] === 'Not Submitted') {
+        return 'Resit';
+    }
+    // Rule: All Absent
+    if (count($uniqueGrades) === 1 && $uniqueGrades[0] === 'Absent') {
+        return 'Absent';
+    }
+    // Rule: Absent + Not Submitted (only these two types present)
+    if (count($uniqueGrades) === 2
+        && in_array('Absent', $uniqueGrades, true)
+        && in_array('Not Submitted', $uniqueGrades, true)
+    ) {
+        return 'Absent';
+    }
+    // Rule: Not Submitted + Resit
+    if (count($uniqueGrades) === 2
+        && in_array('Not Submitted', $uniqueGrades, true)
+        && in_array('Resit', $uniqueGrades, true)
+    ) {
+        return 'Resit';
+    }
+    // Rule: Any special grade + any pass grade
+    //   → return the special grade with priority: Resit > Not Submitted > Absent
+    $hasPassSpecial = (
+        count(array_intersect($specialGrades, $uniqueGrades)) > 0 &&
+        count(array_intersect($passGrades,    $uniqueGrades)) > 0
+    );
+    if ($hasPassSpecial) {
+        if (in_array('Resit', $uniqueGrades, true))         return 'Resit';
+        if (in_array('Not Submitted', $uniqueGrades, true)) return 'Not Submitted';
+        if (in_array('Absent', $uniqueGrades, true))        return 'Absent';
+    }
+    // Rule: All passes → sum of latest-attempt marks (numeric total)
+    if (count(array_diff($uniqueGrades, $passGrades)) === 0) {
+        return array_sum(array_map('floatval', $marks));
+    }
+
+    // Default case
+    return 'Pending';
+}
+
+
+// HD 
+function calculateFinalResultHD($studentId, $moduleId, $conn, $programId = null, $batchId = null)
+{
+    // NOTE: filter on all 4 identity keys (student/program/batch/module) so a
+    // retake in a different batch or programme never mixes marks with this
+    // one — same fix pattern as calculateFinalResult() (ECM) above.
+    $whereSql   = "WHERE student_id = ? AND module_id = ?";
+    $whereTypes = "ii";
+    $studentIdInt = (int) $studentId;
+    $moduleIdInt  = (int) $moduleId;
+    $whereParams  = [$studentIdInt, $moduleIdInt];
+
+    if ($programId !== null) {
+        $whereSql .= " AND program_id = ?";
+        $whereTypes .= "i";
+        $whereParams[] = (int) $programId;
+    }
+    if ($batchId !== null) {
+        $whereSql .= " AND batch_id = ?";
+        $whereTypes .= "i";
+        $whereParams[] = (int) $batchId;
+    }
+
+    $query = "SELECT hd_converted_marks, hd_resit1_converted_marks, hd_resit2_converted_marks, hd_resit3_converted_marks FROM student_results $whereSql";
+    $stmt = $conn->prepare($query);
+
+    $bindParams = [$whereTypes];
+    foreach ($whereParams as $i => $v) {
+        $bindParams[] = &$whereParams[$i]; // references required for bind_param
+    }
+    call_user_func_array([$stmt, 'bind_param'], $bindParams);
+
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $totalMarks = 0;
+    while ($row = $result->fetch_assoc()) {
+        // Check for resit results in reverse order (highest priority first)
+        // If a resit result is >= 0, it means it's a mark.
+        // If it's -2 (Absent) or -1 (Not Submitted), we should also consider it if it's the latest attempt.
+
+        $latestMark = 0;
+
+        if ($row['hd_resit3_converted_marks'] !== null && $row['hd_resit3_converted_marks'] !== '') {
+            $latestMark = $row['hd_resit3_converted_marks'];
+        } elseif ($row['hd_resit2_converted_marks'] !== null && $row['hd_resit2_converted_marks'] !== '') {
+            $latestMark = $row['hd_resit2_converted_marks'];
+        } elseif ($row['hd_resit1_converted_marks'] !== null && $row['hd_resit1_converted_marks'] !== '') {
+            $latestMark = $row['hd_resit1_converted_marks'];
+        } else {
+            $latestMark = $row['hd_converted_marks'];
+        }
+
+        // If the latest mark is negative (Absent or NS), we treat it as 0 for sum calculation
+        // but the individual record should still keep its -2 or -1.
+        $totalMarks += ($latestMark > 0) ? $latestMark : 0;
+    }
+    return $totalMarks;
+}
+
+function getCompletionStatus($hdGrades)
+{
+    foreach ($hdGrades as $grade) {
+        if (strtolower(trim($grade ?? '')) === 'not completed') {
+            return 'Not Completed';
+        }
+    }
+    return 'Completed';
+}

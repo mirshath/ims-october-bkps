@@ -1,0 +1,517 @@
+<?php
+session_start();
+include("database/connection.php");
+include("includes/header.php");
+
+
+if (!isset($_SESSION['username'])) {
+    // header("location: login.php");
+    echo '<script>window.location.href = "login";</script>';
+    // exit();
+}
+
+
+// ---------------------------- allowed Redirections ---------------------------------------------------------------- 
+// -------- Permission CHECKING TO REDIRECT TO HOME PAGE -------- 
+require_once 'PermissionChecking.php';
+// --------------------------------------------------------------------- 
+// -------------------------------------------------------------------------------------------- 
+
+
+
+
+// Fetch universities for the dropdown
+$universities_result = mysqli_query($conn, "SELECT * FROM universities");
+$universities = [];
+while ($row = mysqli_fetch_assoc($universities_result)) {
+    $universities[] = $row;
+}
+
+// Fetch coordinators for the dropdown (assuming coordinators are necessary)
+$coordinators_result = mysqli_query($conn, "SELECT * FROM coordinator_table");
+$coordinators = [];
+while ($row = mysqli_fetch_assoc($coordinators_result)) {
+    $coordinators[] = $row;
+}
+
+// Fetch criteria for checkboxes
+$criterias_result = mysqli_query($conn, "SELECT * FROM criterias");
+$criterias = [];
+while ($row = mysqli_fetch_assoc($criterias_result)) {
+    $criterias[] = $row;
+}
+
+// Fetch payment methods for the dropdown
+$payment_methods_result = mysqli_query($conn, "SELECT * FROM payment_due_method");
+$payment_methods = [];
+while ($row = mysqli_fetch_assoc($payment_methods_result)) {
+    $payment_methods[] = $row;
+}
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (isset($_POST['delete_program'])) {
+        if (!empty($_POST['program_code'])) {
+            $program_code = mysqli_real_escape_string($conn, $_POST['program_code']);
+            $delete_sql = "DELETE FROM program_table WHERE program_code='$program_code'";
+
+            if (mysqli_query($conn, $delete_sql)) {
+                $_SESSION['message'] = "Program deleted successfully.";
+                echo '<script>window.location.href = "' . $_SERVER['HTTP_REFERER'] . '";</script>';
+            } else {
+                echo "<div class='alert alert-danger'>Error: " . mysqli_error($conn) . "</div>";
+            }
+        } else {
+            echo "<div class='alert alert-danger'>Error: Program Code is missing.</div>";
+        }
+    } else {
+        // Handle insert or update
+        $program_code = isset($_POST['program_code']) ? mysqli_real_escape_string($conn, $_POST['program_code']) : '';
+        $university_id = mysqli_real_escape_string($conn, $_POST['university']);
+        $program_name = mysqli_real_escape_string($conn, $_POST['program_name']);
+        $prog_code = mysqli_real_escape_string($conn, $_POST['prog_code']);
+        $coordinator_name = mysqli_real_escape_string($conn, $_POST['coordinator_name']);
+        $medium = mysqli_real_escape_string($conn, $_POST['medium']);
+        $duration = mysqli_real_escape_string($conn, $_POST['duration']);
+        $course_fee_lkr = mysqli_real_escape_string($conn, $_POST['course_fee_lkr']);
+        $course_fee_gbp = mysqli_real_escape_string($conn, $_POST['course_fee_gbp']);
+        $course_fee_usd = mysqli_real_escape_string($conn, $_POST['course_fee_usd']);
+        $course_fee_euro = mysqli_real_escape_string($conn, $_POST['course_fee_euro']);
+        $cetegory = isset($_POST['cetegory']) ? mysqli_real_escape_string($conn, $_POST['cetegory']) : '';
+
+        // Get the payment method from the form
+        $payment_method = mysqli_real_escape_string($conn, $_POST['payment_method']);
+
+        // Handle result method checkboxes
+        $result_method = isset($_POST['result_method']) ? implode(',', $_POST['result_method']) : '';
+
+        // Handle entry requirements
+        $entry_requirements = isset($_POST['entry_requirement']) ? implode(',', $_POST['entry_requirement']) : '';
+
+        if (isset($_POST['edit_program']) && !empty($program_code)) {
+            // Update existing program
+            $update_sql = "UPDATE program_table SET 
+                university_id='$university_id',
+                program_name='$program_name',
+                prog_code='$prog_code',
+                coordinator_name='$coordinator_name',
+                medium='$medium',
+                duration='$duration',
+                result_method='$result_method',
+                course_fee_lkr='$course_fee_lkr',
+                course_fee_gbp='$course_fee_gbp',
+                course_fee_usd='$course_fee_usd',
+                course_fee_euro='$course_fee_euro',
+                entry_requirement='$entry_requirements',
+                payment_method='$payment_method',
+                cetegory='$cetegory'
+                WHERE program_code='$program_code'";
+
+            // Output the query for debugging
+            // echo $update_sql;
+
+            if (mysqli_query($conn, $update_sql)) {
+                $_SESSION['message'] = "Program updated successfully!";
+                echo '<script>window.location.href = "' . $_SERVER['HTTP_REFERER'] . '";</script>';
+            } else {
+                echo "<div class='alert alert-danger'>Error: " . mysqli_error($conn) . "</div>";
+            }
+        } else {
+            // Insert new program
+            $insert_sql = "INSERT INTO program_table 
+           (university_id, program_name, prog_code, coordinator_name, medium, duration, result_method, course_fee_lkr, course_fee_gbp, course_fee_usd, course_fee_euro, entry_requirement, payment_method, cetegory) 
+           VALUES ('$university_id', '$program_name', '$prog_code', '$coordinator_name', '$medium', '$duration', '$result_method', '$course_fee_lkr', '$course_fee_gbp', '$course_fee_usd', '$course_fee_euro', '$entry_requirements', '$payment_method', '$cetegory')";
+            if (mysqli_query($conn, $insert_sql)) {
+                $_SESSION['message'] = "Program added successfully.!";
+                echo '<script>window.location.href = "' . $_SERVER['HTTP_REFERER'] . '";</script>';
+            } else {
+                echo "<div class='alert alert-danger'>Error: " . mysqli_error($conn) . "</div>";
+            }
+        }
+    }
+}
+
+?>
+
+<script>
+    $(document).ready(function() {
+        // Initialize select2 for dropdowns
+        $('.select2').select2();
+
+        // Event listener for program selection change
+        $('#program_select').on('change', function() {
+            var program_code = $(this).val();
+
+            if (program_code) {
+                // If a program is selected, fetch its data
+                $.ajax({
+                    url: 'fetch_program_data.php',
+                    type: 'POST',
+                    data: {
+                        program_code: program_code
+                    },
+                    success: function(response) {
+                        try {
+                            var data = JSON.parse(response);
+                            console.log("Fetched data:", data); // Debug log
+
+                            // Populate the form fields with the fetched data
+                            $('#program_code').val(data.program_code);
+                            $('#university').val(data.university_id).trigger('change');
+                            $('#program_name').val(data.program_name);
+                            $('#prog_code').val(data.prog_code);
+                            $('#coordinator_name').val(data.coordinator_name).trigger('change');
+                            $('#medium').val(data.medium);
+                            $('#duration').val(data.duration);
+                            $('#course_fee_lkr').val(data.course_fee_lkr);
+                            $('#course_fee_gbp').val(data.course_fee_gbp);
+                            $('#course_fee_usd').val(data.course_fee_usd);
+                            $('#course_fee_euro').val(data.course_fee_euro);
+                            $('#cetegory').val(data.cetegory);
+
+                            // FIXED: Set the selected payment method
+                            // Make sure the value exists in the dropdown before setting it
+                            if (data.payment_method && data.payment_method !== '') {
+                                console.log("Setting payment method to:", data.payment_method); // Debug log
+                                $('#payment_method').val(data.payment_method);
+                                // For select2, you need to trigger change after setting value
+                                $('#payment_method').trigger('change');
+                            } else {
+                                // If no payment method is set, reset to default
+                                $('#payment_method').val('').trigger('change');
+                            }
+
+                            // Populate entry requirements checkboxes
+                            $('input[name="entry_requirement[]"]').each(function() {
+                                var value = $(this).val();
+                                if (data.entry_requirements && data.entry_requirements.includes(value)) {
+                                    $(this).prop('checked', true);
+                                } else {
+                                    $(this).prop('checked', false);
+                                }
+                            });
+
+                            // Handle result method checkboxes
+                            if (data.result_method) {
+                                var resultMethods = data.result_method.split(',');
+                                $('input[name="result_method[]"]').each(function() {
+                                    if (resultMethods.includes($(this).val())) {
+                                        $(this).prop('checked', true);
+                                    } else {
+                                        $(this).prop('checked', false);
+                                    }
+                                });
+                            }
+
+                            // Show the "Update" button and hide the "Submit" button
+                            $('#submit_button').hide();
+                            $('#update_button').show();
+                            $('#delete_button').show(); // Also show delete button for editing
+                        } catch (e) {
+                            console.error("Error parsing JSON response: ", e);
+                            console.log("Response received: ", response);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error("AJAX Error: ", status, error);
+                    }
+                });
+            } else {
+                // Clear form fields if no program is selected
+                $('#program_code').val('');
+                $('#university').val('').trigger('change');
+                $('#program_name').val('');
+                $('#prog_code').val('');
+                $('#cetegory').val(''); // Reset category
+                $('#coordinator_name').val('').trigger('change');
+                $('#medium').val('');
+                $('#duration').val('');
+                $('#course_fee_lkr').val('');
+                $('#course_fee_gbp').val('');
+                $('#course_fee_usd').val('');
+                $('#course_fee_euro').val('');
+                $('#payment_method').val('').trigger('change'); // Reset payment method
+                $('input[name="entry_requirement[]"]').prop('checked', false);
+
+                // Show the "Submit" button and hide the "Update" button
+                $('#submit_button').show();
+                $('#update_button').hide();
+                $('#delete_button').hide();
+            }
+        });
+    });
+</script>
+
+
+<!-- Page Wrapper -->
+<div id="wrapper">
+    <!-- Sidebar -->
+    <?php include("nav.php"); ?>
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+        <!-- Main Content -->
+        <div id="content">
+            <!-- Topbar -->
+            <?php include("includes/topnav.php"); ?>
+
+            <div class="p-3">
+                <!-- Page Heading -->
+                <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                    <h4 class="h4 mb-0 text-gray-800">Program Managment</h4>
+                </div>
+                <div class="container">
+                    <div class="row mb-4">
+                        <div class="col-md-4 ml-auto">
+                            <div class="form-group">
+                                <label for="program_select" style="color: red; font-weight: 600;">Select Program to edit:</label>
+                                <select class="form-control select2" id="program_select" name="program_select">
+                                    <option value="">-- Select a Program --</option>
+                                    <?php
+                                    // Fetch program names for the dropdown
+                                    $programs_result = mysqli_query($conn, "SELECT program_code, program_name FROM program_table");
+                                    while ($row = mysqli_fetch_assoc($programs_result)) {
+                                        echo '<option value="' . htmlspecialchars($row['program_code']) . '">' . htmlspecialchars($row['program_name']) . '</option>';
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-5">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header d-flex align-items-center" style="height: 60px;">
+                                <span class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                    <i class="fas fa-plus-circle"></i>
+                                </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                                <h6 class="mb-0 me-2">Add Program</h6>
+                            </div>
+                            <div class="card-body">
+                                <form action="" method="post" class="mb-3">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <!-- <label for="program_code">Program ID:</label> -->
+                                                <input type="hidden" id="program_code" name="program_code">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="university">University: <span style="color: red; font-weight: bolder;">*</span> </label>
+                                                <select class="form-control select2" id="university" name="university" required>
+                                                    <option value="" disabled>-- Select a University --</option>
+                                                    <?php foreach ($universities as $uni): ?>
+                                                        <option value="<?php echo htmlspecialchars($uni['id']); ?>">
+                                                            <?php echo htmlspecialchars($uni['university_name']); ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="prog_code">Program Code:<span style="color: red; font-weight: bolder;">*</span> </label>
+                                                <input type="text" class="form-control" id="prog_code" name="prog_code" placeholder="Program Code" required>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="program_name">Program Name:<span style="color: red; font-weight: bolder;">*</span> </label>
+                                                <input type="text" class="form-control" id="program_name" name="program_name" placeholder="Program Name" required>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="cetegory">Category: <span style="color: red; font-weight: bolder;">*</span> </label>
+                                                <select class="form-control" id="cetegory" name="cetegory" required>
+                                                    <option value="">-- Select a Category --</option>
+                                                    <option value="normal">Normal</option>
+                                                    <option value="final_year">Final Year</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="coordinator_name">Coordinator Name:<span style="color: red; font-weight: bolder;">*</span> </label>
+                                                <select class="form-control select2" id="coordinator_name" name="coordinator_name" required>
+                                                    <option value="" disabled>-- Select a coordinator --</option>
+                                                    <?php foreach ($coordinators as $coord): ?>
+                                                        <option value="<?php echo htmlspecialchars($coord['coordinator_name']); ?>">
+                                                            <?php echo htmlspecialchars($coord['coordinator_name']); ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="payment_method">Payment Method:<span style="color: red; font-weight: bolder;">*</span> </label>
+                                                <select class="form-control select2" id="payment_method" name="payment_method" required>
+                                                    <option value="">-- Select a Payment Method --</option>
+                                                    <?php foreach ($payment_methods as $method): ?>
+                                                        <option value="<?php echo htmlspecialchars($method['payment_value']); ?>">
+                                                            <?php echo htmlspecialchars($method['payment_method']); ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="medium">Medium:<span style="color: red; font-weight: bolder;">*</span> </label>
+                                                <select class="form-control" id="medium" name="medium" required>
+                                                    <option value="English">English</option>
+
+                                                </select>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="duration">Duration:<span style="color: red; font-weight: bolder;">*</span> </label>
+                                                <input type="text" class="form-control" id="duration" name="duration" placeholder="Durations">
+                                            </div>
+
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="course_fee_lkr">Course Fee (LKR):<span style="color: red; font-weight: bolder;">*</span> </label>
+                                                <input type="number" step="0.01" class="form-control" id="course_fee_lkr" name="course_fee_lkr" placeholder="Course Fee LKR">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="course_fee_gbp">UNI Fee (GBP):</label>
+                                                <input type="number" step="0.01" class="form-control" id="course_fee_gbp" name="course_fee_gbp" placeholder="Course Fee GBP">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="course_fee_usd">UNI Fee (USD):</label>
+                                                <input type="number" step="0.01" class="form-control" id="course_fee_usd" name="course_fee_usd" placeholder="Course Fee USD">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="course_fee_euro">UNI Fee (EURO):</label>
+                                                <input type="number" step="0.01" class="form-control" id="course_fee_euro" name="course_fee_euro" placeholder="Course Fee EURO">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Entry Requirements: <span style="color: red; font-weight: bolder;">*</span> </label>
+                                                <?php foreach ($criterias as $criteria): ?>
+                                                    <div class="form-check">
+                                                        <input type="checkbox" class="form-check-input" name="entry_requirement[]" value="<?php echo htmlspecialchars($criteria['criteria_name']); ?>">
+                                                        <label class="form-check-label"><?php echo htmlspecialchars($criteria['criteria_name']); ?></label>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <button type="submit" id="submit_button" class="btn btn-primary">Submit</button>
+                                        <button type="submit" id="update_button" class="btn btn-success" name="edit_program" style="display: none;">Update</button>
+                                        <!-- <button type="submit" id="delete_button" class="btn btn-danger" name="delete_program" style="display: none;">Delete</button> -->
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid" style="font-size: 13px;">
+                <div class="card shadow mb-4">
+                    <div class="card-header d-flex align-items-center" style="height: 60px;"> <!-- Added d-flex and align-items-center -->
+                        <span class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                            <i class="fas fa-list"></i>
+                        </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                        <h6 class="mb-0">Current Programms</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped" id="dataTable" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Program Name</th>
+                                        <th>University</th>
+                                        <th>Program Code</th>
+                                        <th>Category</th>
+                                        <th>Coordinator Name</th>
+                                        <th>Medium</th>
+                                        <th>Duration</th>
+                                        <th>Fees</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    // $programs_result = mysqli_query($conn, "SELECT * FROM program_table");
+                                    $programs_result = mysqli_query($conn, "
+                                        SELECT program_table.*, universities.university_name, payment_due_method.payment_method 
+                                        FROM program_table
+                                        JOIN universities ON program_table.university_id = universities.id
+                                        LEFT JOIN payment_due_method ON program_table.payment_method = payment_due_method.id
+                                    ");
+
+                                    while ($row = mysqli_fetch_assoc($programs_result)) {
+                                        echo '<tr>';
+                                        echo '<td>' . htmlspecialchars($row['program_name']) . '</td>';
+                                        echo '<td>' . htmlspecialchars($row['university_name']) . '</td>';
+                                        echo '<td>' . htmlspecialchars($row['prog_code']) . '</td>';
+                                        echo '<td>' . htmlspecialchars($row['cetegory'] ?? '-') . '</td>';
+                                        echo '<td>' . htmlspecialchars($row['coordinator_name']) . '</td>';
+                                        echo '<td>' . htmlspecialchars($row['medium']) . '</td>';
+                                        echo '<td>' . htmlspecialchars($row['duration']) . '</td>';
+
+                                        // Display fees with currency symbols if they are greater than 0
+                                        echo '<td>';
+                                        $hasFees = false;
+
+                                        if ($row['course_fee_lkr'] > 0) {
+                                            echo 'LKR ' . number_format($row['course_fee_lkr'], 2);
+                                            $hasFees = true;
+                                        }
+
+                                        if ($row['course_fee_gbp'] > 0) {
+                                            if ($hasFees) echo '<br>';
+                                            echo 'GBP £' . number_format($row['course_fee_gbp'], 2);
+                                            $hasFees = true;
+                                        }
+
+                                        if ($row['course_fee_usd'] > 0) {
+                                            if ($hasFees) echo '<br>';
+                                            echo 'USD $' . number_format($row['course_fee_usd'], 2);
+                                            $hasFees = true;
+                                        }
+
+                                        if ($row['course_fee_euro'] > 0) {
+                                            if ($hasFees) echo '<br>';
+                                            echo 'EUR €' . number_format($row['course_fee_euro'], 2);
+                                            $hasFees = true;
+                                        }
+
+                                        if (!$hasFees) {
+                                            echo 'No fees set';
+                                        }
+
+                                        echo '</td>';
+
+                                        echo '<td>';
+                                        echo '<button class="btn btn-warning btn-sm edit-button" data-prog-code="' . htmlspecialchars($row['program_code']) . '"><i class="fas fa-edit"></i></button>';
+                                        echo '<form action="" method="post" style="display:inline;">
+                                            <input type="hidden" name="program_code" value="' . htmlspecialchars($row['program_code']) . '">
+                                            <button type="submit" name="delete_program" class="btn btn-danger btn-sm"onclick="return confirm(\'Are you sure you want to delete this module?\')"><i class="fas fa-trash-alt"></i></button>
+                                            </form>';
+                                        echo '</td>';
+                                        echo '</tr>';
+                                    }
+                                    ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    $(document).ready(function() {
+        $('.edit-button').on('click', function() {
+            var progCode = $(this).data('prog-code');
+            $('#program_select').val(progCode).trigger('change');
+        });
+    });
+</script>
+
+<script src="vendor/datatables/jquery.dataTables.min.js"></script>
+<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+<link rel="stylesheet" href="./vendor/datatables/dataTables.bootstrap4.min.css">
+<!--<script src="js/demo/datatables-demo.js"></script>-->
+<script>
+    $(document).ready(function() {
+        $('#dataTable').DataTable({
+            "pageLength": 100
+        });
+    });
+</script>
+</body>
+
+</html>

@@ -1,0 +1,5 @@
+[13-Dec-2025 09:07:23 UTC] PHP Fatal error:  Uncaught ArgumentCountError: The number of elements in the type definition string must match the number of bind variables in /home/bmsims/public_html/add_payment_plan_folder/insert_payment_plan.php:113
+Stack trace:
+#0 /home/bmsims/public_html/add_payment_plan_folder/insert_payment_plan.php(113): mysqli_stmt_bind_param()
+#1 {main}
+  thrown in /home/bmsims/public_html/add_payment_plan_folder/insert_payment_plan.php on line 113

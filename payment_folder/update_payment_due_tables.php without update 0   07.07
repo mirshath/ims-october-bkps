@@ -1,0 +1,511 @@
+<?php
+session_start();
+include("../database/connection.php");
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $studentId = $_POST['student_id'] ?? '';
+    $programmeBatch = $_POST['programme_batch'] ?? '';
+    global $programme_code;
+    $programme_code = $_POST['program_Code'] ?? '';
+    // $programme_code = 57;
+
+    if (empty($studentId) || empty($programmeBatch)) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Missing required parameters'
+        ]);
+        exit;
+    }
+
+    $result = updatePaymentDueTablesOnSuccess($studentId, $programmeBatch, $programme_code, $conn);
+    echo json_encode($result);
+} else {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Invalid request method'
+    ]);
+}
+
+
+function updatePaymentDueTablesOnSuccess($studentId, $programmeBatch, $programme_code, $conn)
+{
+    try {
+        // Start transaction for data consistency
+        $conn->begin_transaction();
+
+        // Get student information
+        $studentQuery = "
+            SELECT 
+                s.student_code,
+                CONCAT(s.first_name, ' ', s.last_name) AS student_name,
+                ap.student_registration_id,
+                ap.programme_code,
+                ap.batch_id
+            FROM students s
+            JOIN allocate_programme ap ON s.student_code = ap.student_code
+            WHERE s.student_code = ? AND ap.status = 'active'";
+
+        // Add programme_code filter if provided
+        if (!empty($programme_code)) {
+            $studentQuery .= " AND ap.programme_code = ?";
+            $stmt = $conn->prepare($studentQuery);
+            $stmt->bind_param("is", $studentId, $programme_code);
+        } else {
+            $stmt = $conn->prepare($studentQuery);
+            $stmt->bind_param("i", $studentId);
+        }
+
+        $stmt->execute();
+        $studentInfo = $stmt->get_result()->fetch_assoc();
+
+        if (!$studentInfo) {
+            throw new Exception("Student not found");
+        }
+
+        // Fetch program details from program_table
+        $programQuery = "
+            SELECT program_name, payment_method FROM program_table 
+            WHERE program_code  = ?";
+        $stmt = $conn->prepare($programQuery);
+        $stmt->bind_param("s", $programme_code);
+        $stmt->execute();
+        $programDetails = $stmt->get_result()->fetch_assoc();
+
+        if ($programDetails) {
+            // Get the program name and payment method
+            $programName = $programDetails['program_name'];
+            $paymentMethod = $programDetails['payment_method'];
+            // You can now use $programName and $paymentMethod as needed
+            error_log("Program Name: " . $programName);
+            error_log("Payment Method: " . $paymentMethod);
+        } else {
+            error_log("No program found for code: " . $programme_code);
+        }
+
+        // Get payment plan details
+        $paymentPlanQuery = "
+            SELECT 
+                appt.university_fee_LKR,
+                appt.university_fee_GBP,
+                appt.university_fee_USD,
+                appt.registration_fee_LKR,
+                appt.registration_fee_GBP,
+                appt.registration_fee_USD
+            FROM add_payment_plan_table appt
+            WHERE appt.student_id = ? AND appt.programme_batch = ?
+        ";
+
+        $stmt = $conn->prepare($paymentPlanQuery);
+        $stmt->bind_param("is", $studentId, $programmeBatch);
+        $stmt->execute();
+        $paymentPlan = $stmt->get_result()->fetch_assoc();
+
+        $paymentDetails = [];
+
+        // Calculate University Fee Outstanding (LKR)
+        if (!empty($paymentPlan['university_fee_LKR']) && $paymentPlan['university_fee_LKR'] > 0) {
+            $uniFeeLKR = $paymentPlan['university_fee_LKR'];
+
+            $uniPaymentsLKRQuery = "
+                SELECT COALESCE(SUM(LKR_money), 0) as total_paid_lkr
+                FROM payment_uni_fee
+                WHERE student_id = ? AND program_batch = ? 
+                AND (currency_type = 'LKR' OR currency_type IS NULL)
+            ";
+
+            $stmt = $conn->prepare($uniPaymentsLKRQuery);
+            $stmt->bind_param("is", $studentId, $programmeBatch);
+            $stmt->execute();
+            $paidLKR = $stmt->get_result()->fetch_assoc()['total_paid_lkr'];
+
+            $outstandingLKR = $uniFeeLKR - $paidLKR;
+
+            if ($outstandingLKR > 0) {
+                $paymentDetails[] = [
+                    'payment_type' => 'University Fee (LKR)',
+                    'installment_amount' => $uniFeeLKR,
+                    'total_paid_amount' => $paidLKR,
+                    'outstanding_amount' => $outstandingLKR,
+                    'due_date' => date('Y-m-d'),
+                    'currency' => 'LKR'
+                ];
+            }
+        }
+
+        // Calculate University Fee Outstanding (GBP)
+        if (!empty($paymentPlan['university_fee_GBP']) && $paymentPlan['university_fee_GBP'] > 0) {
+            $uniFeeGBP = $paymentPlan['university_fee_GBP'];
+
+            $uniPaymentsGBPQuery = "
+                SELECT COALESCE(SUM(paid_amount), 0) as total_paid_gbp
+                FROM payment_uni_fee
+                WHERE student_id = ? AND program_batch = ? AND currency_type = 'GBP'
+            ";
+
+            $stmt = $conn->prepare($uniPaymentsGBPQuery);
+            $stmt->bind_param("is", $studentId, $programmeBatch);
+            $stmt->execute();
+            $paidGBP = $stmt->get_result()->fetch_assoc()['total_paid_gbp'];
+
+            $outstandingGBP = $uniFeeGBP - $paidGBP;
+
+            if ($outstandingGBP > 0) {
+                $paymentDetails[] = [
+                    'payment_type' => 'University Fee (GBP)',
+                    'installment_amount' => $uniFeeGBP,
+                    'total_paid_amount' => $paidGBP,
+                    'outstanding_amount' => $outstandingGBP,
+                    'due_date' => date('Y-m-d'),
+                    'currency' => 'GBP'
+                ];
+            }
+        }
+
+        // Calculate University Fee Outstanding (USD)
+        if (!empty($paymentPlan['university_fee_USD']) && $paymentPlan['university_fee_USD'] > 0) {
+            $uniFeeUSD = $paymentPlan['university_fee_USD'];
+
+            $uniPaymentsUSDQuery = "
+                SELECT COALESCE(SUM(paid_amount), 0) as total_paid_usd
+                FROM payment_uni_fee
+                WHERE student_id = ? AND program_batch = ? AND currency_type = 'USD'
+            ";
+
+            $stmt = $conn->prepare($uniPaymentsUSDQuery);
+            $stmt->bind_param("is", $studentId, $programmeBatch);
+            $stmt->execute();
+            $paidUSD = $stmt->get_result()->fetch_assoc()['total_paid_usd'];
+
+            $outstandingUSD = $uniFeeUSD - $paidUSD;
+
+            if ($outstandingUSD > 0) {
+                $paymentDetails[] = [
+                    'payment_type' => 'University Fee (USD)',
+                    'installment_amount' => $uniFeeUSD,
+                    'total_paid_amount' => $paidUSD,
+                    'outstanding_amount' => $outstandingUSD,
+                    'due_date' => date('Y-m-d'),
+                    'currency' => 'USD'
+                ];
+            }
+        }
+
+        // Calculate Registration Fee Outstanding
+        $regFeeLKR = !empty($paymentPlan['registration_fee_LKR']) ? $paymentPlan['registration_fee_LKR'] : 0;
+        $regFeeGBP = !empty($paymentPlan['registration_fee_GBP']) ? $paymentPlan['registration_fee_GBP'] : 0;
+        $regFeeUSD = !empty($paymentPlan['registration_fee_USD']) ? $paymentPlan['registration_fee_USD'] : 0;
+
+        $regPaymentsQuery = "
+            SELECT COALESCE(SUM(paymentAmount), 0) as total_paid
+            FROM payment_wise_info
+            WHERE student_id = ? AND program_batch = ?
+            AND (installmentNumber = 'Initial Payment' 
+                 OR installmentNumber LIKE '%initial%' 
+                 OR installmentNumber LIKE '%registration%'
+                 OR installmentNumber LIKE '%Registration%')
+            AND status = 'paid'
+        ";
+
+        $stmt = $conn->prepare($regPaymentsQuery);
+        $stmt->bind_param("is", $studentId, $programmeBatch);
+        $stmt->execute();
+        $regPaid = $stmt->get_result()->fetch_assoc()['total_paid'];
+
+        $totalRegFee = $regFeeLKR + $regFeeGBP + $regFeeUSD;
+        $outstandingRegFee = $totalRegFee - $regPaid;
+
+        if ($totalRegFee > 0) {
+            $paymentDetails[] = [
+                'payment_type' => 'Registration Fee',
+                'installment_amount' => $totalRegFee,
+                'total_paid_amount' => $regPaid,
+                'outstanding_amount' => $outstandingRegFee,
+                'due_date' => date('Y-m-d'),
+                'currency' => 'LKR'
+            ];
+        }
+
+        // Calculate Installment Outstanding
+        $installmentsQuery = "
+            SELECT 
+                idt.id,
+                idt.installment_numbers,
+                idt.installment_amount,
+                idt.devided_values,
+                idt.due_date,
+                idt.discount_type,
+                idt.discount_value
+            FROM installment_payment_table ipt
+            JOIN installment_details_table idt ON ipt.id = idt.installment_payment_table_id
+            JOIN add_payment_plan_table appt ON ipt.payment_plans_tb_id = appt.id
+            WHERE appt.student_id = ? AND appt.programme_batch = ?
+            ORDER BY idt.installment_numbers
+        ";
+
+        $stmt = $conn->prepare($installmentsQuery);
+        $stmt->bind_param("is", $studentId, $programmeBatch);
+        $stmt->execute();
+        $installmentsResult = $stmt->get_result();
+
+        while ($installment = $installmentsResult->fetch_assoc()) {
+            $installmentNumber = $installment['installment_numbers'];
+            $originalAmount = !empty($installment['devided_values']) ? $installment['devided_values'] : 0;
+
+            // Apply discount if exists
+            if (!empty($installment['discount_type'])) {
+                if ($installment['discount_type'] == 'Value') {
+                    $originalAmount -= $installment['discount_value'];
+                } elseif ($installment['discount_type'] == 'Percentage') {
+                    $originalAmount -= ($originalAmount * $installment['discount_value']) / 100;
+                }
+            }
+
+            $dueDate = $installment['due_date'];
+
+            // Get installment payments
+            $installmentPaymentsQuery = "
+                SELECT COALESCE(SUM(paymentAmount), 0) as total_paid
+                FROM payment_wise_info
+                WHERE student_id = ? AND program_batch = ? AND installmentNumber = ?
+                AND installmentNumber != 'Initial Payment'
+                AND installmentNumber NOT LIKE '%initial%'
+                AND installmentNumber NOT LIKE '%registration%'
+                AND installmentNumber NOT LIKE '%Registration%'
+                AND status = 'paid'
+            ";
+
+            $stmt = $conn->prepare($installmentPaymentsQuery);
+            $stmt->bind_param("iss", $studentId, $programmeBatch, $installmentNumber);
+            $stmt->execute();
+            $installmentPaid = $stmt->get_result()->fetch_assoc()['total_paid'];
+
+            $outstandingInstallment = $originalAmount - $installmentPaid;
+
+            if ($originalAmount > 0) {
+                $paymentDetails[] = [
+                    'payment_type' => 'Installment',
+                    'installment_numbers' => $installmentNumber,
+                    'installment_amount' => $originalAmount,
+                    'total_paid_amount' => $installmentPaid,
+                    'outstanding_amount' => $outstandingInstallment,
+                    'due_date' => $dueDate,
+                    'currency' => 'LKR'
+                ];
+            }
+        }
+
+        // Calculate totals using the same logic as outstandingPayment.php
+        $studentTotals = calculateStudentTotals($paymentDetails);
+
+        // Clear existing record for this student from payment_due_tables
+        $clearQuery = "DELETE FROM payment_due_tables WHERE student_code = ?";
+        $stmt = $conn->prepare($clearQuery);
+        $stmt->bind_param("s", $studentInfo['student_code']);
+        $stmt->execute();
+
+        // Insert new record in payment_due_tables only if there are outstanding amounts
+        if ($studentTotals['total_outstanding'] > 0) {
+            $insertQuery = "
+                INSERT INTO payment_due_tables 
+                (student_code, student_name, student_registration_id, programme_batch, 
+                 due_count_bms_fees, due_count_uni_fees, remaining_full_amount, created_at, updated_at, payment_method) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)
+            ";
+
+            $stmt = $conn->prepare($insertQuery);
+            $stmt->bind_param(
+                "ssssiiis",
+                $studentInfo['student_code'],
+                $studentInfo['student_name'],
+                $studentInfo['student_registration_id'],
+                $programmeBatch,
+                $studentTotals['reg_installment_past_due_count'],
+                $studentTotals['uni_fee_past_due_count'],
+                $studentTotals['reg_installment_outstanding'],
+                $paymentMethod
+            );
+
+            $stmt->execute();
+        }
+
+        // ===== UPDATED: Handle payment_withheld_table =====
+        updatePaymentWithheldTable(
+            $conn,
+            $studentInfo['student_code'],
+            $studentInfo['student_registration_id'],
+            $studentInfo['programme_code'],
+            $studentInfo['batch_id'],
+            $studentTotals,
+            $paymentMethod
+        );
+
+        // Commit transaction
+        $conn->commit();
+
+        return [
+            'success' => true,
+            'message' => 'Payment due tables and withheld table updated successfully',
+            'totals' => $studentTotals
+        ];
+    } catch (Exception $e) {
+        // Rollback transaction on error
+        $conn->rollback();
+        return [
+            'success' => false,
+            'message' => 'Error updating payment tables: ' . $e->getMessage()
+        ];
+    }
+}
+
+function updatePaymentWithheldTable($conn, $studentCode, $studentRegistrationId, $programId, $batchId, $studentTotals, $paymentMethod)
+{
+    try {
+        // Determine payment status based on outstanding amounts
+        $paymentStatus = 'active'; // Default status
+        $totalOutstanding = $studentTotals['total_outstanding'];
+        $dueBMSCount = $studentTotals['reg_installment_past_due_count'];
+        $dueUniCount = $studentTotals['uni_fee_past_due_count'];
+
+        if ($totalOutstanding > 0) {
+            if ($dueBMSCount >= $paymentMethod) { // Check if dueBMSCount is greater than paymentMethod
+                $paymentStatus = 'withheld'; // Has past due payments
+            } else {
+                $paymentStatus = 'active'; // Has outstanding but not overdue
+            }
+        }
+
+        // Check if record already exists
+        $checkQuery = "
+            SELECT id FROM payment_withheld_table 
+            WHERE student_code = ? AND program_id = ? AND batch_id = ?
+        ";
+
+        $stmt = $conn->prepare($checkQuery);
+        $stmt->bind_param("sii", $studentCode, $programId, $batchId);
+        $stmt->execute();
+        $existingRecord = $stmt->get_result()->fetch_assoc();
+
+        if ($existingRecord) {
+            // Update existing record
+            $updateQuery = "
+                UPDATE payment_withheld_table 
+                SET payment_status = ?, 
+                    student_registration_id = ?,
+                    due_count_bms_fees = ?, 
+                    due_count_uni_fees = ?, 
+                    last_payment_date = NOW(),
+                    updated_at = NOW()
+                WHERE student_code = ? AND program_id = ? AND batch_id = ?
+            ";
+
+            $stmt = $conn->prepare($updateQuery);
+            $stmt->bind_param(
+                "ssiisii",
+                $paymentStatus,
+                $studentRegistrationId,
+                $dueBMSCount,
+                $dueUniCount,
+                $studentCode,
+                $programId,
+                $batchId
+            );
+            $stmt->execute();
+        } else {
+            // Insert new record only if there are outstanding amounts
+            if ($totalOutstanding > 0) {
+                $insertQuery = "
+                    INSERT INTO payment_withheld_table 
+                    (student_code, student_registration_id, program_id, batch_id, 
+                     payment_status, due_count_bms_fees, due_count_uni_fees, 
+                     last_payment_date, created_at, updated_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())
+                ";
+
+                $stmt = $conn->prepare($insertQuery);
+                $stmt->bind_param(
+                    "ssiisii",
+                    $studentCode,
+                    $studentRegistrationId,
+                    $programId,
+                    $batchId,
+                    $paymentStatus,
+                    $dueBMSCount,
+                    $dueUniCount
+                );
+                $stmt->execute();
+            }
+        }
+
+        return true;
+    } catch (Exception $e) {
+        throw new Exception("Error updating payment withheld table: " . $e->getMessage());
+    }
+}
+
+function calculateStudentTotals($studentPaymentDetails)
+{
+    $totals = [
+        'total_original' => 0,
+        'total_paid' => 0,
+        'total_outstanding' => 0,
+        'past_due_total' => 0,
+        'past_due_count' => 0,
+        'uni_fee_original' => 0,
+        'uni_fee_paid' => 0,
+        'uni_fee_outstanding' => 0,
+        'uni_fee_past_due_total' => 0,
+        'uni_fee_past_due_count' => 0,
+        'reg_installment_original' => 0,
+        'reg_installment_paid' => 0,
+        'reg_installment_outstanding' => 0,
+        'reg_installment_past_due_total' => 0,
+        'reg_installment_past_due_count' => 0
+    ];
+
+    $currentDate = new DateTime();
+
+    foreach ($studentPaymentDetails as $detail) {
+        $isUniFee = strpos($detail['payment_type'], 'University Fee') !== false;
+        $originalAmount = $detail['installment_amount'];
+        $paidAmount = $detail['total_paid_amount'];
+        $outstandingAmount = $detail['outstanding_amount'];
+
+        // Check if payment is past due
+        $isPastDue = false;
+        if (!empty($detail['due_date']) && $outstandingAmount > 0) {
+            $dueDate = new DateTime($detail['due_date']);
+            $isPastDue = $dueDate < $currentDate;
+        }
+
+        if ($isUniFee) {
+            $totals['uni_fee_original'] += $originalAmount;
+            $totals['uni_fee_paid'] += $paidAmount;
+            $totals['uni_fee_outstanding'] += $outstandingAmount;
+
+            if ($isPastDue) {
+                $totals['uni_fee_past_due_total'] += $outstandingAmount;
+                $totals['uni_fee_past_due_count']++;
+            }
+        } else {
+            $totals['reg_installment_original'] += $originalAmount;
+            $totals['reg_installment_paid'] += $paidAmount;
+            $totals['reg_installment_outstanding'] += $outstandingAmount;
+
+            if ($isPastDue) {
+                $totals['reg_installment_past_due_total'] += $outstandingAmount;
+                $totals['reg_installment_past_due_count']++;
+            }
+        }
+
+        $totals['total_original'] += $originalAmount;
+        $totals['total_paid'] += $paidAmount;
+        $totals['total_outstanding'] += $outstandingAmount;
+
+        if ($isPastDue) {
+            $totals['past_due_total'] += $outstandingAmount;
+            $totals['past_due_count']++;
+        }
+    }
+
+    return $totals;
+}

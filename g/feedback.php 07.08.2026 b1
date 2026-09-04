@@ -1,0 +1,559 @@
+<?php
+include("../database/connection.php"); // Adjust path as necessary
+
+// Check ID
+if (!isset($_GET['id']) || empty($_GET['id'])) {
+    header("Location: https://www.bms.ac.lk/");
+    exit();
+}
+
+// Get the unique ID from the URL
+$feedback_id = $_GET['id'] ?? null;
+
+// Security check: Prevent multiple submissions (Cookie check)
+if ($feedback_id && isset($_COOKIE["feedback_submitted_" . $feedback_id])) {
+    ?>
+    <!DOCTYPE html>
+    <html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <title>Already Submitted - BMS Feedback</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <style>
+            body {
+                background: url('../assets/BG-LOGO.png') repeat center center / 250px;
+            }
+
+            .card-blur-bg {
+                background: rgba(255, 255, 255, 0.93);
+                backdrop-filter: blur(2px);
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="container d-flex align-items-center justify-content-center px-3 py-4" style="min-height: 80vh;">
+            <div class="card card-blur-bg shadow-lg border-0 text-center w-100"
+                style="max-width: 520px; border-radius: 20px;">
+                <div class="card-body p-4 p-md-5">
+                    <div class="mb-3 mb-md-4">
+                        <span class="d-inline-flex align-items-center justify-content-center rounded-circle text-danger"
+                            style="width:clamp(72px,20vw,96px);height:clamp(72px,20vw,96px);background-color:rgba(220,53,69,0.12);"><img
+                                src="../assets/bmspnglogo.png" alt="BMS Logo"
+                                style="width:clamp(72px,20vw,96px);height:clamp(72px,20vw,96px);object-fit:contain;border-radius:50%;background:white;"></span>
+                    </div>
+                    <h2 class="fw-bold text-danger mb-2" style="font-size:clamp(1.35rem,4.5vw,1.75rem);">Already Submitted
+                    </h2>
+                    <p class="text-muted mb-4" style="font-size:clamp(1rem,3.5vw,1.125rem);">You have already submitted
+                        feedback for this session. We appreciate you taking the time to share your views.</p>
+                    <a href="https://www.bms.ac.lk/" class="btn btn-primary w-100 py-2"
+                        style="border-radius:10px;font-weight:600;background-color:#052c65;border:none;">Go to Home Page</a>
+                </div>
+            </div>
+        </div>
+        <script>setTimeout(() => window.location.href = 'https://www.bms.ac.lk/', 3000);</script>
+    </body>
+
+    </html>
+    <?php
+    exit();
+}
+
+// ✅ Validate format
+if (!preg_match('/^[a-z0-9\-]+$/', $feedback_id)) {
+    header("Location: https://www.bms.ac.lk/");
+    exit();
+}
+
+// ✅ Combined Optimized Query
+$stmt = $conn->prepare("
+    SELECT fl.*, 
+           pt.program_name, 
+           bt.batch_name, 
+           m.module_name, 
+           lt.lecturer_name 
+    FROM feedback_links fl
+    LEFT JOIN program_table pt ON fl.programme_id = pt.program_code
+    LEFT JOIN batch_table bt ON fl.batch_id = bt.id
+    LEFT JOIN modules m ON fl.module_id = m.id
+    LEFT JOIN lecturer_table lt ON fl.lecturer_id = lt.id
+    WHERE fl.link_id = ?
+");
+$stmt->bind_param("s", $feedback_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$feedback_details = $result->fetch_assoc();
+$stmt->close();
+
+if (!$feedback_details) {
+    ?>
+    <!DOCTYPE html>
+    <html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Invalid Link - BMS</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    </head>
+
+    <body style="background: url('../assets/BG-LOGO.png') repeat center center / 250px;">
+        <div class='container d-flex align-items-center justify-content-center' style='min-height: 80vh;'>
+            <div class='card shadow-lg border-0 text-center p-5'
+                style='max-width: 500px; border-radius: 20px; background-color: rgba(255,255,255,0.93);'>
+                <div class='card-body'>
+                    <div class='mb-4'><img src='../assets/bmspnglogo.png' alt='BMS Logo'
+                            style='width:90px; height:auto; border-radius:12px; background:#fff; box-shadow:0 2px 12px rgba(44,62,80,0.06); margin-bottom:20px;'>
+                        <div><i class='fas fa-link-slash fa-4x text-danger'></i></div>
+                    </div>
+                    <h2 class='fw-bold text-dark mb-3'>Invalid Link</h2>
+                    <p class='text-muted mb-4'>The feedback link is invalid or has expired.</p>
+                    <a href='https://www.bms.ac.lk/' class='btn btn-primary px-4 py-2'
+                        style='border-radius:10px;font-weight:600;background-color:#052c65;border:none;'><i
+                            class='fas fa-home me-2'></i>Go to Home Page</a>
+                </div>
+            </div>
+        </div>
+    </body>
+
+    </html>
+    <?php
+    exit;
+}
+
+// Check if active
+if (isset($feedback_details['active']) && $feedback_details['active'] == 0) {
+    ?>
+    <!DOCTYPE html>
+    <html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Link Inactive - BMS</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    </head>
+
+    <body style="background: url('../assets/BG-LOGO.png') repeat center center / 250px;">
+        <div class='container d-flex align-items-center justify-content-center' style='min-height: 80vh;'>
+            <div class='card shadow-lg border-0 text-center p-5'
+                style='max-width: 500px; border-radius: 20px; background-color: rgba(255,255,255,0.93);'>
+                <div class='card-body'>
+                    <div class='mb-4'><img src='../assets/bmspnglogo.png' alt='BMS Logo'
+                            style='width:90px; height:auto; background:#fff; box-shadow:0 2px 12px rgba(44,62,80,0.06); margin-bottom:20px;'><br><i
+                            class='fas fa-exclamation-triangle fa-4x text-warning'></i></div>
+                    <h2 class='fw-bold text-dark mb-3'>Link Inactive</h2>
+                    <p class='text-muted mb-4'>This feedback link has been deactivated.</p>
+                    <a href='https://www.bms.ac.lk/' class='btn btn-primary px-4 py-2'
+                        style='border-radius:10px;font-weight:600;background-color:#052c65;border:none;'><i
+                            class='fas fa-home me-2'></i>Go to Home Page</a>
+                </div>
+            </div>
+        </div>
+        <script>setTimeout(() => window.location.href = 'https://www.bms.ac.lk/', 3000);</script>
+    </body>
+
+    </html>
+    <?php
+    exit;
+}
+
+// Data for form
+$programme_id = $feedback_details['programme_id'];
+$batch_id = $feedback_details['batch_id'];
+$module_id = $feedback_details['module_id'];
+$lecturer_id = $feedback_details['lecturer_id'];
+$program_name = $feedback_details['program_name'] ?? 'N/A';
+$batch_name = $feedback_details['batch_name'] ?? 'N/A';
+$module_name = $feedback_details['module_name'] ?? 'N/A';
+$lecturer_name = $feedback_details['lecturer_name'] ?? 'N/A';
+?>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Student Feedback - BMS</title>
+
+    <!-- Heavy items removed, only essentials kept -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Poppins:wght@500;600;700&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #052c65;
+            --secondary-color: #dc3545;
+            --bg-gradient: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            --card-bg: #ffffff;
+            --text-dark: #1a1a1a;
+            --text-muted: #6c757d;
+            --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.12);
+            --border-radius: 12px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: url('../assets/BG-LOGO.png') repeat center center / 250px;
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px 0;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        .form-label,
+        .question-label {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .main-feedback-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            max-width: 900px;
+            width: 100%;
+            margin: 0 15px;
+        }
+
+        .header-banner {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+        }
+
+        .course-details-section {
+            background: #fff;
+            padding: 2rem;
+            text-align: center;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .course-details-section h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .course-details-section h3 {
+            font-size: 1.3rem;
+            font-weight: 500;
+        }
+
+        .course-details-section h4 {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+        }
+
+        .feedback-section {
+            padding: 2rem;
+        }
+
+        .question-card {
+            background: #fff;
+            border: 1px solid #edf2f7;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 5px solid var(--primary-color);
+            transition: var(--transition);
+        }
+
+        .question-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .question-label {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--primary-color);
+            margin-bottom: 1.25rem;
+            display: block;
+        }
+
+        .modern-radio-group {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .modern-radio-item input {
+            display: none;
+        }
+
+        .modern-radio-item label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 0.5rem;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: var(--transition);
+        }
+
+        .modern-radio-item input:checked+label {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 10px rgba(5, 44, 101, 0.2);
+        }
+
+        .modern-radio-item label:hover {
+            border-color: var(--primary-color);
+            background: #f0f4f8;
+        }
+
+        .modern-radio-item i {
+            font-size: 1.4rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        .modern-radio-item input:checked+label i {
+            color: white;
+        }
+
+        .comments-textarea {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 1rem;
+            width: 100%;
+            transition: var(--transition);
+        }
+
+        .comments-textarea:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(5, 44, 101, 0.1);
+            outline: none;
+        }
+
+        .submit-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 1.1rem;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 1.15rem;
+            width: 100%;
+            transition: var(--transition);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            background: #083b8a;
+            transform: scale(1.01);
+            box-shadow: 0 6px 20px rgba(5, 44, 101, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .header-banner {
+                height: 150px;
+            }
+
+            .course-details-section {
+                padding: 1.5rem;
+            }
+
+            .course-details-section h2 {
+                font-size: 1.5rem;
+            }
+
+            .modern-radio-group {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .feedback-section {
+                padding: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-banner {
+                height: 100px;
+            }
+
+            .course-details-section h2 {
+                font-size: 1.3rem;
+            }
+
+            .feedback-section {
+                padding: 1rem;
+            }
+
+            .question-card {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="main-feedback-card">
+        <img src="../assets/Student_Feedback.webp" alt="Student Feedback Banner" class="header-banner">
+
+        <div class="course-details-section">
+            <h2><?php echo htmlspecialchars($program_name); ?></h2>
+            <h3><?php echo htmlspecialchars($batch_name); ?></h3>
+            <h4><?php echo htmlspecialchars($module_name); ?> • <?php echo htmlspecialchars($lecturer_name); ?></h4>
+        </div>
+
+        <div class="feedback-section">
+            <form id="studentForm" method="POST" action="insert_student.php">
+                <input type="hidden" name="program_id" value="<?php echo htmlspecialchars($programme_id); ?>">
+                <input type="hidden" name="batch_id" value="<?php echo htmlspecialchars($batch_id); ?>">
+                <input type="hidden" name="module_id" value="<?php echo htmlspecialchars($module_id); ?>">
+                <input type="hidden" name="lecturer_id" value="<?php echo htmlspecialchars($lecturer_id); ?>">
+                <input type="hidden" name="feedback_id" value="<?php echo htmlspecialchars($feedback_id); ?>">
+                <input type="hidden" name="program_name" value="<?php echo htmlspecialchars($program_name); ?>">
+                <input type="hidden" name="module_name" value="<?php echo htmlspecialchars($module_name); ?>">
+                <input type="hidden" name="lecturer_name" value="<?php echo htmlspecialchars($lecturer_name); ?>">
+
+                <?php
+                $questions = [
+                    'presentation' => ['label' => 'Presentation', 'icon' => 'fa-chalkboard-teacher'],
+                    'preparation' => ['label' => 'Preparation', 'icon' => 'fa-book-reader'],
+                    'syllabus_coverage' => ['label' => 'Syllabus Coverage', 'icon' => 'fa-tasks'],
+                    'knowledge_subject' => ['label' => 'Knowledge on the Subject', 'icon' => 'fa-brain'],
+                    'question_discussion' => ['label' => 'Question Discussion', 'icon' => 'fa-comments'],
+                    'interaction_students' => ['label' => 'Interaction with Students', 'icon' => 'fa-users'],
+                    'punctuality' => ['label' => 'Punctuality', 'icon' => 'fa-clock'],
+                    'overall' => ['label' => 'Overall Rating', 'icon' => 'fa-star-half-alt']
+                ];
+
+                foreach ($questions as $name => $details):
+                    ?>
+                    <div class="question-card">
+                        <label class="question-label"><i class="fas <?php echo $details['icon']; ?> me-2"></i>
+                            <?php echo $details['label']; ?></label>
+                        <div class="modern-radio-group">
+                            <?php
+                            $options = [
+                                ['val' => 'Excellent', 'icon' => 'fa-smile-beam'],
+                                ['val' => 'Good', 'icon' => 'fa-smile'],
+                                ['val' => 'Average', 'icon' => 'fa-meh'],
+                                ['val' => 'Poor', 'icon' => 'fa-frown']
+                            ];
+                            foreach ($options as $opt):
+                                ?>
+                                <div class="modern-radio-item">
+                                    <input type="radio" id="<?php echo $name . '_' . $opt['val']; ?>"
+                                        name="<?php echo $name; ?>" value="<?php echo $opt['val']; ?>">
+                                    <label for="<?php echo $name . '_' . $opt['val']; ?>">
+                                        <i class="far <?php echo $opt['icon']; ?>"></i>
+                                        <?php echo $opt['val']; ?>
+                                    </label>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+
+                <div class="question-card border-left-0">
+                    <label class="question-label" for="comments"><i class="fas fa-comment-dots me-2"></i> Additional
+                        Comments</label>
+                    <textarea required class="form-control comments-textarea" id="comments" name="comments" rows="4"
+                        placeholder="Tell us more about your experience..."></textarea>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <span>Submit Feedback</span>
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('studentForm');
+            if (!form) return;
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                const groupNames = ['presentation', 'preparation', 'syllabus_coverage', 'knowledge_subject', 'question_discussion', 'interaction_students', 'punctuality', 'overall'];
+
+                for (let name of groupNames) {
+                    if (!document.querySelector(`input[name="${name}"]:checked`)) {
+                        alert(`Please provide a rating for: ${name.replace(/_/g, ' ')}`);
+                        document.getElementsByName(name)[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        return;
+                    }
+                }
+
+                if (!document.getElementById('comments').value.trim()) {
+                    alert('Please enter your comments.');
+                    document.getElementById('comments').focus();
+                    return;
+                }
+
+                const submitBtn = document.getElementById('submitBtn');
+                const btnSpan = submitBtn.querySelector('span');
+                const btnIcon = submitBtn.querySelector('i');
+                submitBtn.disabled = true;
+                btnSpan.innerText = 'Submitting...';
+                btnIcon.className = 'fas fa-spinner fa-spin';
+
+                fetch('insert_student.php', {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            document.querySelector('.main-feedback-card').innerHTML = `
+                        <div class='card-body text-center p-5'>
+                            <div class='mb-3'><span class='d-inline-flex align-items-center justify-content-center rounded-circle text-success' style='width:96px;height:96px;background-color:rgba(40,167,69,0.12);'><i class='fas fa-check-circle fa-4x'></i></span></div>
+                            <h2 class='fw-bold text-dark mb-3'>Thank you</h2>
+                            <p class='text-muted mb-4'>Your feedback has been submitted successfully.</p>
+                            <a href='https://www.bms.ac.lk/' class='btn btn-primary w-100 py-2' style='border-radius:10px;font-weight:600;background-color:#052c65;border:none;'>Go to Home Page</a>
+                        </div>
+                    `;
+                            setTimeout(() => window.location.href = 'https://www.bms.ac.lk/', 3000);
+                        } else {
+                            alert(data.message || 'Error occurred.');
+                            submitBtn.disabled = false;
+                            btnSpan.innerText = 'Submit Feedback';
+                            btnIcon.className = 'fas fa-paper-plane';
+                        }
+                    })
+                    .catch(error => {
+                        alert('Submission failed.');
+                        submitBtn.disabled = false;
+                        btnSpan.innerText = 'Submit Feedback';
+                        btnIcon.className = 'fas fa-paper-plane';
+                    });
+            });
+        });
+    </script>
+</body>
+
+</html>

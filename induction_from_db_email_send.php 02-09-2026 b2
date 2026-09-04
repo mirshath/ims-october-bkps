@@ -1,0 +1,367 @@
+<?php
+session_start();
+include("database/connection.php");
+include("includes/header.php");
+
+if (!isset($_SESSION['username'])) {
+    echo '<script>window.location.href = "login";</script>';
+    exit;
+}
+
+require_once 'PermissionChecking.php';
+
+?>
+
+<div id="wrapper">
+    <?php include("nav.php"); ?>
+    <div id="content-wrapper" class="d-flex flex-column">
+        <div id="content">
+            <?php include("includes/topnav.php"); ?>
+            <div class="p-3">
+                <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                    <h4 class="h4 mb-0 text-gray-800">Induction Email Send (From DB)</h4>
+                </div>
+
+                <div class="row mb-5">
+                    <div class="div w-50">
+                        <div class="card shadow">
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label" for="programDropdown">
+                                            Programme
+                                        </label>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <select id="programDropdown" class="form-select select2">
+                                            <option value="">Select Programme</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label" for="batchDropdown">
+                                            Batch
+                                        </label>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <select id="batchDropdown" class="form-select select2">
+                                            <option value="">Select Batch</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <button id="loadStudentsBtn" class="btn btn-primary">
+                                            Load Active Students
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3" id="studentsSection" style="display: none;">
+                    <div class="card shadow">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">Active Students</h6>
+                            <button id="sendEmailsBtn" class="btn btn-success">
+                                <i class="fas fa-paper-plane"></i> Send Induction Emails
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped" id="studentsTable">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th><input type="checkbox" id="selectAll"></th>
+                                            <th>Student Code</th>
+                                            <th>Registration ID</th>
+                                            <th>Name</th>
+                                            <th>Email</th>
+                                            <th>Status</th>
+                                            <th>Sent By</th>
+                                            <th>Sent At</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="studentsTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3" id="emailProgressSection" style="display: none;">
+                    <div class="card shadow">
+                        <div class="card-header">
+                            <h6 class="mb-0">Email Sending Progress</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="progress mb-3">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" id="emailProgressBar" style="width: 0%"></div>
+                            </div>
+                            <p id="emailProgressText" class="text-center">0 / 0 emails sent</p>
+                            <div id="emailLogs" class="mt-3" style="max-height: 300px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        let selectedStudents = [];
+
+        $('.select2').select2();
+
+        const universityId = 1;
+        $.ajax({
+            url: 'Batch_transer/fetch_programs_without_uni.php',
+            type: 'POST',
+            data: {
+                university_id: universityId
+            },
+            success: function(data) {
+                $('#programDropdown').html(data);
+            }
+        });
+
+        $('#programDropdown').on('change', function() {
+            const programId = $(this).val();
+            if (programId) {
+                $.ajax({
+                    url: 'reports/AllStudents/fetch_batches.php',
+                    type: 'POST',
+                    data: {
+                        program_id: programId
+                    },
+                    success: function(data) {
+                        $('#batchDropdown').html(data);
+                    }
+                });
+            } else {
+                $('#batchDropdown').html('<option value="">Select Batch</option>');
+            }
+        });
+
+        $('#loadStudentsBtn').on('click', function() {
+            const programId = $('#programDropdown').val();
+            const batchId = $('#batchDropdown').val();
+
+            if (!programId) {
+                alert('Please select a programme');
+                return;
+            }
+
+            if (!batchId) {
+                alert('Please select a batch');
+                return;
+            }
+
+            const $btn = $(this);
+            $btn.prop('disabled', true).text('Loading...');
+
+            $.ajax({
+                url: 'induction_DB_folder/fetch_induction_students_from_db.php',
+                type: 'POST',
+                data: {
+                    program_id: programId,
+                    batch_id: batchId
+                },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        const tbody = $('#studentsTableBody');
+                        tbody.empty();
+                        selectedStudents = [];
+ // <input type="checkbox" class="studentCheckbox" data-id="${student.id}" data-student-code="${student.student_code}" data-programme-code="${student.programme_code}" data-batch-id="${student.batch_id}" data-nic="${student.nic}" ${student.email_sent ? 'disabled' : 'checked'}>
+                        if (response.students.length > 0) {
+                            response.students.forEach(function(student) {
+                                const row = $('<tr></tr>');
+                                row.append(`
+                                    <td>
+                                       
+                                        <input type="checkbox" class="studentCheckbox" data-id="${student.id}" data-student-code="${student.student_code}" data-programme-code="${student.programme_code}" data-batch-id="${student.batch_id}" data-nic="${student.nic}" ${student.email_sent ? '' : 'checked'}>
+                                    </td>
+                                    <td>${student.student_code}</td>
+                                    <td>${student.student_registration_id || '-'}</td>
+                                    <td>${student.title} ${student.first_name} ${student.last_name}</td>
+                                    <td>${student.personal_email}</td>
+                                    <td>${student.email_sent ? '<span class="badge bg-success">Sent</span>' : '<span class="badge bg-secondary">Not Sent</span>'}</td>
+                                    <td>${student.sent_by || '-'}</td>
+                                    <td>${student.sent_at ? new Date(student.sent_at).toLocaleString() : '-'}</td>
+                                `);
+                                tbody.append(row);
+                                if (!student.email_sent) {
+                                    selectedStudents.push({
+                                        id: student.id,
+                                        student_code: student.student_code,
+                                        programme_code: student.programme_code,
+                                        batch_id: student.batch_id,
+                                        personal_email: student.personal_email,
+                                        title: student.title,
+                                        first_name: student.first_name,
+                                        last_name: student.last_name,
+                                        nic: student.nic
+                                    });
+                                }
+                            });
+                            $('#studentsSection').show();
+                        } else {
+                            tbody.append('<tr><td colspan="8" class="text-center">No active students found</td></tr>');
+                            $('#studentsSection').show();
+                        }
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('Error loading students');
+                },
+                complete: function() {
+                    $btn.prop('disabled', false).text('Load Active Students');
+                }
+            });
+        });
+
+        $(document).on('change', '.studentCheckbox', function() {
+            const studentId = $(this).data('id');
+            if ($(this).is(':checked')) {
+                const row = $(this).closest('tr');
+                const studentCode = $(this).data('student-code');
+                const programmeCode = $(this).data('programme-code');
+                const batchId = $(this).data('batch-id');
+                const nic = $(this).data('nic');
+                const personalEmail = row.find('td:eq(4)').text();
+                const nameParts = row.find('td:eq(3)').text().split(' ');
+                const title = nameParts[0];
+                const firstName = nameParts[1];
+                const lastName = nameParts.slice(2).join(' ');
+                selectedStudents.push({
+                    id: studentId,
+                    student_code: studentCode,
+                    programme_code: programmeCode,
+                    batch_id: batchId,
+                    personal_email: personalEmail,
+                    title: title,
+                    first_name: firstName,
+                    last_name: lastName,
+                    nic: nic
+                });
+            } else {
+                selectedStudents = selectedStudents.filter(s => s.id !== studentId);
+            }
+        });
+
+        $('#selectAll').on('change', function() {
+            const isChecked = $(this).is(':checked');
+            $('.studentCheckbox:not(:disabled)').prop('checked', isChecked);
+            if (isChecked) {
+                $('#studentsTableBody tr').each(function() {
+                    const checkbox = $(this).find('.studentCheckbox:not(:disabled)');
+                    if (checkbox.length > 0) {
+                        const studentId = checkbox.data('id');
+                        const studentCode = checkbox.data('student-code');
+                        const programmeCode = checkbox.data('programme-code');
+                        const batchId = checkbox.data('batch-id');
+                        const nic = checkbox.data('nic');
+                        const personalEmail = $(this).find('td:eq(4)').text();
+                        const nameParts = $(this).find('td:eq(3)').text().split(' ');
+                        const title = nameParts[0];
+                        const firstName = nameParts[1];
+                        const lastName = nameParts.slice(2).join(' ');
+                        if (!selectedStudents.find(s => s.id === studentId)) {
+                            selectedStudents.push({
+                                id: studentId,
+                                student_code: studentCode,
+                                programme_code: programmeCode,
+                                batch_id: batchId,
+                                personal_email: personalEmail,
+                                title: title,
+                                first_name: firstName,
+                                last_name: lastName,
+                                nic: nic
+                            });
+                        }
+                    }
+                });
+            } else {
+                selectedStudents = [];
+            }
+        });
+
+        $('#sendEmailsBtn').on('click', function() {
+            if (selectedStudents.length === 0) {
+                alert('Please select at least one student');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to send induction emails to ${selectedStudents.length} students?`)) {
+                return;
+            }
+
+            const $btn = $(this);
+            $btn.prop('disabled', true).text('Sending...');
+            $('#emailProgressSection').show();
+            $('#emailProgressBar').css('width', '0%');
+            $('#emailProgressText').text(`0 / ${selectedStudents.length} emails sent`);
+            $('#emailLogs').empty();
+
+            let sentCount = 0;
+            const totalCount = selectedStudents.length;
+
+            function sendNextEmail(index) {
+                if (index >= selectedStudents.length) {
+                    $btn.prop('disabled', false).text('Send Induction Emails');
+                    alert(`Email sending complete! ${sentCount} / ${totalCount} emails sent successfully.`);
+                    $('#loadStudentsBtn').click();
+                    return;
+                }
+
+                const student = selectedStudents[index];
+                $.ajax({
+                    url: 'send_induction_email_from_db.php',
+                    type: 'POST',
+                    data: student,
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            sentCount++;
+                            $('#emailLogs').append(`<div class="text-success"><i class="fas fa-check-circle"></i> Email sent to ${student.personal_email}</div>`);
+                        } else {
+                            $('#emailLogs').append(`<div class="text-danger"><i class="fas fa-times-circle"></i> Failed to send to ${student.personal_email}: ${response.message}</div>`);
+                        }
+                        const progress = ((index + 1) / totalCount) * 100;
+                        $('#emailProgressBar').css('width', progress + '%');
+                        $('#emailProgressText').text(`${sentCount} / ${totalCount} emails sent`);
+                        $('#emailLogs').scrollTop($('#emailLogs')[0].scrollHeight);
+                    },
+                    error: function() {
+                        $('#emailLogs').append(`<div class="text-danger"><i class="fas fa-times-circle"></i> Failed to send to ${student.personal_email}: Server error</div>`);
+                        const progress = ((index + 1) / totalCount) * 100;
+                        $('#emailProgressBar').css('width', progress + '%');
+                        $('#emailProgressText').text(`${sentCount} / ${totalCount} emails sent`);
+                    },
+                    complete: function() {
+                        setTimeout(function() {
+                            sendNextEmail(index + 1);
+                        }, 500);
+                    }
+                });
+            }
+
+            sendNextEmail(0);
+        });
+    });
+</script>
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/css/select2.min.css" rel="stylesheet">
+<?php include("includes/footer.php"); ?>

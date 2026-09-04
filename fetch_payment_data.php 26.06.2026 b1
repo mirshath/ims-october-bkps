@@ -1,0 +1,72 @@
+<?php
+include 'database/connection.php';
+
+if (isset($_POST['programme_id'], $_POST['batch_id'])) {
+    $programme_id = $_POST['programme_id'];
+    $batch_id = $_POST['batch_id'];
+
+    $query = "SELECT p.program_name, b.batch_name, pba.* 
+              FROM payment_batch_allocation pba
+              JOIN program_table p ON p.program_code = pba.programme_id
+              JOIN batch_table b ON b.id = pba.batch_id
+              WHERE pba.programme_id = ? AND pba.batch_id = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("ii", $programme_id, $batch_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+
+        $table = '<table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Course Fee (LKR)</th>
+                        <th>Uni Fee (GBP)</th>
+                        <th>Uni Fee (USD)</th>
+                        <th>Uni Fee (EUR)</th>
+                        <th>Register Date</th>
+                        <th>Installments</th>
+                        <th>Registration Fee</th>
+                        <th>Only Course Fee</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>' . number_format($row['course_fee_lkr'], 2) . '</td>
+                        <td>' . number_format($row['uni_fee_gbp'], 2) . '</td>
+                        <td>' . number_format($row['uni_fee_usd'], 2) . '</td>
+                        <td>' . number_format($row['uni_fee_euro'], 2) . '</td>
+                        <td>' . htmlspecialchars($row['register_date']) . '</td>
+                        <td>' . (int)$row['installment_no'] . '</td>
+                        <td>' . number_format($row['registration_fee'], 2) . '</td>
+                        <td>' . number_format($row['only_course_fee'], 2) . '</td>
+                    </tr>
+                </tbody>
+              </table>';
+
+        echo json_encode([
+            'table' => $table,
+            'data' => [
+                'programme_id' => $programme_id,
+                'batch_id' => $batch_id,
+                'program_name' => $row['program_name'],
+                'batch_name' => $row['batch_name'],
+                'course_fee_lkr' => $row['course_fee_lkr'],
+                'uni_fee_gbp' => $row['uni_fee_gbp'],
+                'uni_fee_usd' => $row['uni_fee_usd'],
+                'uni_fee_euro' => $row['uni_fee_euro'],
+                'register_date' => $row['register_date'],
+                'installment_no' => $row['installment_no'],
+                'registration_fee' => $row['registration_fee'],
+                'only_course_fee' => $row['only_course_fee'],
+            ],
+        ]);
+    } else {
+        echo json_encode([
+            'table' => '<div class="alert alert-warning">No payment details found.</div>',
+            'data' => null
+        ]);
+    }
+    $stmt->close();
+}

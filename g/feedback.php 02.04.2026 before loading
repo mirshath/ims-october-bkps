@@ -1,0 +1,755 @@
+<?php
+
+
+include("../database/connection.php"); // Adjust path as necessary
+$skipSessionCheck = true; // Skip the session check script in header.php
+include("../includes/header.php"); // Include your header if needed
+
+
+// OPTIONAL: allow public access OR require login
+$requireLogin = false;
+
+if ($requireLogin && !isset($_SESSION['user_id'])) {
+    header("Location: https://www.bms.ac.lk/");
+    exit();
+}
+// Check ID
+if (!isset($_GET['id']) || empty($_GET['id'])) {
+    header("Location: https://www.bms.ac.lk/");
+    exit();
+}
+
+
+// Get the unique ID from the URL
+$feedback_id = $_GET['id'] ?? null;
+
+// Security check: Prevent multiple submissions from the same browser (1 day)
+// if ($feedback_id && isset($_COOKIE["feedback_submitted_" . $feedback_id])) {
+//     echo "<script>alert('You have already submitted feedback for this session.'); window.location.href='https://www.bms.ac.lk/';</script>";
+//     exit();
+// }
+
+if ($feedback_id && isset($_COOKIE["feedback_submitted_" . $feedback_id])) {
+?>
+    <style>
+        body {
+            background-image: url('../assets/BG-LOGO.png');
+            background-repeat: repeat;
+            background-size: 250px;
+        }
+
+        .card-blur-bg {
+            background: rgba(255, 255, 255, 0.93);
+            backdrop-filter: blur(2px);
+        }
+    </style>
+    <div class="container d-flex align-items-center justify-content-center px-3 py-4" style="min-height: 80vh;">
+        <div class="card card-blur-bg shadow-lg border-0 text-center w-100" style="max-width: 520px; border-radius: 20px;">
+            <div class="card-body p-4 p-md-5">
+                <div class="mb-3 mb-md-4">
+                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle text-danger"
+                        style="width:clamp(72px,20vw,96px);height:clamp(72px,20vw,96px);background-color:rgba(220,53,69,0.12);">
+                        <img src="../assets/bmspnglogo.png" alt="BMS Logo"
+                            style="width:clamp(72px,20vw,96px);height:clamp(72px,20vw,96px);object-fit:contain;border-radius:50%;background:white;">
+                    </span>
+                </div>
+                <h2 class="font-weight-bolder text-danger mb-2 mb-md-3"
+                    style="font-family:'Nunito','Open Sans',sans-serif;font-size:clamp(1.35rem,4.5vw,1.75rem);line-height:1.3;">
+                    Already Submitted
+                </h2>
+                <p class="text-muted mb-4"
+                    style="font-size:clamp(1rem,3.5vw,1.125rem);line-height:1.65;">
+                    You have already submitted feedback for this session. We appreciate you taking the time to share your views.
+                </p>
+                <a href="https://www.bms.ac.lk/"
+                    class="btn btn-primary w-100 d-sm-inline-block px-4 py-2"
+                    style="border-radius:10px;font-weight:600;background-color:#052c65;border:none;">
+                    <i class="fas fa-home mr-2"></i>Go to Home Page
+                </a>
+            </div>
+        </div>
+    </div>
+    <script>
+        setTimeout(function() {
+            window.location.href = 'https://www.bms.ac.lk/';
+        }, 3000);
+    </script>
+<?php
+    exit();
+}
+
+
+
+
+
+// ✅ Validate format (VERY IMPORTANT)
+if (!preg_match('/^[a-z0-9\-]+$/', $feedback_id)) {
+    header("Location: https://www.bms.ac.lk/");
+    exit();
+}
+
+// ✅ Check in database
+// $stmt = $conn->prepare("SELECT * FROM feedback_links WHERE link_id = ?");
+// $stmt->bind_param("s", $feedback_id);
+// $stmt->execute();
+// $result = $stmt->get_result();
+
+// if ($result->num_rows === 0) {
+//     header("Location: https://www.bms.ac.lk/");
+//     exit();
+// }
+
+if ($feedback_id) {
+    // Fetch feedback details from the database using the feedback_id
+    // Example: SELECT * FROM feedback_links WHERE link_id = ?
+    $stmt = $conn->prepare("SELECT * FROM feedback_links WHERE link_id = ?");
+    $stmt->bind_param("s", $feedback_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $feedback_details = $result->fetch_assoc();
+    $stmt->close();
+
+    if ($feedback_details) {
+        // Check if the link is active
+        // if (isset($feedback_details['active']) && $feedback_details['active'] == 0) {
+        //     echo "
+        //     <div class='container d-flex align-items-center justify-content-center' style='min-height: 80vh;'>
+        //         <div class='card shadow-lg border-0 text-center p-5' style='max-width: 500px; border-radius: 20px;'>
+        //             <div class='card-body'>
+        //                 <div class='mb-4'>
+        //                     <i class='fas fa-exclamation-triangle fa-4x text-warning'></i>
+        //                 </div>
+        //                 <h2 class='fw-bold text-dark mb-3' style='font-family: \"Poppins\", sans-serif;'>Link Inactive</h2>
+        //                 <p class='text-muted mb-4' style='font-size: 1.1rem;'>This feedback link has been deactivated and is no longer accepting submissions.</p>
+        //                 <a href='https://www.bms.ac.lk/' class='btn btn-primary px-4 py-2' style='border-radius: 10px; font-weight: 600; background-color: #052c65; border: none;'>
+        //                     <i class='fas fa-home me-2'></i>Go to Home Page
+        //                 </a>
+        //             </div>
+        //         </div>
+        //     </div>";
+        //     exit;
+        // }
+        
+         if (isset($feedback_details['active']) && $feedback_details['active'] == 0) {
+            echo "
+            <div class='container d-flex align-items-center justify-content-center' 
+                style='min-height: 80vh; 
+                       background: url(\"../assets/BG-LOGO.png\") center center / cover repeat; 
+                       background-size: 250px;'>
+                <div class='card shadow-lg border-0 text-center p-5' 
+                    style='max-width: 500px; border-radius: 20px; background-color: rgba(255,255,255,0.93);'>
+                    <div class='card-body'>
+                        <div class='mb-4'>
+                            <img src='../assets/bmspnglogo.png' alt='BMS Logo' style='width:90px; height:auto;  background:#fff; box-shadow:0 2px 12px rgba(44,62,80,0.06); margin-bottom:20px;'>
+                            <br>
+                            <i class='fas fa-exclamation-triangle fa-4x text-warning'></i>
+                        </div>
+                        <h2 class='fw-bold text-dark mb-3' style='font-family: \"Poppins\", sans-serif;'>Link Inactive</h2>
+                        <p class='text-muted mb-4' style='font-size: 1.1rem;'>This feedback link has been deactivated and is no longer accepting submissions.</p>
+                        <a href='https://www.bms.ac.lk/' class='btn btn-primary px-4 py-2' style='border-radius: 10px; font-weight: 600; background-color: #052c65; border: none;'>
+                            <i class='fas fa-home me-2'></i>Go to Home Page
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <script>
+                setTimeout(function() {
+                    window.location.href = 'https://www.bms.ac.lk/';
+                }, 3000);
+            </script>
+            ";
+            exit;
+        }
+
+
+        // Fetch full names
+        $programme_id = $feedback_details['programme_id'];
+        $batch_id = $feedback_details['batch_id'];
+        $module_id = $feedback_details['module_id'];
+        $lecturer_id = $feedback_details['lecturer_id'];
+
+        // Fetch programme name
+        $stmt_program = $conn->prepare("SELECT program_name FROM program_table WHERE program_code = ?");
+        $stmt_program->bind_param("s", $programme_id);
+        $stmt_program->execute();
+        $result_program = $stmt_program->get_result();
+        $program_name = $result_program->fetch_assoc()['program_name'] ?? 'N/A';
+        $stmt_program->close();
+
+        // Fetch batch name
+        $stmt_batch = $conn->prepare("SELECT batch_name FROM batch_table WHERE id = ?");
+        $stmt_batch->bind_param("s", $batch_id);
+        $stmt_batch->execute();
+        $result_batch = $stmt_batch->get_result();
+        $batch_name = $result_batch->fetch_assoc()['batch_name'] ?? 'N/A';
+        $stmt_batch->close();
+
+        // Fetch module name
+        $stmt_module = $conn->prepare("SELECT module_name FROM modules WHERE id = ?");
+        $stmt_module->bind_param("s", $module_id);
+        $stmt_module->execute();
+        $result_module = $stmt_module->get_result();
+        $module_name = $result_module->fetch_assoc()['module_name'] ?? 'N/A';
+        $stmt_module->close();
+
+        // Fetch lecturer name
+        $stmt_lecturer = $conn->prepare("SELECT lecturer_name FROM lecturer_table WHERE id = ?");
+        $stmt_lecturer->bind_param("s", $lecturer_id);
+        $stmt_lecturer->execute();
+        $result_lecturer = $stmt_lecturer->get_result();
+        $lecturer_name = $result_lecturer->fetch_assoc()['lecturer_name'] ?? 'N/A';
+        $stmt_lecturer->close();
+
+        // Variables are now set and ready to use in the form below
+    } else {
+        echo "
+        <div class='container d-flex align-items-center justify-content-center' style='min-height: 80vh; background: url(\"../assets/BG-LOGO.png\") center center / cover repeat; background-size: 250px;'>
+            <div class='card shadow-lg border-0 text-center p-5' style='max-width: 500px; border-radius: 20px; background-color: rgba(255,255,255,0.93);'>
+                <div class='card-body'>
+                    <div class='mb-4'>
+                        <img src='../assets/bmspnglogo.png' alt='BMS Logo' style='width:90px; height:auto; border-radius:12px; background:#fff; box-shadow:0 2px 12px rgba(44,62,80,0.06); margin-bottom:20px;'>
+                        <div>
+                            <i class='fas fa-link-slash fa-4x text-danger'></i>
+                        </div>
+                    </div>
+                    <h2 class='fw-bold text-dark mb-3' style='font-family: \"Poppins\", sans-serif;'>Invalid Link</h2>
+                    <p class='text-muted mb-4' style='font-size: 1.1rem;'>The feedback link you followed is invalid, has expired, or is incorrectly formatted.</p>
+                    <a href='https://www.bms.ac.lk/' class='btn btn-primary px-4 py-2' style='border-radius: 10px; font-weight: 600; background-color: #052c65; border: none;'>
+                        <i class='fas fa-home me-2'></i>Go to Home Page
+                    </a>
+                </div>
+            </div>
+        </div>";
+        exit;
+    }
+} else {
+    echo "<h1>Access Denied</h1>";
+    echo "<p>No feedback ID provided.</p>";
+    exit;
+}
+
+?>
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --primary-color: #052c65;
+        --secondary-color: #dc3545;
+        --bg-gradient: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        --card-bg: #ffffff;
+        --text-dark: #1a1a1a;
+        --text-muted: #6c757d;
+        --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.12);
+        --border-radius: 12px;
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+
+    }
+
+    body {
+        font-family: 'Inter', sans-serif;
+        background: var(--bg-gradient);
+        color: var(--text-dark);
+        min-height: 100vh;
+        margin: 0;
+        padding: 0;
+
+        background: url('../assets/BG-LOGO.png') center center / cover repeat;
+        background-size: 250px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    .form-label {
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .feedback-page-wrapper {
+        padding: 1rem;
+    }
+
+    .main-feedback-card {
+        background: var(--card-bg);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+        border: none;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .header-banner {
+        width: 100%;
+        height: 220px;
+        /* Adjust height as needed */
+        object-fit: cover;
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+    }
+
+    .course-details-section {
+        background: #fff;
+        padding: 2rem;
+        text-align: center;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .course-details-section h2 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .course-details-section h3 {
+        font-size: 1.3rem;
+        font-weight: 500;
+        color: var(--text-dark);
+        margin-bottom: 0.5rem;
+    }
+
+    .course-details-section h4 {
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: var(--text-muted);
+        margin: 0;
+    }
+
+    .feedback-section {
+        padding: 2rem;
+    }
+
+    .question-card {
+        background: #fff;
+        border: 1px solid #edf2f7;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        transition: var(--transition);
+        border-left: 5px solid var(--primary-color);
+    }
+
+    .question-card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+
+    .question-label {
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: var(--primary-color);
+        margin-bottom: 1.25rem;
+        display: block;
+    }
+
+    /* Modern Radio Group Design - Grid based for responsiveness */
+    .modern-radio-group {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+    }
+
+    .modern-radio-item input {
+        display: none;
+    }
+
+    .modern-radio-item label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 0.75rem 0.5rem;
+        background: #f8f9fa;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: var(--transition);
+        text-align: center;
+        height: 100%;
+        width: 100%;
+    }
+
+    .modern-radio-item input:checked+label {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+        box-shadow: 0 4px 10px rgba(5, 44, 101, 0.2);
+    }
+
+    .modern-radio-item label:hover {
+        border-color: var(--primary-color);
+        background: #f0f4f8;
+    }
+
+    .modern-radio-item i {
+        font-size: 1.4rem;
+        margin-bottom: 0.5rem;
+        color: var(--primary-color);
+        transition: var(--transition);
+    }
+
+    .modern-radio-item input:checked+label i {
+        color: white;
+        transform: scale(1.1);
+    }
+
+    /* Textarea Design */
+    .comments-textarea {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 1rem;
+        transition: var(--transition);
+        font-size: 1rem;
+        width: 100%;
+    }
+
+    .comments-textarea:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 4px rgba(5, 44, 101, 0.1);
+        outline: none;
+    }
+
+    .submit-btn {
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 1.1rem 2rem;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 1.15rem;
+        width: 100%;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        margin-top: 1rem;
+        cursor: pointer;
+    }
+
+    .submit-btn:hover:not(:disabled) {
+        background: #083b8a;
+        transform: scale(1.01);
+        box-shadow: 0 6px 20px rgba(5, 44, 101, 0.3);
+    }
+
+    /* Media Queries for perfect responsiveness */
+
+    /* Tablet (768px and below) */
+    @media (max-width: 768px) {
+        .feedback-page-wrapper {
+            padding: 0.75rem;
+        }
+
+        .course-details-section {
+            padding: 1.5rem;
+        }
+
+        .course-details-section h2 {
+            font-size: 1.5rem;
+        }
+
+        .course-details-section h3 {
+            font-size: 1.1rem;
+        }
+
+        .feedback-section {
+            padding: 1.5rem;
+        }
+
+        .modern-radio-group {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+    }
+
+    /* Mobile (480px and below) */
+    @media (max-width: 480px) {
+        .header-banner {
+            height: 60px;
+        }
+
+        .course-details-section {
+            padding: 1.25rem 1rem;
+        }
+
+        .course-details-section h2 {
+            font-size: 1.3rem;
+        }
+
+        .course-details-section h3 {
+            font-size: 1rem;
+        }
+
+        .course-details-section h4 {
+            font-size: 0.9rem;
+        }
+
+        .feedback-section {
+            padding: 1rem;
+        }
+
+        .question-card {
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .question-label {
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .modern-radio-item label {
+            padding: 0.6rem 0.4rem;
+            font-size: 0.8rem;
+        }
+
+        .modern-radio-item i {
+            font-size: 1.2rem;
+        }
+
+        .submit-btn {
+            padding: 1rem;
+            font-size: 1.05rem;
+        }
+    }
+
+    /* Large Screens */
+    @media (min-width: 1200px) {
+        .feedback-page-wrapper {
+            padding: 3rem 0;
+        }
+    }
+</style>
+
+<div class="container feedback-page-wrapper">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10 col-12">
+            <div class="main-feedback-card">
+                <!-- Header Banner -->
+                <img src="../assets/Student_Feedback.webp" alt="Student Feedback Banner" class="header-banner">
+
+                <!-- Course Details Section -->
+                <div class="course-details-section">
+                    <h2><?php echo htmlspecialchars($program_name ?? 'N/A'); ?></h2>
+                    <h3 style="display: nones;"><?php echo htmlspecialchars($batch_name ?? 'N/A'); ?></h3>
+                    <h4><?php echo htmlspecialchars($module_name ?? 'N/A'); ?> • <?php echo htmlspecialchars($lecturer_name ?? 'N/A'); ?></h4>
+                </div>
+
+                <div class="feedback-section">
+                    <form id="studentForm" method="POST" action="insert_student.php">
+                        <input type="hidden" name="program_id" value="<?php echo htmlspecialchars($programme_id ?? ''); ?>">
+                        <input type="hidden" name="batch_id" value="<?php echo htmlspecialchars($batch_id ?? ''); ?>">
+                        <input type="hidden" name="module_id" value="<?php echo htmlspecialchars($module_id ?? ''); ?>">
+                        <input type="hidden" name="lecturer_id" value="<?php echo htmlspecialchars($lecturer_id ?? ''); ?>">
+                        <input type="hidden" name="feedback_id" value="<?php echo htmlspecialchars($feedback_id ?? ''); ?>">
+                        <input type="hidden" name="program_name" value="<?php echo htmlspecialchars($program_name ?? 'N/A'); ?>">
+                        <input type="hidden" name="module_name" value="<?php echo htmlspecialchars($module_name ?? 'N/A'); ?>">
+                        <input type="hidden" name="lecturer_name" value="<?php echo htmlspecialchars($lecturer_name ?? 'N/A'); ?>">
+
+                        <?php
+                        $questions = [
+                            'presentation' => ['label' => 'Presentation', 'icon' => 'fa-chalkboard-teacher'],
+                            'preparation' => ['label' => 'Preparation', 'icon' => 'fa-book-reader'],
+                            'syllabus_coverage' => ['label' => 'Syllabus Coverage', 'icon' => 'fa-tasks'],
+                            'knowledge_subject' => ['label' => 'Knowledge on the Subject', 'icon' => 'fa-brain'],
+                            'question_discussion' => ['label' => 'Question Discussion', 'icon' => 'fa-comments'],
+                            'interaction_students' => ['label' => 'Interaction with Students', 'icon' => 'fa-users'],
+                            'punctuality' => ['label' => 'Punctuality', 'icon' => 'fa-clock'],
+                            'overall' => ['label' => 'Overall Rating', 'icon' => 'fa-star-half-alt']
+                        ];
+
+                        foreach ($questions as $name => $details):
+                        ?>
+                            <div class="question-card">
+                                <label class="question-label"><i class="fas <?php echo $details['icon']; ?> me-2"></i> <?php echo $details['label']; ?></label>
+                                <div class="modern-radio-group">
+                                    <?php
+                                    $options = [
+                                        ['val' => 'Excellent', 'icon' => 'fa-smile-beam'],
+                                        ['val' => 'Good', 'icon' => 'fa-smile'],
+                                        ['val' => 'Average', 'icon' => 'fa-meh'],
+                                        ['val' => 'Poor', 'icon' => 'fa-frown']
+                                    ];
+                                    foreach ($options as $opt):
+                                    ?>
+                                        <div class="modern-radio-item">
+                                            <input type="radio" id="<?php echo $name . '_' . $opt['val']; ?>" name="<?php echo $name; ?>" value="<?php echo $opt['val']; ?>">
+                                            <label for="<?php echo $name . '_' . $opt['val']; ?>">
+                                                <i class="far <?php echo $opt['icon']; ?>"></i>
+                                                <?php echo $opt['val']; ?>
+                                            </label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+
+                        <!-- Comments Section -->
+                        <div class="question-card border-left-0">
+                            <label class="question-label" for="comments"><i class="fas fa-comment-dots me-2"></i> Additional Comments</label>
+                            <textarea required class="form-control comments-textarea" id="comments" name="comments" rows="4" placeholder="Tell us more about your experience..."></textarea>
+                        </div>
+
+                        <button type="submit" class="submit-btn" id="submitBtn">
+                            <span>Submit Feedback</span>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* .modal-background {
+        background-image: url('https://media.istockphoto.com/id/1338579925/vector/geometric-background-of-squares-and-dots.jpg?s=612x612&w=0&k=20&c=SZJsLHWoh2rTHRJP5bSss3a7xuY6GCE3iFLUDW2t0Q0=');
+    } */
+</style>
+
+<!-- Bootstrap JS and dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('studentForm');
+        if (!form) return;
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const radioGroups = [
+                'presentation', 'preparation', 'syllabus_coverage',
+                'knowledge_subject', 'question_discussion',
+                'interaction_students', 'punctuality', 'overall'
+            ];
+
+            let missingField = '';
+            const allSelected = radioGroups.every(group => {
+                if (!document.querySelector(`input[name="${group}"]:checked`)) {
+                    missingField = group.replace(/_/g, ' ');
+                    return false;
+                }
+                return true;
+            });
+
+            if (!allSelected) {
+                alert(`Please provide a rating for: ${missingField.charAt(0).toUpperCase() + missingField.slice(1)}`);
+                // Scroll to the missing field
+                const target = document.querySelector(`input[name="${missingField.replace(/ /g, '_')}"]`).closest('.question-card');
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+                return;
+            }
+
+            const comments = document.getElementById('comments');
+            if (!comments.value.trim()) {
+                alert('Please enter your comments.');
+                comments.focus();
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            const btnSpan = submitBtn.querySelector('span');
+            const btnIcon = submitBtn.querySelector('i');
+
+            const originalText = btnSpan.innerText;
+            const originalIconClass = btnIcon.className;
+
+            // Immediate Loading State
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.8';
+            submitBtn.style.cursor = 'not-allowed';
+            btnSpan.innerText = 'Submitting...';
+            btnIcon.className = 'fas fa-spinner fa-spin';
+
+            const formData = new FormData(form);
+
+            fetch('insert_student.php', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error(`Server Error (${response.status}): ${text}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // alert(data.message || 'Feedback submitted successfully!');
+                        form.reset();
+                        window.scrollTo({
+                            top: 0,
+                            behavior: 'smooth'
+                        });
+                        // setTimeout(() => window.location.reload(), 1000);
+                        // Show thank you design for 2 seconds, then redirect
+                        document.querySelector('.main-feedback-card').innerHTML = `
+                            <div class='card-body text-center p-5'>
+                                <div class='mb-3'>
+                                    <span class='d-inline-flex align-items-center justify-content-center rounded-circle text-success' style='width:clamp(72px,20vw,96px);height:clamp(72px,20vw,96px);background-color:rgba(40,167,69,0.12);'>
+                                        <i class='fas fa-check-circle' style='font-size:clamp(2.25rem,8vw,3rem);'></i>
+                                    </span>
+                                </div>
+                                <h2 class='font-weight-bold text-dark mb-3' style='font-family:"Nunito","Open Sans",sans-serif;font-size:clamp(1.35rem,4.5vw,1.75rem);line-height:1.3;'>Thank you</h2>
+                                <p class='text-muted mb-4' style='font-size:clamp(1rem,3.5vw,1.125rem);line-height:1.65;'>Your feedback has been submitted successfully.<br>We appreciate you taking the time to share your views.</p>
+                                <a href='https://www.bms.ac.lk/' class='btn btn-primary w-100 px-4 py-2' style='border-radius:10px;font-weight:600;background-color:#052c65;border:none;'>
+                                    <i class='fas fa-home mr-2'></i>Go to Home Page
+                                </a>
+                            </div>
+                        `;
+                        setTimeout(() => window.location.href = 'https://www.bms.ac.lk/', 3000);
+                    } else {
+                        alert(data.message || 'Error occurred. Please try again.');
+                        resetBtn();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert(`Submission failed: ${error.message}`);
+                    resetBtn();
+                });
+
+            function resetBtn() {
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+                submitBtn.style.cursor = 'pointer';
+                btnSpan.innerText = originalText;
+                btnIcon.className = originalIconClass;
+            }
+        });
+    });
+</script>
+
+</body>
+
+</html>
+
+
+<?php
+include("../includes/footer.php"); // Include your footer if needed

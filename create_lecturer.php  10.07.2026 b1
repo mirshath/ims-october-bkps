@@ -1,0 +1,295 @@
+<?php
+session_start();
+include("database/connection.php");
+include("includes/header.php");
+
+if (!isset($_SESSION['username'])) {
+    // header("location: login.php");
+    echo '<script>window.location.href = "login";</script>';
+    // exit();
+}
+
+
+// ---------------------------- allowed Redirections ---------------------------------------------------------------- 
+// -------- Permission CHECKING TO REDIRECT TO HOME PAGE -------- 
+require_once 'PermissionChecking.php';
+// --------------------------------------------------------------------- 
+// -------------------------------------------------------------------------------------------- 
+
+
+
+
+// Initialize variables
+$lecturer_name = $qualification = "";
+$programs = []; // Initialize programs as an array
+$id = 0;
+$update = false;
+
+// Fetch programs for the dropdown
+$sql = "SELECT * FROM program_table";
+$result = mysqli_query($conn, $sql);
+$programsOptions = [];
+while ($row = mysqli_fetch_assoc($result)) {
+    $programsOptions[] = $row;
+}
+
+// Fetch lecturers from admin table where role = 'lecture'
+$sql_admins = "SELECT username, title, full_name FROM admin WHERE role = 'lecture'";
+$result_admins = mysqli_query($conn, $sql_admins);
+$adminLecturers = [];
+while ($row_admin = mysqli_fetch_assoc($result_admins)) {
+    $adminLecturers[] = $row_admin;
+}
+
+
+// Handle form submission
+if (isset($_POST['save'])) {
+    $lecturer_username = $_POST['lecturer_name'];
+    $qualification = $_POST['qualification'];
+    $programs = isset($_POST['programs']) ? implode(',', $_POST['programs']) : '';
+
+    // Fetch the title and full_name from the admin table for the selected username
+    $admin_query = "SELECT title, full_name FROM admin WHERE username = '$lecturer_username'";
+    $admin_result = mysqli_query($conn, $admin_query);
+    $admin_row = mysqli_fetch_assoc($admin_result);
+    $title = $admin_row['title'] ?? 'Mr';
+    $full_name = $admin_row['full_name'] ?? $lecturer_username;
+    // $combined_name = $title . ' ' . $full_name;
+    $combined_name =  $full_name;
+
+    $sql = "INSERT INTO lecturer_table (title, lecturer_name, hourly_rate, qualification, programs) VALUES ('$title', '$combined_name', 0, '$qualification', '$programs')";
+    if ($conn->query($sql) === TRUE) {
+        $_SESSION['message'] = "Lecturer added successfully!";
+        echo '<script>window.location.href = "create_lecturer";</script>';
+    } else {
+        $_SESSION['message'] = "Error: " . $sql . "<br>" . $conn->error;
+        echo '<script>window.location.href = "create_lecturer";</script>';
+    }
+}
+
+// Handle record update
+if (isset($_GET['edit'])) {
+    $id = $_GET['edit'];
+    $update = true;
+    $result = $conn->query("SELECT * FROM lecturer_table WHERE id=$id");
+    $row = $result->fetch_assoc();
+    $lecturer_name = $row['lecturer_name']; // This is now the full_name
+    $qualification = $row['qualification'];
+    $programs = explode(',', $row['programs']); // Convert string to array
+}
+
+// Handle form update
+if (isset($_POST['update'])) {
+    $id = $_POST['id'];
+    $lecturer_username = $_POST['lecturer_name'];
+    $qualification = $_POST['qualification'];
+    $programs = isset($_POST['programs']) ? implode(',', $_POST['programs']) : '';
+
+    // Fetch the title and full_name from the admin table for the selected username
+    $admin_query = "SELECT title, full_name FROM admin WHERE username = '$lecturer_username'";
+    $admin_result = mysqli_query($conn, $admin_query);
+    $admin_row = mysqli_fetch_assoc($admin_result);
+    $title = $admin_row['title'] ?? 'Mr';
+    $full_name = $admin_row['full_name'] ?? $lecturer_username;
+    $combined_name = $full_name;
+
+    $sql = "UPDATE lecturer_table SET title='$title', lecturer_name='$combined_name', qualification='$qualification', programs='$programs' WHERE id=$id";
+    if ($conn->query($sql) === TRUE) {
+        $_SESSION['message'] = "Lecturer updated successfully!";
+        echo '<script>window.location.href = "create_lecturer";</script>';
+    } else {
+        $_SESSION['message'] = "Error: " . $sql . "<br>" . $conn->error;
+        echo '<script>window.location.href = "create_lecturer";</script>';
+    }
+}
+
+// Handle record deletion
+if (isset($_GET['delete'])) {
+    $id = $_GET['delete'];
+    $sql = "DELETE FROM lecturer_table WHERE id=$id";
+    if ($conn->query($sql) === TRUE) {
+        $_SESSION['message'] = "Lecturer deleted successfully!";
+        echo '<script>window.location.href = "create_lecturer";</script>';
+    } else {
+        $_SESSION['message'] = "Error: " . $sql . "<br>" . $conn->error;
+        echo '<script>window.location.href = "create_lecturer";</script>';
+    }
+}
+
+// Fetch all records
+$result = $conn->query("SELECT * FROM lecturer_table");
+
+?>
+
+<!-- Page Wrapper -->
+<div id="wrapper">
+    <!-- Sidebar -->
+    <?php include("nav.php"); ?>
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+        <!-- Main Content -->
+        <div id="content">
+            <!-- Topbar -->
+            <?php include("includes/topnav.php"); ?>
+            <!-- Begin Page Content -->
+
+            <!-- ----------------------------------------------------------  -->
+            <!-- ----------------------------------------------------------  -->
+
+            <div class="p-3">
+                <!-- Page Heading -->
+                <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                    <h4 class="h4 mb-0 text-gray-800">Lecture Managment</h4>
+                </div>
+
+
+                <!-- add form // create forms -->
+
+                <div class="row mb-5">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header d-flex align-items-center" style="height: 60px;">
+                                <span class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                    <i class="fas fa-plus-circle"></i>
+                                </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                                <h6 class="mb-0 me-2">Add Lecturer</h6>
+                            </div>
+
+                            <div class="card-body">
+                                <form action="" method="post" class="mb-3">
+                                    <input type="hidden" name="id" value="<?php echo $id; ?>">
+
+                                    <div class="form-group">
+                                        <div class="row">
+                                            <div class="col-md-3"> <label for="lecturer_name">Lecturer Name:</label></div>
+                                            <div class="col">
+                                                <select class="form-control select2" id="lecturer_name" name="lecturer_name" required style="width: 100%;">
+                                                    <option value="">Select Lecturer</option>
+                                                    <?php foreach ($adminLecturers as $admin): ?>
+                                                        <?php
+                                                        $combined_admin_name = ($admin['title'] ?? '') . ' ' . ($admin['full_name'] ?? '');
+                                                        ?>
+                                                        <option value="<?php echo htmlspecialchars($admin['username']); ?>" <?php echo $lecturer_name == $admin['full_name'] ? 'selected' : ''; ?>>
+                                                            <?php echo htmlspecialchars($admin['username'] . ' (' . $combined_admin_name . ')'); ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <script>
+                                        // Initialize select2 on the Lecturer Name select
+                                        $(document).ready(function() {
+                                            $('#lecturer_name').select2({
+                                                placeholder: "Select Lecturer",
+                                                allowClear: true,
+                                                width: 'resolve'
+                                            });
+                                        });
+                                    </script>
+
+                                    <div class="form-group">
+                                        <div class="row">
+                                            <div class="col-md-3"> <label for="qualification">Qualification:</label></div>
+                                            <div class="col"><textarea class="form-control" id="qualification" name="qualification" placeholder="Qualifications" rows="3" required><?php echo htmlspecialchars($qualification); ?></textarea></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="row">
+                                            <div class="col-md-3"> <label>Programs</label></div>
+                                            <div class="col">
+                                                <?php foreach ($programsOptions as $program): ?>
+                                                    <div class="form-check">
+                                                        <input type="checkbox" class="form-check-input" name="programs[]" value="<?php echo htmlspecialchars($program['program_name']); ?>"
+                                                            <?php echo in_array($program['program_name'], $programs) ? 'checked' : ''; ?>>
+                                                        <label class="form-check-label"><?php echo htmlspecialchars($program['program_name']); ?></label>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="text-right">
+                                        <?php if ($update): ?>
+                                            <button type="submit" class="btn btn-primary" name="update">Update</button>
+                                        <?php else: ?>
+                                            <button type="submit" class="btn btn-primary" name="save">Save</button>
+                                        <?php endif; ?>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- ----------------------------------------------------------  -->
+            <!-- ----------------------------------------------------------  -->
+
+            <div class="container-fluid">
+
+                <div class="card shadow mb-4" style="font-size: 13px;">
+                    <div class="card-header d-flex align-items-center" style="height: 60px;">
+                        <span class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                            <i class="fas fa-list"></i>
+                        </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                        <h6 class="mb-0">Current Lecturers</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped" id="dataTable" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <!-- <th>ID</th> -->
+                                        <th>Lecturer Name</th>
+                                        <th>Qualification</th>
+                                        <th>Programs</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    // Fetch all lecturers to display in the table
+                                    $sql_table = "SELECT * FROM lecturer_table";
+                                    $lecturers_result = mysqli_query($conn, $sql_table);
+                                    while ($row = mysqli_fetch_assoc($lecturers_result)) {
+                                        $display_name = htmlspecialchars($row['title'] . ' ' . $row['lecturer_name']);
+                                        echo '<tr>';
+                                        echo '<td>' . $display_name . '</td>';
+                                        echo '<td>' . htmlspecialchars($row['qualification']) . '</td>';
+                                        echo '<td>' . htmlspecialchars($row['programs']) . '</td>';
+                                        echo '<td>';
+                                        echo '<a href="?edit=' . htmlspecialchars($row['id']) . '" class="btn btn-warning btn-sm"><i class="fas fa-edit"></i></a> &nbsp;';
+                                        echo '<a href="?delete=' . htmlspecialchars($row['id']) . '" class="btn btn-danger btn-sm" onclick="return confirm(\'Are you sure?\')"><i class="fas fa-trash-alt"></i></a>';
+                                        echo '</td>';
+                                        echo '</tr>';
+                                    }
+                                    ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- /.container-fluid -->
+        </div>
+        <!-- End of Main Content -->
+    </div>
+    <!-- End of Content Wrapper -->
+</div>
+<!-- End of Page Wrapper -->
+
+
+<!-- Page level plugins -->
+<script src="vendor/datatables/jquery.dataTables.min.js"></script>
+<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+
+<link rel="stylesheet" href="./vendor/datatables/dataTables.bootstrap4.min.css">
+<!-- Page level custom scripts -->
+<script src="js/demo/datatables-demo.js"></script>
+
+</body>
+
+</html>

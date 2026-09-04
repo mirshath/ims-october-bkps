@@ -1,0 +1,32 @@
+# =====================================================================
+# google-form/uploads/.htaccess
+# This folder holds user-uploaded images (banners, question images,
+# and respondent file-upload answers). Files here must be *viewable*
+# (the browser needs to load them as <img> tags) but must NEVER be
+# *executable* — otherwise someone could upload "shell.php" renamed
+# with an image extension trick and run it.
+# =====================================================================
+
+# Allow the files themselves to be requested/displayed
+<IfModule mod_authz_core.c>
+    Require all granted
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Allow from all
+</IfModule>
+
+Options -Indexes -ExecCGI
+AddHandler cgi-script .php .phtml .php3 .php4 .php5 .php7 .pl .py .cgi .asp .sh
+
+# Belt-and-braces: refuse to serve any of these as scripts even if the
+# handler line above is ignored by the server config.
+<FilesMatch "\.(php|phtml|php3|php4|php5|php7|pl|py|cgi|asp|sh)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>

@@ -1,0 +1,38 @@
+<?php
+session_start();
+include("../database/connection.php"); // Adjust the path as necessary
+
+if (!isset($_SESSION['username'])) {
+    echo json_encode(['error' => 'Unauthorized access']);
+    exit();
+}
+
+if (isset($_POST['programme_id'])) {
+    $programmeId = $_POST['programme_id'];
+
+    // Prepare the SQL statement to prevent SQL injection
+    $stmt = $conn->prepare("SELECT course_fee_lkr, course_fee_gbp, course_fee_usd, course_fee_euro FROM program_table WHERE program_code = ?");
+    $stmt->bind_param("s", $programmeId);
+
+    // Execute the statement
+    $stmt->execute();
+
+    // Get the result
+    $result = $stmt->get_result();
+
+    if ($result->num_rows > 0) {
+        // Fetch the data
+        $feeData = $result->fetch_assoc();
+        echo json_encode($feeData);
+    } else {
+        echo json_encode(['error' => 'No data found']);
+    }
+
+    // Close the statement
+    $stmt->close();
+} else {
+    echo json_encode(['error' => 'Invalid request']);
+}
+
+// Close the database connection
+$conn->close();

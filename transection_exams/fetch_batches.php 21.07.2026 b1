@@ -1,0 +1,15 @@
+<?php
+include("../database/connection.php");
+
+$programme_id = $_POST['programme_id'];
+
+$query = "SELECT * FROM batch_table WHERE programme  = '$programme_id' ORDER BY id";
+$result = mysqli_query($conn, $query);
+
+$batches = [];
+while ($row = mysqli_fetch_assoc($result)) {
+    $batches[] = $row;
+}
+
+echo json_encode($batches);
+?>

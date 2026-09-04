@@ -1,0 +1,381 @@
+<?php
+session_start();
+include("database/connection.php");
+include("includes/header.php");
+
+if (!isset($_SESSION['username'])) {
+    echo '<script>window.location.href = "login";</script>';
+    exit();
+}
+
+// ---------------------------- allowed Redirections ---------------------------------------------------------------- 
+// -------- Permission CHECKING TO REDIRECT TO HOME PAGE -------- 
+require_once 'PermissionChecking.php';
+// --------------------------------------------------------------------- 
+// -------------------------------------------------------------------------------------------- 
+
+?>
+
+<div id="wrapper">
+    <?php include("nav.php"); ?>
+    <div id="content-wrapper" class="d-flex flex-column">
+        <div id="content">
+            <?php include("includes/topnav.php"); ?>
+            <div class="p-3">
+                <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                    <h4 class="h4 mb-0 text-gray-800">Check All Data For Student</h4>
+                </div>
+
+                <div class="card mb-5">
+                    <div class="card-header d-flex align-items-center" style="height: 60px;">
+                        <span
+                            class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center"
+                            style="width: 30px; height: 30px;">
+                            <i class="fas fa-search"></i>
+                        </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                        <h6 class="mb-0 me-2 font-weight-bold">Select Student</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="student_select">Student</label>
+                                    <select id="student_select" class="form-control select2">
+                                        <option value="">Select Student</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="student_data_container" style="display: none;">
+                    <!-- Student Basic Info -->
+                    <div class="card mb-5">
+                        <div class="card-header d-flex align-items-center" style="height: 60px;">
+                            <span
+                                class="bg-primary text-white rounded-circle p-2 d-flex align-items-center justify-content-center"
+                                style="width: 30px; height: 30px;">
+                                <i class="fas fa-info-circle"></i>
+                            </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                            <h6 class="mb-0 me-2 font-weight-bold">Student Basic Info (students table)</h6>
+                        </div>
+                        <div class="card-body" id="basic_info_content"></div>
+                    </div>
+
+                    <!-- Programme Allocation -->
+                    <div class="card mb-5">
+                        <div class="card-header d-flex align-items-center" style="height: 60px;">
+                            <span
+                                class="bg-success text-white rounded-circle p-2 d-flex align-items-center justify-content-center"
+                                style="width: 30px; height: 30px;">
+                                <i class="fas fa-graduation-cap"></i>
+                            </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                            <h6 class="mb-0 me-2 font-weight-bold">Programme Allocation (allocate_programme)</h6>
+                        </div>
+                        <div class="card-body" id="allocate_programme_content"></div>
+                    </div>
+
+                    <!-- Payment Plan -->
+                    <div class="card mb-5">
+                        <div class="card-header d-flex align-items-center" style="height: 60px;">
+                            <span
+                                class="bg-info text-white rounded-circle p-2 d-flex align-items-center justify-content-center"
+                                style="width: 30px; height: 30px;">
+                                <i class="fas fa-file-invoice-dollar"></i>
+                            </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                            <h6 class="mb-0 me-2 font-weight-bold">Payment Plan (add_payment_plan_table)</h6>
+                        </div>
+                        <div class="card-body" id="payment_plan_content"></div>
+                    </div>
+
+                    <!-- Installment Summary -->
+                    <div class="card mb-5">
+                        <div class="card-header d-flex align-items-center" style="height: 60px;">
+                            <span
+                                class="bg-warning text-white rounded-circle p-2 d-flex align-items-center justify-content-center"
+                                style="width: 30px; height: 30px;">
+                                <i class="fas fa-calculator"></i>
+                            </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                            <h6 class="mb-0 me-2 font-weight-bold">Installment Summary (installment_payment_table)</h6>
+                        </div>
+                        <div class="card-body" id="installment_payment_content"></div>
+                    </div>
+
+                    <!-- Installment Details -->
+                    <div class="card mb-5">
+                        <div class="card-header d-flex align-items-center" style="height: 60px;">
+                            <span
+                                class="bg-danger text-white rounded-circle p-2 d-flex align-items-center justify-content-center"
+                                style="width: 30px; height: 30px;">
+                                <i class="fas fa-list-ol"></i>
+                            </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                            <h6 class="mb-0 me-2 font-weight-bold">Installment Details (installment_details_table)</h6>
+                        </div>
+                        <div class="card-body" id="installment_details_content"></div>
+                    </div>
+
+                    <!-- Payment Due Info -->
+                    <div class="card mb-5">
+                        <div class="card-header d-flex align-items-center" style="height: 60px;">
+                            <span
+                                class="bg-secondary text-white rounded-circle p-2 d-flex align-items-center justify-content-center"
+                                style="width: 30px; height: 30px;">
+                                <i class="fas fa-clock"></i>
+                            </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                            <h6 class="mb-0 me-2 font-weight-bold">Payment Due Info (payment_due_tables)</h6>
+                        </div>
+                        <div class="card-body" id="payment_due_content"></div>
+                    </div>
+
+                    <!-- Payment Withheld Status -->
+                    <div class="card mb-5">
+                        <div class="card-header d-flex align-items-center" style="height: 60px;">
+                            <span
+                                class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center"
+                                style="width: 30px; height: 30px;">
+                                <i class="fas fa-ban"></i>
+                            </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                            <h6 class="mb-0 me-2 font-weight-bold">Payment Withheld Status (payment_withheld_table)</h6>
+                        </div>
+                        <div class="card-body" id="payment_withheld_content"></div>
+                    </div>
+                </div>
+
+                <div id="loading_spinner" class="text-center my-5" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        // Initialize Select2
+        $('#student_select').select2({
+            placeholder: "Search and select a student",
+            allowClear: true,
+            ajax: {
+                url: 'fetch_students_all.php',
+                dataType: 'json',
+                delay: 250,
+                data: function(params) {
+                    return {
+                        search: params.term
+                    };
+                },
+                processResults: function(data) {
+                    return {
+                        results: data
+                    };
+                },
+                cache: true
+            }
+        });
+
+        $('#student_select').on('change', function() {
+            var studentCode = $(this).val();
+            if (studentCode) {
+                fetchStudentAllData(studentCode);
+            } else {
+                $('#student_data_container').hide();
+            }
+        });
+
+        function fetchStudentAllData(studentCode) {
+            $('#loading_spinner').show();
+            $('#student_data_container').hide();
+
+            $.ajax({
+                url: 'fetch_student_complete_data.php',
+                type: 'POST',
+                data: {
+                    student_code: studentCode
+                },
+                dataType: 'json',
+                success: function(response) {
+                    $('#loading_spinner').hide();
+                    if (response.success) {
+                        displayData(response.data);
+                        $('#student_data_container').show();
+                    } else {
+                        alert('Error fetching data: ' + response.message);
+                    }
+                },
+                error: function() {
+                    $('#loading_spinner').hide();
+                    alert('An error occurred while fetching student data.');
+                }
+            });
+        }
+
+        function displayData(data) {
+            // Basic Info
+            var basicInfo = data.students;
+            var basicHtml = '<div class="row">';
+            if (basicInfo) {
+                basicHtml += '<div class="col-md-3 mb-2"><strong>Name:</strong> <span class="text-dark">' + (basicInfo.first_name || '') + ' ' + (basicInfo.last_name || '') + '</span></div>';
+                basicHtml += '<div class="col-md-3 mb-2"><strong>NIC:</strong> ' + (basicInfo.nic || '-') + '</div>';
+                basicHtml += '<div class="col-md-3 mb-2"><strong>Email:</strong> ' + (basicInfo.bms_email || '-') + '</div>';
+                basicHtml += '<div class="col-md-3 mb-2"><strong>Status:</strong> <span class="badge badge-' + (basicInfo.student_status === 'active' ? 'success' : 'secondary') + '">' + (basicInfo.student_status || '-') + '</span></div>';
+                basicHtml += '<div class="col-md-3 mb-2"><strong>Code:</strong> <span class="badge badge-info">' + (basicInfo.student_code || '-') + '</span></div>';
+                basicHtml += '<div class="col-md-3 mb-2"><strong>Contact:</strong> ' + (basicInfo.contact_no || '-') + '</div>';
+                basicHtml += '<div class="col-md-3 mb-2"><strong>Address:</strong> ' + (basicInfo.address || '-') + '</div>';
+            } else {
+                basicHtml += '<div class="col-12 text-danger"><i class="fas fa-exclamation-triangle"></i> No data found in students table</div>';
+            }
+            basicHtml += '</div>';
+            $('#basic_info_content').html(basicHtml);
+
+            // Allocate Programme
+            var alloc = data.allocate_programme;
+            var allocHtml = '<div class="table-responsive"><table class="table table-hover table-sm">';
+            allocHtml += '<thead class="thead-light"><tr><th>Reg ID</th><th>Program Name</th><th>Batch Name</th><th>Status</th><th>By</th></tr></thead><tbody>';
+            if (alloc && alloc.length > 0) {
+                alloc.forEach(function(item) {
+                    var statusClass = item.status === 'active' ? 'text-success' : 'text-danger';
+                    allocHtml += '<tr>';
+                    allocHtml += '<td><strong>' + (item.student_registration_id || '-') + '</strong></td>';
+                    allocHtml += '<td>' + (item.program_name || item.programme_code || '-') + '</td>';
+                    allocHtml += '<td>' + (item.batch_name || item.batch_id || '-') + '</td>';
+                    allocHtml += '<td class="' + statusClass + ' font-weight-bold">' + (item.status || '-') + '</td>';
+                    allocHtml += '<td>' + (item.entered_by || '-') + '</td>';
+                    allocHtml += '</tr>';
+                });
+            } else {
+                allocHtml += '<tr><td colspan="5" class="text-center text-muted">No active allocations found</td></tr>';
+            }
+            allocHtml += '</tbody></table></div>';
+            $('#allocate_programme_content').html(allocHtml);
+
+            // Payment Plan
+            var plan = data.add_payment_plan_table;
+            var planHtml = '<div class="table-responsive"><table class="table table-hover table-sm">';
+            planHtml += '<thead class="thead-light"><tr><th>Prog-Batch</th><th>Reg Fee (LKR)</th><th>Course (LKR)</th><th>Uni (LKR)</th><th>Uni (GBP)</th><th>Uni (USD)</th><th>By</th></tr></thead><tbody>';
+            if (plan && plan.length > 0) {
+                plan.forEach(function(item) {
+                    planHtml += '<tr>';
+                    planHtml += '<td>' + (item.programme_batch || '-') + '</td>';
+                    planHtml += '<td class="text-rights">' + parseFloat(item.registration_fee_LKR || 0).toLocaleString() + '</td>';
+                    planHtml += '<td class="text-rights">' + parseFloat(item.courseFeeLKR_total || 0).toLocaleString() + '</td>';
+                    planHtml += '<td class="text-rights">' + parseFloat(item.university_fee_LKR || 0).toLocaleString() + '</td>';
+                    planHtml += '<td class="text-rights">' + parseFloat(item.university_fee_GBP || 0).toLocaleString() + '</td>';
+                    planHtml += '<td class="text-rights">' + parseFloat(item.university_fee_USD || 0).toLocaleString() + '</td>';
+                    planHtml += '<td>' + (item.entered_by || '-') + '</td>';
+                    planHtml += '</tr>';
+                });
+            } else {
+                planHtml += '<tr><td colspan="7" class="text-center text-muted">No payment plans found</td></tr>';
+            }
+            planHtml += '</tbody></table></div>';
+            $('#payment_plan_content').html(planHtml);
+
+            // Installment Payment
+            var instPay = data.installment_payment_table;
+            var instPayHtml = '<div class="table-responsive"><table class="table table-hover table-sm">';
+            instPayHtml += '<thead class="thead-light"><tr><th>Prog-Batch</th><th>Course Fee</th><th>Reg Fee</th><th>Uni (LKR)</th><th>Uni (GBP)</th><th>Uni (USD)</th></tr></thead><tbody>';
+            if (instPay && instPay.length > 0) {
+                instPay.forEach(function(item) {
+                    instPayHtml += '<tr>';
+                    instPayHtml += '<td>' + (item.programme_batch || '-') + '</td>';
+                    instPayHtml += '<td class="text-rights font-weight-bold text-primary">' + parseFloat(item.coursefee || 0).toLocaleString() + '</td>';
+                    instPayHtml += '<td class="text-rights">' + parseFloat(item.registrationfee || 0).toLocaleString() + '</td>';
+                    instPayHtml += '<td class="text-rights">' + parseFloat(item.unifee_lkr || 0).toLocaleString() + '</td>';
+                    instPayHtml += '<td class="text-rights">' + parseFloat(item.unifee_gbp || 0).toLocaleString() + '</td>';
+                    instPayHtml += '<td class="text-rights">' + parseFloat(item.unifee_usd || 0).toLocaleString() + '</td>';
+                    instPayHtml += '</tr>';
+                });
+            } else {
+                instPayHtml += '<tr><td colspan="6" class="text-center text-muted">No installment payment summary found</td></tr>';
+            }
+            instPayHtml += '</tbody></table></div>';
+            $('#installment_payment_content').html(instPayHtml);
+
+            // Installment Details
+            var details = data.installment_details_table;
+            var detailsHtml = '<div class="table-responsive"><table class="table table-hover table-sm">';
+            detailsHtml += '<thead class="thead-light"><tr><th>#</th><th>Prog-Batch</th><th>Balance Amount</th><th>Original Divided</th><th>Due Date</th></tr></thead><tbody>';
+            if (details && details.length > 0) {
+                details.forEach(function(item) {
+                    var amount = parseFloat(item.installment_amount || 0);
+                    var textClass = amount > 0 ? 'text-danger font-weight-bold' : 'text-success';
+                    detailsHtml += '<tr>';
+                    detailsHtml += '<td>' + (item.installment_numbers || '-') + '</td>';
+                    detailsHtml += '<td><small>' + (item.programme_batch || '-') + '</small></td>';
+                    detailsHtml += '<td class="text-rights ' + textClass + '">' + amount.toLocaleString() + '</td>';
+                    detailsHtml += '<td class="text-rights">' + parseFloat(item.devided_values || 0).toLocaleString() + '</td>';
+                    detailsHtml += '<td>' + (item.due_date || '-') + '</td>';
+                    detailsHtml += '</tr>';
+                });
+            } else {
+                detailsHtml += '<tr><td colspan="5" class="text-center text-muted">No installment details found</td></tr>';
+            }
+            detailsHtml += '</tbody></table></div>';
+            $('#installment_details_content').html(detailsHtml);
+
+            // Payment Due Info
+            var due = data.payment_due_tables;
+            var dueHtml = '<div class="table-responsive"><table class="table table-hover table-sm">';
+            dueHtml += '<thead class="thead-light"><tr><th>Prog-Batch</th><th>Remaining Balance</th><th>BMS Due Count</th><th>Uni Due Count</th><th>Method</th></tr></thead><tbody>';
+            if (due && due.length > 0) {
+                due.forEach(function(item) {
+                    var bmsDue = parseInt(item.due_count_bms_fees || 0);
+                    var uniDue = parseInt(item.due_count_uni_fees || 0);
+                    dueHtml += '<tr>';
+                    dueHtml += '<td>' + (item.programme_batch || '-') + '</td>';
+                    dueHtml += '<td class="text-rights font-weight-bold text-danger">' + parseFloat(item.remaining_full_amount || 0).toLocaleString() + '</td>';
+                    dueHtml += '<td class="text-centers"><span class="badge badge-' + (bmsDue > 0 ? 'danger' : 'success') + '">' + bmsDue + '</span></td>';
+                    dueHtml += '<td class="text-centers"><span class="badge badge-' + (uniDue > 0 ? 'danger' : 'success') + '">' + uniDue + '</span></td>';
+                    dueHtml += '<td>Method ' + (item.payment_method || '-') + '</td>';
+                    dueHtml += '</tr>';
+                });
+            } else {
+                dueHtml += '<tr><td colspan="5" class="text-center text-muted">No data found in payment_due_tables</td></tr>';
+            }
+            dueHtml += '</tbody></table></div>';
+            $('#payment_due_content').html(dueHtml);
+
+            // Withheld Status
+            var withheld = data.payment_withheld_table;
+            var withheldHtml = '<div class="table-responsive"><table class="table table-hover table-sm">';
+            withheldHtml += '<thead class="thead-light"><tr><th>Program Name</th><th>Batch Name</th><th>Payment Status</th><th>BMS Due</th><th>Uni Due</th><th>Last Payment</th></tr></thead><tbody>';
+            if (withheld && withheld.length > 0) {
+                withheld.forEach(function(item) {
+                    var isWithheld = item.payment_status === 'withheld';
+                    var statusClass = isWithheld ? 'badge badge-danger' : 'badge badge-success';
+                    var rowClass = isWithheld ? 'table-danger' : '';
+                    withheldHtml += '<tr class="' + rowClass + '">';
+                    withheldHtml += '<td>' + (item.program_name || item.program_id || '-') + '</td>';
+                    withheldHtml += '<td>' + (item.batch_name || item.batch_id || '-') + '</td>';
+                    withheldHtml += '<td><span class="' + statusClass + ' p-2">' + (item.payment_status || '-').toUpperCase() + '</span></td>';
+                    withheldHtml += '<td class="text-centers">' + (item.due_count_bms_fees || 0) + '</td>';
+                    withheldHtml += '<td class="text-centers">' + (item.due_count_uni_fees || 0) + '</td>';
+                    withheldHtml += '<td>' + (item.last_payment_date || '-') + '</td>';
+                    withheldHtml += '</tr>';
+                });
+            } else {
+                withheldHtml += '<tr><td colspan="6" class="text-center text-muted">No data found in payment_withheld_table</td></tr>';
+            }
+            withheldHtml += '</tbody></table></div>';
+            $('#payment_withheld_content').html(withheldHtml);
+        }
+    });
+</script>
+
+<?php
+// include("includes/footer.php"); // Assuming footer is handled by header or at bottom
+?>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/js/select2.min.js"></script>
+<script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+
+</body>
+
+</html>

@@ -1,0 +1,914 @@
+<?php
+// Include database connection
+include("../database/connection.php");
+
+// JSON endpoint safety — NEVER let PHP warnings/errors leak into output (breaks JSON.parse)
+// - display_errors = 0: hide HTML warnings from response (they still go to server error log)
+// - output buffer + ob_clean() before echo: wipe any accidental output
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ob_start();
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+
+        global $conn;
+
+        // Get input parameters
+        $programme_id = isset($_POST['programme_id']) ? $_POST['programme_id'] : null;
+        $batch_id = isset($_POST['batch_id']) ? $_POST['batch_id'] : null;
+        $module_id = isset($_POST['module_id']) ? $_POST['module_id'] : null;
+        $main_component_id = isset($_POST['main_component_id']) ? $_POST['main_component_id'] : null;
+        $sub_component_id = isset($_POST['sub_component_id']) ? $_POST['sub_component_id'] : null;
+        $student_status = isset($_POST['student_status']) ? $_POST['student_status'] : '';
+
+        // Validate inputs
+        if (!$programme_id || !$batch_id || !$module_id) {
+            throw new Exception("Missing required parameters");
+        }
+
+        // Get programme name
+        $programmeQuery = "SELECT program_name FROM program_table WHERE program_code = ?";
+        $programmeStmt = $conn->prepare($programmeQuery);
+        if (!$programmeStmt) {
+            throw new Exception("Programme query prepare failed: " . $conn->error);
+        }
+
+        $programmeStmt->bind_param("i", $programme_id);
+        $programmeStmt->execute();
+        $programmeResult = $programmeStmt->get_result();
+        $programmeData = $programmeResult->fetch_assoc();
+        $programme_name = $programmeData['program_name'];
+
+        // Get module name
+        $moduleQuery = "SELECT module_name FROM modules WHERE id = ?";
+        $moduleStmt = $conn->prepare($moduleQuery);
+        $moduleStmt->bind_param("i", $module_id);
+        $moduleStmt->execute();
+        $moduleResult = $moduleStmt->get_result();
+        $moduleData = $moduleResult->fetch_assoc();
+        $module_name = $moduleData['module_name'] ?? '';
+
+        // Check if the program is BBM
+        if (strpos($programme_name, 'Bachelor of Business Management') !== false || $programme_id == 47) { // 47 is the BBM program ID
+            // Get year and semester information for the module
+            $yearSemesterQuery = "SELECT year_id, semester_id FROM modules WHERE id = ?";
+            $yearSemesterStmt = $conn->prepare($yearSemesterQuery);
+            $yearSemesterStmt->bind_param("i", $module_id);
+            $yearSemesterStmt->execute();
+            $yearSemesterResult = $yearSemesterStmt->get_result();
+            $yearSemesterData = $yearSemesterResult->fetch_assoc();
+            $year_id = $yearSemesterData['year_id'];
+            $semester_id = $yearSemesterData['semester_id'];
+
+            // Get main components
+            $componentQuery = "SELECT DISTINCT mc.id as main_component_id, mc.as_main_component_name 
+                                FROM allocated_components ac
+                                JOIN assignment_components mc ON ac.main_component_id = mc.id
+                                WHERE ac.module_id = ?";
+            $componentStmt = $conn->prepare($componentQuery);
+            $componentStmt->bind_param("i", $module_id);
+            $componentStmt->execute();
+            $componentResult = $componentStmt->get_result();
+            $components = [];
+            while ($row = $componentResult->fetch_assoc()) {
+                $components[] = $row;
+            }
+
+            // NEW CODE: Get ALL subcomponents for ALL main components
+            $allSubComponentsQuery = "SELECT ac.main_component_id, sc.id as sub_component_id, sc.sub_component_name 
+                                     FROM allocated_components ac
+                                     JOIN sub_assign_components sc ON ac.sub_component_id = sc.id
+                                     WHERE ac.module_id = ?";
+            $allSubComponentsStmt = $conn->prepare($allSubComponentsQuery);
+            $allSubComponentsStmt->bind_param("i", $module_id);
+            $allSubComponentsStmt->execute();
+            $allSubComponentsResult = $allSubComponentsStmt->get_result();
+
+            // Create a structured array of components with their subcomponents
+            $componentStructure = [];
+            foreach ($components as $component) {
+                $componentStructure[$component['main_component_id']] = [
+                    'name' => $component['as_main_component_name'],
+                    'subcomponents' => []
+                ];
+            }
+
+            // Add subcomponents to their parent components
+            while ($row = $allSubComponentsResult->fetch_assoc()) {
+                $mainComponentId = $row['main_component_id'];
+                if (isset($componentStructure[$mainComponentId])) {
+                    $componentStructure[$mainComponentId]['subcomponents'][$row['sub_component_id']] = $row['sub_component_name'];
+                }
+            }
+            // END NEW CODE
+
+            // Get sub-components if main component is selected (keep this for filtering)
+            $subComponents = [];
+            if ($main_component_id) {
+                $subComponentsQuery = "SELECT DISTINCT sc.id, sc.sub_component_name 
+                                      FROM allocated_components ac
+                                      JOIN sub_assign_components sc ON ac.sub_component_id = sc.id
+                                      WHERE ac.module_id = ? AND ac.main_component_id = ?";
+                $subComponentsStmt = $conn->prepare($subComponentsQuery);
+                $subComponentsStmt->bind_param("ii", $module_id, $main_component_id);
+                $subComponentsStmt->execute();
+                $subComponentsResult = $subComponentsStmt->get_result();
+
+                while ($row = $subComponentsResult->fetch_assoc()) {
+                    $subComponents[] = $row;
+                }
+            }
+
+            // Get students enrolled in this program and batch
+            $studentsQuery = "SELECT s.student_code, s.first_name, s.last_name, ap.student_registration_id, ap.compulsory_sub, ap.elective_subs 
+                              FROM students s 
+                              JOIN allocate_programme ap ON s.student_code = ap.student_code 
+                              WHERE ap.programme_code = ? AND ap.batch_id = ? ";
+
+            $bbmStudentTypes = '';
+            $bbmStudentParams = [$programme_id, $batch_id];
+            $bbmStudentParamTypes = 'ii';
+
+            if (!empty($student_status)) {
+                $studentsQuery .= " AND ap.status = ? ";
+                $bbmStudentParams[] = $student_status;
+                $bbmStudentParamTypes .= 's';
+            }
+
+            $studentsStmt = $conn->prepare($studentsQuery);
+            $studentsStmt->bind_param($bbmStudentParamTypes, ...$bbmStudentParams);
+            $studentsStmt->execute();
+            $studentsResult = $studentsStmt->get_result();
+
+            $students = [];
+            while ($row = $studentsResult->fetch_assoc()) {
+                // Check if module is in compulsory_sub or elective_subs
+                // Fix PHP 8.x Deprecated: explode(null) → cast NULL to ''
+                $compulsory_subs = explode(',', (string)($row['compulsory_sub'] ?? ''));
+                $elective_subs_array = explode(',', (string)($row['elective_subs'] ?? ''));
+                $compulsory_subs = array_map('trim', $compulsory_subs);
+                $elective_subs_array = array_map('trim', $elective_subs_array);
+
+                if (in_array($module_name, $compulsory_subs) || in_array($module_name, $elective_subs_array)) {
+                    $students[$row['student_code']] = [
+                        'student_id' => $row['student_code'],
+                        'student_name' => $row['first_name'] . ' ' . $row['last_name'],
+                        'student_registration_id' => $row['student_registration_id']
+                    ];
+                }
+            }
+
+            // Fetch BBM direct results (for components without questions)
+            $directResultsQuery = "SELECT * FROM bbm_direct_result 
+                                  WHERE program_id = ? AND batch_id = ? AND module_id = ?";
+            $params = [$programme_id, $batch_id, $module_id];
+            $types = "iii";
+
+            if ($main_component_id) {
+                $directResultsQuery .= " AND main_comp_id = ?";
+                $params[] = $main_component_id;
+                $types .= "i";
+            }
+
+            if ($sub_component_id) {
+                $directResultsQuery .= " AND sub_component_id = ?";
+                $params[] = $sub_component_id;
+                $types .= "i";
+            }
+
+            $directResultsStmt = $conn->prepare($directResultsQuery);
+            $directResultsStmt->bind_param($types, ...$params);
+            $directResultsStmt->execute();
+            $directResultsResult = $directResultsStmt->get_result();
+
+            $directResults = [];
+            while ($row = $directResultsResult->fetch_assoc()) {
+                $studentId = $row['student_id'];
+                $componentId = $row['main_comp_id'];
+                $subComponentId = $row['sub_component_id'];
+
+                if (!isset($directResults[$studentId])) {
+                    $directResults[$studentId] = [];
+                }
+
+                if (!isset($directResults[$studentId][$componentId])) {
+                    $directResults[$studentId][$componentId] = [];
+                }
+
+                if ($subComponentId) {
+                    // This is a subcomponent result
+                    $directResults[$studentId][$componentId][$subComponentId] = [
+                        'examiner1_marks' => $row['examiner1_marks'],
+                        'examiner2_marks' => $row['examiner2_marks'],
+                        'final_marks' => $row['final_marks'],
+                        'status' => $row['status']
+                    ];
+                } else {
+                    // This is a main component result (no subcomponent)
+                    $directResults[$studentId][$componentId]['main'] = [
+                        'examiner1_marks' => $row['examiner1_marks'],
+                        'examiner2_marks' => $row['examiner2_marks'],
+                        'final_marks' => $row['final_marks'],
+                        'status' => $row['status']
+                    ];
+                }
+            }
+
+
+
+            // Fetch BBM detailed results (for components with questions)
+            $detailedResultsQuery = "SELECT * FROM bbm_result_details 
+            WHERE program_id = ? AND batch_id = ? AND module_id = ?";
+            $params = [$programme_id, $batch_id, $module_id];
+            $types = "iii";
+
+            if ($main_component_id) {
+                $detailedResultsQuery .= " AND main_comp_id = ?";
+                $params[] = $main_component_id;
+                $types .= "i";
+            }
+
+            if ($sub_component_id) {
+                $detailedResultsQuery .= " AND sub_component_id = ?";
+                $params[] = $sub_component_id;
+                $types .= "i";
+            }
+
+            $detailedResultsStmt = $conn->prepare($detailedResultsQuery);
+            $detailedResultsStmt->bind_param($types, ...$params);
+            $detailedResultsStmt->execute();
+            $detailedResultsResult = $detailedResultsStmt->get_result();
+
+            $detailedResults = [];
+            while ($row = $detailedResultsResult->fetch_assoc()) {
+                $studentId = $row['student_id'];
+                $componentId = $row['main_comp_id'];
+                $subComponentId = $row['sub_component_id'];
+                $questionNo = $row['question_no'];
+
+                if (!isset($detailedResults[$studentId])) {
+                    $detailedResults[$studentId] = [];
+                }
+
+                if (!isset($detailedResults[$studentId][$componentId])) {
+                    $detailedResults[$studentId][$componentId] = [];
+                }
+
+                if ($subComponentId) {
+                    if (!isset($detailedResults[$studentId][$componentId][$subComponentId])) {
+                        $detailedResults[$studentId][$componentId][$subComponentId] = [];
+                    }
+                    $detailedResults[$studentId][$componentId][$subComponentId][$questionNo] = [
+                        'examiner1_marks' => $row['examiner1_marks'],
+                        'examiner2_marks' => $row['examiner2_marks'],
+                        'final_marks' => $row['final_marks'],
+                        'status' => $row['status']
+                    ];
+                } else {
+                    if (!isset($detailedResults[$studentId][$componentId]['main'])) {
+                        $detailedResults[$studentId][$componentId]['main'] = [];
+                    }
+                    $detailedResults[$studentId][$componentId]['main'][$questionNo] = [
+                        'examiner1_marks' => $row['examiner1_marks'],
+                        'examiner2_marks' => $row['examiner2_marks'],
+                        'final_marks' => $row['final_marks'],
+                        'status' => $row['status']
+                    ];
+                }
+            }
+
+            // Add the detailed results to the student data
+            foreach ($students as $studentId => $studentData) {
+                // Add questions data to the student results
+                if (isset($detailedResults[$studentId])) {
+                    $studentResults[$studentId]['questions'] = $detailedResults[$studentId];
+                }
+            }
+
+
+            // Fetch BBM final results
+            $finalResultsQuery = "SELECT * FROM bbm_final_results_tbl 
+                                 WHERE program_id = ? AND batch_id = ? AND module_id = ?";
+            $params = [$programme_id, $batch_id, $module_id];
+            $types = "iii";
+
+            if ($main_component_id) {
+                $finalResultsQuery .= " AND main_comp_id = ?";
+                $params[] = $main_component_id;
+                $types .= "i";
+            }
+
+            if ($sub_component_id) {
+                $finalResultsQuery .= " AND sub_comp_id = ?";
+                $params[] = $sub_component_id;
+                $types .= "i";
+            }
+
+            $finalResultsStmt = $conn->prepare($finalResultsQuery);
+            $finalResultsStmt->bind_param($types, ...$params);
+            $finalResultsStmt->execute();
+            $finalResultsResult = $finalResultsStmt->get_result();
+
+            $finalResults = [];
+            while ($row = $finalResultsResult->fetch_assoc()) {
+                $studentId = $row['student_id'];
+                $componentId = $row['main_comp_id'];
+                $subComponentId = $row['sub_comp_id'];
+
+                if (!isset($finalResults[$studentId])) {
+                    $finalResults[$studentId] = [];
+                }
+
+                if (!isset($finalResults[$studentId][$componentId])) {
+                    $finalResults[$studentId][$componentId] = [];
+                }
+
+                if ($subComponentId) {
+                    $finalResults[$studentId][$componentId][$subComponentId] = [
+                        'final_result' => $row['final_result'],
+                        'final_result_ex2' => $row['final_result_ex2'],
+                        'que_no' => $row['que_no']
+                    ];
+                } else {
+                    $finalResults[$studentId][$componentId]['main'] = [
+                        'final_result' => $row['final_result'],
+                        'final_result_ex2' => $row['final_result_ex2'],
+                        'que_no' => $row['que_no']
+                    ];
+                }
+            }
+
+            // Fetch total module results with GPA
+            $totalModResultsQuery = "SELECT * FROM total_mod_rslt 
+                                    WHERE prog_id = ? AND batch_id = ? AND module_id = ?";
+            $totalModResultsStmt = $conn->prepare($totalModResultsQuery);
+            $totalModResultsStmt->bind_param("iii", $programme_id, $batch_id, $module_id);
+            $totalModResultsStmt->execute();
+            $totalModResultsResult = $totalModResultsStmt->get_result();
+
+            $totalModResults = [];
+            while ($row = $totalModResultsResult->fetch_assoc()) {
+                $studentId = $row['std_id'];
+                $totalModResults[$studentId] = [
+                    'ex1_total_rslt' => $row['ex1_total_rslt'],
+                    'ex2_total_rslt' => $row['ex2_total_rslt'],
+                    'total' => $row['total'],
+                    'grades' => $row['grades'],
+                    'GV' => $row['GV'],
+                    'CGP' => $row['CGP']
+                ];
+            }
+
+            // Fetch GPA calculations
+            $gpaQuery = "SELECT * FROM gpa_calculate_tbl 
+                        WHERE prog_id = ? AND batch_id = ? AND year_id = ? AND semester_id = ?";
+            $gpaStmt = $conn->prepare($gpaQuery);
+            $gpaStmt->bind_param("iiii", $programme_id, $batch_id, $year_id, $semester_id);
+            $gpaStmt->execute();
+            $gpaResult = $gpaStmt->get_result();
+
+            $gpaData = [];
+            while ($row = $gpaResult->fetch_assoc()) {
+                $studentId = $row['std_id'];
+                $gpaData[$studentId] = [
+                    'total_credit_value' => $row['total_credit_value'],
+                    'total_CGP_value' => $row['total_CGP_value'],
+                    'final_GPA_value' => $row['final_GPA_value']
+                ];
+            }
+
+            // Combine all data for each student
+            $studentResults = [];
+            foreach ($students as $studentId => $studentData) {
+                $studentResults[$studentId] = [
+                    'student_id' => $studentId,
+                    'student_name' => $studentData['student_name'],
+                    'student_registration_id' => $studentData['student_registration_id'],
+                    'components' => [],
+                    'questions' => [],
+                    'final_results' => $finalResults[$studentId] ?? [],
+                    'total_mod_result' => $totalModResults[$studentId] ?? null,
+                    'gpa_data' => $gpaData[$studentId] ?? null
+                ];
+
+                // Add direct results
+                if (isset($directResults[$studentId])) {
+                    $studentResults[$studentId]['components'] = $directResults[$studentId];
+                }
+
+                // Add detailed results
+                if (isset($detailedResults[$studentId])) {
+                    $studentResults[$studentId]['questions'] = $detailedResults[$studentId];
+                }
+            }
+
+            // Format the response
+            $response = [
+                'components' => $components,
+                'sub_components' => $subComponents,
+                'results' => array_values($studentResults),
+                'programme_type' => 'BBM',
+                'componentStructure' => $componentStructure, // NEW: Add the component structure to the response
+                'debug_info' => [
+                    'programme_name' => $programme_name,
+                    'year_id' => $year_id,
+                    'semester_id' => $semester_id
+                ]
+            ];
+
+            // Return the response as JSON
+            while (ob_get_level()) {
+                ob_end_clean();
+            } // wipe any leaked warnings/output
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode($response);
+            exit; // Stop further processing
+        } else {
+            // Original code for other program types
+            // Get main components
+            $componentQuery = "SELECT DISTINCT mc.id as main_component_id, mc.as_main_component_name 
+                                FROM allocated_components ac
+                                JOIN assignment_components mc ON ac.main_component_id = mc.id
+                                WHERE ac.module_id = ?";
+            $componentStmt = $conn->prepare($componentQuery);
+            if (!$componentStmt) {
+                throw new Exception("Component query prepare failed: " . $conn->error);
+            }
+
+            $componentStmt->bind_param("i", $module_id);
+            $componentStmt->execute();
+            $componentResult = $componentStmt->get_result();
+            $components = [];
+            while ($row = $componentResult->fetch_assoc()) {
+                $components[] = $row;
+            }
+
+
+            // First get all students with their compulsory_sub and elective_subs
+            $studentsQuery = "SELECT ap.student_code, ap.compulsory_sub, ap.elective_subs 
+                              FROM allocate_programme ap
+                              WHERE ap.programme_code = ? AND ap.batch_id = ? ";
+
+            $allowedParams = [$programme_id, $batch_id];
+            $allowedTypes = 'ii';
+
+            if (!empty($student_status)) {
+                $studentsQuery .= " AND ap.status = ? ";
+                $allowedParams[] = $student_status;
+                $allowedTypes .= 's';
+            }
+
+            $studentsStmt = $conn->prepare($studentsQuery);
+            $studentsStmt->bind_param($allowedTypes, ...$allowedParams);
+            $studentsStmt->execute();
+            $studentsResult = $studentsStmt->get_result();
+
+            $allowed_student_ids = [];
+            while ($row = $studentsResult->fetch_assoc()) {
+                // Fix PHP 8.x Deprecated: explode(null) → cast NULL to ''
+                $compulsory_subs = explode(',', (string)($row['compulsory_sub'] ?? ''));
+                $elective_subs_array = explode(',', (string)($row['elective_subs'] ?? ''));
+                $compulsory_subs = array_map('trim', $compulsory_subs);
+                $elective_subs_array = array_map('trim', $elective_subs_array);
+
+                if (in_array($module_name, $compulsory_subs) || in_array($module_name, $elective_subs_array)) {
+                    $allowed_student_ids[] = $row['student_code'];
+                }
+            }
+
+            // Define programme type first
+            if (strpos($programme_name, 'Executive Certificate in Management') !== false) {
+                $programme_type = 'ECM';
+            } else if (strpos($programme_name, 'Graduate Diploma in Management (Level 6)') !== false) {
+                $programme_type = 'GDM';
+            } else if (strpos($programme_name, 'BTEC Higher National Diploma in Business') !== false) {
+                $programme_type = 'BTEC';
+            } else if (
+                strpos($programme_name, 'BSc (Hons) in Software Engineering') !== false ||
+                strpos($programme_name, 'Higher Diploma in Biomedical Science') !== false ||
+                strpos($programme_name, 'Higher Diploma in Biotechnology') !== false ||
+                strpos($programme_name, 'Higher Diploma in Food Science and Nutrition') !== false ||
+                strpos($programme_name, 'Higher Diploma in Medical Biotechnology') !== false
+            ) {
+                $programme_type = 'HD';
+            } else {
+                $programme_type = 'IFD';
+            }
+
+            // Initialize componentResits array (needed before early returns / re-use below)
+            $componentResits = [];
+            foreach ($components as $component) {
+                $componentResits[$component['main_component_id']] = [
+                    'resit_1' => false,
+                    'resit_2' => false,
+                    'resit_3' => false,
+                    'resit_4' => false,
+                    'resit_5' => false,
+                    'resit_6' => false,
+                    'resit_7' => false
+                ];
+            }
+
+            if (empty($allowed_student_ids)) {
+                $response = [
+                    'components' => $components,
+                    'results' => [],
+                    'componentResits' => $componentResits,
+                    'programme_type' => $programme_type,
+                    'debug_info' => ['programme_name' => $programme_name, 'student_status' => $student_status]
+                ];
+                while (ob_get_level()) {
+                    ob_end_clean();
+                } // wipe any leaked warnings/output
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode($response);
+                exit;
+            }
+
+            $allowed_ids_placeholders = implode(',', array_fill(0, count($allowed_student_ids), '?'));
+
+            $query = "SELECT 
+                        sr.student_id,
+                ap.student_code as student_id,
+                CONCAT(s.first_name, ' ', s.last_name) as student_name,
+                ap.student_registration_id,
+                sr.*,
+                CASE 
+                    WHEN mc.as_main_component_name LIKE '%Assignment%' THEN 'assignment'
+                    WHEN mc.as_main_component_name LIKE '%Final%' THEN 'final_exam'
+                    ELSE 'other'
+                END as component_type,
+                mc.as_main_component_name as component_name
+            FROM allocate_programme ap
+            JOIN students s ON ap.student_code = s.student_code
+
+            LEFT JOIN student_results sr ON (sr.student_id = ap.student_code 
+                AND sr.program_id = ? 
+                AND sr.batch_id = ? 
+                AND sr.module_id = ?)
+            LEFT JOIN assignment_components mc ON sr.main_component_id = mc.id
+            WHERE ap.programme_code = ? 
+                AND ap.batch_id = ? 
+            ";
+
+            if (!empty($student_status)) {
+                $query .= " AND ap.status = ? ";
+            }
+
+            $query .= " AND ap.student_code IN ($allowed_ids_placeholders)
+            ";
+
+
+
+            if ($main_component_id) {
+                $query .= " AND (sr.main_component_id = ? OR sr.main_component_id IS NULL)";
+            }
+            if ($sub_component_id) {
+                $query .= " AND (sr.sub_component_id = ? OR sr.sub_component_id IS NULL)";
+            }
+            $query .= " ORDER BY ap.student_code, sr.main_component_id";
+
+
+            // ---------------
+            // Build $params AND $types IN LOCKSTEP below so their length is GUARANTEED to match.
+            // This eliminates the ArgumentCountError on bind_param.
+            // ---------------
+
+            $params = [];
+            $types  = '';
+
+            // LEFT JOIN student_results placeholders: program_id, batch_id, module_id
+            $params[] = $programme_id;
+            $types .= 'i';
+            $params[] = $batch_id;
+            $types .= 'i';
+            $params[] = $module_id;
+            $types .= 'i';
+
+            // WHERE ap.programme_code = ? AND ap.batch_id = ?
+            $params[] = $programme_id;
+            $types .= 'i';
+            $params[] = $batch_id;
+            $types .= 'i';
+
+            // Optional: student status filter
+            if (!empty($student_status)) {
+                $params[] = $student_status;
+                $types .= 's';
+            }
+
+            // IN (...) allowed student IDs
+            foreach ($allowed_student_ids as $sid) {
+                $params[] = $sid;
+                $types .= 'i';
+            }
+
+            // Optional: main component filter
+            if ($main_component_id) {
+                $params[] = $main_component_id;
+                $types .= 'i';
+            }
+
+            // Optional: sub component filter
+            if ($sub_component_id) {
+                $params[] = $sub_component_id;
+                $types .= 'i';
+            }
+
+            $stmt = $conn->prepare($query);
+            if (!$stmt) {
+                throw new Exception("Results query prepare failed: " . $conn->error);
+            }
+
+            if (!empty($params)) {
+                $stmt->bind_param($types, ...$params);
+            }
+            $stmt->execute();
+            $result = $stmt->get_result();
+
+
+            // Organize results by student
+            $studentResults = [];
+            while ($row = $result->fetch_assoc()) {
+                $studentId = $row['student_id'];
+                $componentId = $row['main_component_id'];
+
+                if (!isset($studentResults[$studentId])) {
+                    $studentResults[$studentId] = [
+                        'student_id' => $studentId,
+                        'student_name' => $row['student_name'],
+                        'student_registration_id' => $row['student_registration_id'],
+                        'student_name (student_registration_id)' => $row['student_name'] . ' (' . $row['student_registration_id'] . ')',
+                        'components' => []
+                    ];
+                }
+
+
+                if (strpos($programme_name, 'Executive Certificate in Management') !== false) {
+                    $resultData = [
+                        'main_result' => $row['converted_marks'],
+                        'component_name' => $row['component_name'],
+                        'component_type' => $row['component_type']
+                    ];
+
+                    // Loop through all ECM resits dynamically
+                    for ($i = 1; $i <= 4; $i++) {
+                        $markKey = "ecm_r{$i}_converted_marks";
+                        $gradeKey = "ecm_r{$i}_grade"; // assuming you have grades for ECM resits
+
+                        if (isset($row[$markKey]) && $row[$markKey] !== null && $row[$markKey] !== '') {
+                            $resultData["resit_$i"] = $row[$markKey];
+
+                            // Include grade if exists
+                            if (isset($row[$gradeKey]) && $row[$gradeKey] !== null && $row[$gradeKey] !== '') {
+                                $resultData["resit{$i}_Grade"] = $row[$gradeKey];
+                            }
+
+                            $componentResits[$componentId]["resit_$i"] = true;
+                        }
+                    }
+
+                    $studentResults[$studentId]['components'][$componentId] = $resultData;
+                }
+
+
+
+                // else if (strpos($programme_name, 'Higher Diploma in Biomedical Science') !== false) 
+                // else if (
+                //     strpos($programme_name, 'BSc (Hons) in Software Engineering') !== false ||
+                //     strpos($programme_name, 'Higher Diploma in Biomedical Science') !== false ||
+                //     strpos($programme_name, 'Higher Diploma in Biotechnology') !== false ||
+                //     strpos($programme_name, 'Higher Diploma in Food Science and Nutrition') !== false ||
+                //     strpos($programme_name, 'Higher Diploma in Medical Biotechnology') !== false
+                // ) {
+                //     // Initialize the resultData outside the loop to avoid overwriting
+                //     $resultData = [
+                //         'main_result' => $row['hd_converted_marks'],
+                //         'main_result_Grade' => $row['hd_grade'],
+                //         'component_type' => $row['component_type'],
+                //         'component_name' => $row['component_name']
+                //     ];
+                //     for ($i = 1; $i <= 7; $i++) {
+                //         // Dynamically check if the key exists in the $row array and is not empty
+                //         $key = "hd_resit{$i}_converted_marks";
+                //         $gradeKey = "hd_resit{$i}_grade";
+
+                //         // Check if the key exists in the row and if it's not empty
+                //         if (isset($row[$key]) && !empty($row[$key])) {
+                //             // Mark that the resit data exists for this component
+                //             $componentResits[$componentId]["resit_$i"] = true;
+
+                //             // Correctly add the resit value and grade to the result data (don't overwrite other data)
+                //             $resultData["resit_$i"] = $row[$key];
+                //             $resultData["resit{$i}_Grade"] = $row[$gradeKey];
+                //         }
+                //     }
+
+
+
+                //     // Store results with resit data for the default case
+                //     $studentResults[$studentId]['components'][$componentId] = $resultData;
+                // } 
+
+                // neew on 27.02.2026 added this code 
+                else if (
+                    strpos($programme_name, 'BSc (Hons) in Software Engineering') !== false ||
+                    strpos($programme_name, 'Higher Diploma in Biomedical Science') !== false ||
+                    strpos($programme_name, 'Higher Diploma in Biotechnology') !== false ||
+                    strpos($programme_name, 'Higher Diploma in Food Science and Nutrition') !== false ||
+                    strpos($programme_name, 'Higher Diploma in Medical Biotechnology') !== false
+                ) {
+                    // Handle main_result conversion for special values
+                    $main_result_val = $row['hd_converted_marks'];
+                    if ($main_result_val === null || $main_result_val === '') {
+                        $main_result_display = '';
+                    } elseif ($main_result_val == -1) {
+                        $main_result_display = 'Not Submitted';
+                    } elseif ($main_result_val == -2) {
+                        $main_result_display = 'Absent';
+                    } else {
+                        $main_result_display = $main_result_val;
+                    }
+
+                    // Initialize the resultData
+                    $resultData = [
+                        'main_result' => $main_result_display,
+                        'main_result_Grade' => $row['hd_grade'],
+                        'component_type' => $row['component_type'],
+                        'component_name' => $row['component_name']
+                    ];
+
+                    for ($i = 1; $i <= 7; $i++) {
+                        $key = "hd_resit{$i}_converted_marks";
+                        $gradeKey = "hd_resit{$i}_grade";
+
+                        // Only show if the resit value key is set (it may be 0 or -1)
+                        if (isset($row[$key]) && $row[$key] !== null && $row[$key] !== '') {
+                            $resit_val = $row[$key];
+                            if ($resit_val == -1) {
+                                $resit_display = 'Not Submitted';
+                            } elseif ($resit_val == -2) {
+                                $resit_display = 'Absent';
+                            } else {
+                                $resit_display = $resit_val;
+                            }
+
+                            // Mark that the resit data exists for this component
+                            $componentResits[$componentId]["resit_$i"] = true;
+
+                            $resultData["resit_$i"] = $resit_display;
+                            $resultData["resit{$i}_Grade"] = $row[$gradeKey];
+                        }
+                    }
+
+                    // Store results with resit data for the default case
+                    $studentResults[$studentId]['components'][$componentId] = $resultData;
+                } else {
+                    // Default processing for other programmes (e.g., IFD)
+                    for ($i = 1; $i <= 4; $i++) {
+                        if (!empty($row["resit_result_$i"])) {
+                            $componentResits[$componentId]["resit_$i"] = true;
+                        }
+                    }
+
+                    // Store results with resit data for the default case
+                    $resultData = [
+                        'main_result' => $row['result'],
+                        'component_type' => $row['component_type'],
+                        'component_name' => $row['component_name']
+                    ];
+
+                    for ($i = 1; $i <= 4; $i++) {
+                        if (!empty($row["resit_result_$i"])) {
+                            $resultData["resit_$i"] = $row["resit_result_$i"];
+                        }
+                    }
+
+                    $studentResults[$studentId]['components'][$componentId] = $resultData;
+                }
+            }
+
+
+            // ------------------------------------------------------------------------------------------------ 
+            // ------------------------------------------------------------------------------------------------ 
+
+            // Format the final results based on programme type
+            if (
+
+                strpos($programme_name, 'BSc (Hons) in Software Engineering') !== false ||
+                strpos($programme_name, 'Higher Diploma in Biomedical Science') !== false ||
+                strpos($programme_name, 'Higher Diploma in Biotechnology') !== false ||
+                strpos($programme_name, 'Higher Diploma in Food Science and Nutrition') !== false ||
+                strpos($programme_name, 'Higher Diploma in Medical Biotechnology') !== false
+            ) {
+                // Format results for ECM and HD programmes
+                foreach ($studentResults as &$result) {
+                    $assignmentResults = [];
+                    $finalExamResults = [];
+                    $otherResults = [];
+
+                    foreach ($result['components'] as $componentId => $data) {
+                        switch ($data['component_type']) {
+                            case 'assignment':
+                                $assignmentResults[] = $data;
+                                break;
+                            case 'final_exam':
+                                $finalExamResults[] = $data;
+                                break;
+                            default:
+                                $otherResults[] = $data;
+                        }
+                    }
+
+                    $result['formatted_results'] = [
+                        'assignments' => $assignmentResults,
+                        'final_exams' => $finalExamResults,
+                        'others' => $otherResults
+                    ];
+                }
+            } else {
+                // Default formatting for other programme types (e.g., IFD)
+                foreach ($studentResults as &$result) {
+                    $assignmentResults = [];
+                    $finalExamResults = [];
+                    $otherResults = [];
+
+                    foreach ($result['components'] as $componentId => $data) {
+                        switch ($data['component_type']) {
+                            case 'assignment':
+                                $assignmentResults[] = $data;
+                                break;
+                            case 'final_exam':
+                                $finalExamResults[] = $data;
+                                break;
+                            default:
+                                $otherResults[] = $data;
+                        }
+                    }
+
+                    $result['formatted_results'] = [
+                        'assignments' => $assignmentResults,
+                        'final_exams' => $finalExamResults,
+                        'others' => $otherResults
+                    ];
+                }
+            }
+
+            // Fetch final results for each student
+            $finalResultQuery = "SELECT id, student_id, final_result 
+                                FROM final_student_results 
+                                WHERE program_id = ? 
+                                AND batch_id = ? 
+                                AND module_id = ?";
+
+            $finalResultStmt = $conn->prepare($finalResultQuery);
+            $finalResultStmt->bind_param("iii", $programme_id, $batch_id, $module_id);
+            $finalResultStmt->execute();
+            $finalResultResult = $finalResultStmt->get_result();
+
+            $finalResults = [];
+            while ($row = $finalResultResult->fetch_assoc()) {
+                $finalResults[$row['student_id']] = [
+                    'final_result' => $row['final_result'],
+                    'id' => $row['id']
+                ];
+            }
+
+            // Add final results to student results array
+            foreach ($studentResults as $studentId => &$result) {
+                $result['final_result'] = $finalResults[$studentId]['final_result'] ?? '-';
+                $result['id'] = $finalResults[$studentId]['id'] ?? null;
+            }
+
+
+            // Programme type already defined earlier
+
+            // Prepare the response
+            $response = [
+                'components' => $components,
+                'results' => array_values($studentResults),
+                'componentResits' => $componentResits,
+                'programme_type' => $programme_type,
+                'debug_info' => [
+                    'programme_name' => $programme_name,
+                    'student_status' => $student_status,
+                    'query' => $query,
+                ]
+            ];
+
+            // Return the response as JSON
+            while (ob_get_level()) {
+                ob_end_clean();
+            } // wipe any leaked warnings/output
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode($response);
+        }
+    } catch (Exception $e) {
+        while (ob_get_level()) {
+            ob_end_clean();
+        } // wipe any leaked warnings/output
+        header('Content-Type: application/json; charset=utf-8', true, 500);
+        echo json_encode(['error' => $e->getMessage()]);
+    }
+}

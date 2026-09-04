@@ -1,0 +1,12 @@
+<?php
+include("../database/connection.php");
+
+if (isset($_POST['program_id'])) {
+    $program_id = $_POST['program_id'];
+    $batches_query = "SELECT * FROM batch_table WHERE programme  = '$program_id'"; // Adjust the query according to your table structure
+    $batches_result = mysqli_query($conn, $batches_query);
+    $batches = mysqli_fetch_all($batches_result, MYSQLI_ASSOC);
+    
+    echo json_encode($batches);
+}
+?>

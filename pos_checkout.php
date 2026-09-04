@@ -1,0 +1,272 @@
+<?php
+/**
+ * This is a JSON API endpoint - it must NEVER leak stray HTML/notices into
+ * the response body, or the browser's JSON parser fails and the frontend
+ * shows a generic "Purchase failed" message instead of the real reason.
+ *
+ * ob_start() catches ANY accidental output from included files (PHP
+ * notices/deprecation warnings, whitespace/BOM before a <?php tag, a
+ * duplicate session_start() warning, etc.). We discard that buffer right
+ * before we emit our own JSON, and log the real error instead of printing it.
+ */
+ob_start();
+error_reporting(E_ALL);
+ini_set('display_errors', '0'); // never echo errors into a JSON response
+ini_set('log_errors', '1');
+
+// Catch fatal errors in this file or anything it includes (e.g. a missing
+// file, a typo'd function call) and still return valid JSON instead of a
+// raw PHP error page that breaks the frontend's JSON parser.
+register_shutdown_function(function () {
+    $err = error_get_last();
+    if ($err && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        error_log('[pos_checkout] Fatal: ' . $err['message'] . ' in ' . $err['file'] . ':' . $err['line']);
+        if (ob_get_length() !== false) {
+            ob_clean();
+        }
+        if (!headers_sent()) {
+            http_response_code(500);
+            header('Content-Type: application/json');
+        }
+        echo json_encode(['success' => false, 'error' => 'server_error', 'message' => 'Server error during checkout']);
+    }
+});
+
+header('Content-Type: application/json');
+session_start();
+include("database/connection.php");
+include("pos-includes/bootstrap.php");
+
+// AJAX endpoint - use the JSON-friendly login check (no redirect script)
+pos_require_login_json();
+
+
+
+$raw = file_get_contents('php://input');
+$data = json_decode($raw, true);
+
+if (!is_array($data) || !isset($data['items']) || !is_array($data['items'])) {
+    ob_clean();
+    http_response_code(400);
+    echo json_encode(['success' => false, 'error' => 'invalid_payload']);
+    exit;
+}
+
+$conn = get_db();
+if (!$conn) {
+    ob_clean();
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'db_unavailable']);
+    exit;
+}
+
+// Ensure required columns exist on orders + order_items tables (outside the transaction so
+// there is no implicit MySQL commit mid-transaction).
+// We compare both column EXISTENCE and its TYPE/DEFAULT against the spec. If the column was
+// previously created with the wrong precision (e.g. DECIMAL(10,0) instead of DECIMAL(10,2))
+// we run MODIFY COLUMN to fix it — otherwise tiered percentages lose decimal digits.
+function pos_ensure_column($conn, $table, $column, $spec) {
+    $tableE = mysqli_real_escape_string($conn, $table);
+    $colE   = mysqli_real_escape_string($conn, $column);
+    $row = mysqli_fetch_assoc(mysqli_query($conn, "SHOW COLUMNS FROM `$tableE` LIKE '$colE'"));
+    if (!$row) {
+        @mysqli_query($conn, "ALTER TABLE `$tableE` ADD COLUMN `$colE` $spec");
+        return;
+    }
+    // Normalise declared spec's type + default so we can compare.
+    $specLower = strtolower($spec);
+    $hasDefault = (stripos($spec, ' NOT NULL DEFAULT ') !== false) || (stripos($spec, ' DEFAULT ') !== false);
+    $actualTypeLower = strtolower($row['Type']);
+    $actualNull     = $row['Null'];
+    $actualDefault  = isset($row['Default']) ? $row['Default'] : null;
+
+    // Extract required type (DECIMAL(...), VARCHAR(...), etc.) from spec.
+    $typeMatch = [];
+    if (!preg_match('/^([a-z_]+(?:\([^)]+\))?)(\s+unsigned)?/i', $spec, $typeMatch)) return;
+    $needTypeLower = strtolower($typeMatch[1]);
+    $needUnsigned  = !empty($typeMatch[2]);
+
+    // If declared type precision differs (e.g. decimal(10,2) vs decimal(10,0)) => run MODIFY.
+    $typeNeedsFix = ($actualTypeLower !== $needTypeLower);
+    // Also enforce defaults on these discount columns so NOT NULL never causes strict-mode insert errors.
+    $needNotNull  = (stripos($spec, ' NOT NULL') !== false);
+    $actualNotNull = (strtoupper($actualNull) === 'NO');
+    $nullNeedsFix  = ($needNotNull !== $actualNotNull);
+
+    // Default extraction for DECIMAL numbers.
+    $defaultMatch = [];
+    $needDefault = null;
+    if ($hasDefault && preg_match("/\s+DEFAULT\s+('([^']*)'|[0-9]+(?:\.[0-9]+)?)/i", $spec, $defaultMatch)) {
+        $needDefault = isset($defaultMatch[3]) ? $defaultMatch[3] : ($defaultMatch[2] ?? null);
+    }
+    $defaultNeedsFix = ($needDefault !== null && (string)$actualDefault !== (string)$needDefault);
+
+    if ($typeNeedsFix || $nullNeedsFix || $defaultNeedsFix) {
+        @mysqli_query($conn, "ALTER TABLE `$tableE` MODIFY COLUMN `$colE` $spec");
+    }
+}
+
+// orders.customer_type / customer_name (pre-existing columns, also re-normalised here in case
+// the spec dump is from an older backup without them)
+pos_ensure_column($conn, 'orders', 'customer_type',  "VARCHAR(20) NOT NULL DEFAULT 'Cash'");
+pos_ensure_column($conn, 'orders', 'customer_name',  "VARCHAR(255) DEFAULT NULL");
+// Discount columns — with CORRECT precision and safe NOT NULL DEFAULT so strict SQL mode never breaks INSERT
+pos_ensure_column($conn, 'orders',      'discount',      "DECIMAL(10,2) NOT NULL DEFAULT 0.00");
+pos_ensure_column($conn, 'orders',      'discount_rate', "DECIMAL(5,4)  NOT NULL DEFAULT 0.0000");
+pos_ensure_column($conn, 'order_items', 'discount',      "DECIMAL(10,2) NOT NULL DEFAULT 0.00");
+
+$tx = false;
+try {
+    mysqli_begin_transaction($conn);
+    $tx = true;
+
+    $subtotal = 0.0;
+    $items = [];
+
+    // Process items (compute each line's subtotal for accurate proportional discount allocation)
+    foreach ($data['items'] as $i) {
+        $id = isset($i['id']) ? $i['id'] : null;
+        $qty = isset($i['qty']) ? (int)$i['qty'] : 0;
+        if (!$id || $qty < 1) {
+            throw new Exception('invalid_item');
+        }
+
+        $st = mysqli_prepare($conn, 'SELECT id,name,price,stock,active FROM products WHERE id=? FOR UPDATE');
+        mysqli_stmt_bind_param($st, 's', $id);
+        mysqli_stmt_execute($st);
+        $res = mysqli_stmt_get_result($st);
+        $p = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($st);
+
+        if (!$p) {
+            throw new Exception('product_not_found');
+        }
+        if (isset($p['active']) && (int)$p['active'] !== 1) {
+            throw new Exception('product_inactive');
+        }
+        if ($qty > (int)$p['stock']) {
+            throw new Exception('insufficient_stock');
+        }
+
+        $lineSub = (float)$p['price'] * $qty;
+        $subtotal += $lineSub;
+        $items[] = ['id' => $p['id'], 'qty' => $qty, 'price' => $p['price'], 'line_sub' => $lineSub];
+    }
+
+    // Who made the sale & Customer info
+    $createdBy = $_SESSION['username'] ?? null;
+
+    $allowedCustomerTypes = ['Cash', 'Staff', 'Student', 'Corporate'];
+    $customerType = !empty($data['customer_type']) ? trim($data['customer_type']) : 'Cash';
+    if (!in_array($customerType, $allowedCustomerTypes, true)) {
+        $customerType = 'Cash';
+    }
+    $customerName = !empty($data['customer_name']) ? trim($data['customer_name']) : null;
+    if ($customerType === 'Cash') {
+        $customerName = null;
+    } elseif ($customerName === null || $customerName === '') {
+        // Staff/Student/Corporate selected but no name supplied
+        throw new Exception('customer_name_required');
+    }
+
+    // Server is the source of truth for money math - never trust client-sent totals.
+    if ($customerType === 'Corporate') {
+        $subtotal = 0.0;
+        $discount = 0.0;
+        $discountRate = 0.0;
+        $afterDiscount = 0.0;
+        $tax = 0.0;
+        $total = 0.0;
+        foreach ($items as &$it) {
+            $it['price'] = 0.0;
+            $it['discount'] = 0.0;
+            $it['line_sub'] = 0.0;
+        }
+        unset($it);
+    } else {
+        // Tiered discount by TOTAL quantity across all items in the cart (not distinct
+        // product rows). Must stay in sync with getTieredDiscount() in pos-assets/js/cart.js:
+        //   total qty 1        -> 0%
+        //   total qty 2        -> 10%
+        //   total qty 3 or more -> 15%
+        $totalQty = 0;
+        foreach ($items as $it) {
+            $totalQty += (int)$it['qty'];
+        }
+        $discountRate = 0.0;
+        if ($totalQty >= 3) {
+            $discountRate = 0.15;
+        } elseif ($totalQty === 2) {
+            $discountRate = 0.10;
+        } elseif ($totalQty === 1) {
+            $discountRate = 0.0;
+        }
+        $discount = $subtotal * $discountRate;
+        if ($discount < 0) $discount = 0;
+
+        // Allocate total discount proportionally to each line (penny-safe)
+        // so sum(item.discount) == order.discount exactly.
+        $totalDiscountAllocated = 0.0;
+        $itemCount = count($items);
+        foreach ($items as $idx => &$it) {
+            if ($subtotal > 0 && $discount > 0) {
+                if ($idx < $itemCount - 1) {
+                    $share = (float)($it['line_sub'] / $subtotal) * $discount;
+                    $share = floor($share * 100) / 100; // 2dp round-down
+                    $it['discount'] = $share;
+                    $totalDiscountAllocated += $share;
+                } else {
+                    // Last item absorbs the rounding remainder
+                    $it['discount'] = $discount - $totalDiscountAllocated;
+                }
+            } else {
+                $it['discount'] = 0.0;
+            }
+        }
+        unset($it);
+
+        $afterDiscount = $subtotal - $discount;
+        if ($afterDiscount < 0) $afterDiscount = 0;
+
+        $taxRate = 0.0; // keep in sync with taxRate in pos-assets/js/cart.js
+        $tax = $afterDiscount * $taxRate;
+        $total = $afterDiscount + $tax;
+    }
+
+    $st = mysqli_prepare($conn, 'INSERT INTO orders(subtotal,discount,discount_rate,tax,total,customer_type,customer_name,created_by) VALUES(?,?,?,?,?,?,?,?)');
+    $subtotalS = number_format($subtotal, 2, '.', '');
+    $discountS = number_format($discount, 2, '.', '');
+    $discountRateS = number_format($discountRate, 4, '.', '');
+    $taxS = number_format($tax, 2, '.', '');
+    $totalS = number_format($total, 2, '.', '');
+    mysqli_stmt_bind_param($st, 'ssssssss', $subtotalS, $discountS, $discountRateS, $taxS, $totalS, $customerType, $customerName, $createdBy);
+    mysqli_stmt_execute($st);
+    mysqli_stmt_close($st);
+    $order_id = (int)mysqli_insert_id($conn);
+
+    // Insert order items and update stock
+    $ins = mysqli_prepare($conn, 'INSERT INTO order_items(order_id,product_id,qty,price,discount) VALUES(?,?,?,?,?)');
+    $upd = mysqli_prepare($conn, 'UPDATE products SET stock = stock - ? WHERE id=?');
+
+    foreach ($items as $it) {
+        $priceS = number_format($it['price'], 2, '.', '');
+        $itemDiscountS = number_format($it['discount'], 2, '.', '');
+        mysqli_stmt_bind_param($ins, 'isiss', $order_id, $it['id'], $it['qty'], $priceS, $itemDiscountS);
+        mysqli_stmt_execute($ins);
+        mysqli_stmt_bind_param($upd, 'is', $it['qty'], $it['id']);
+        mysqli_stmt_execute($upd);
+    }
+
+    mysqli_stmt_close($ins);
+    mysqli_stmt_close($upd);
+    mysqli_commit($conn);
+
+    ob_clean();
+    echo json_encode(['success' => true, 'order_id' => $order_id]);
+} catch (Throwable $e) {
+    if ($tx) mysqli_rollback($conn);
+    error_log('[pos_checkout] ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    ob_clean();
+    http_response_code(400);
+    echo json_encode(['success' => false, 'error' => 'checkout_failed', 'message' => $e->getMessage()]);
+}

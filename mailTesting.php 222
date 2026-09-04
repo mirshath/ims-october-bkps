@@ -1,0 +1,160 @@
+<?php
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception as PHPMailerException;
+
+require 'vendor/autoload.php';
+
+$config = parse_ini_file(__DIR__ . '/config.ini');
+
+$mail = new PHPMailer(true);
+
+try {
+    // =========================================================
+    // SMTP CONFIGURATION — loaded from config.ini
+    // (matches send_induction_email_from_db.php pattern)
+    // =========================================================
+
+    $mail->isSMTP();
+    $mail->Host       = $config['SMTP_HOST'];
+    $mail->SMTPAuth   = true;
+    $mail->Username   = $config['SMTP_USER'];
+    $mail->Password   = $config['SMTP_PASS'];
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+    $mail->Port       = $config['SMTP_PORT'];
+    $mail->CharSet    = PHPMailer::CHARSET_UTF8;
+    $mail->Timeout    = 30;
+
+    // =========================================================
+    // SENDER (from config.ini — NOT hardcoded)
+    // =========================================================
+
+    $mail->setFrom(
+        $config['SMTP_FROM_EMAIL'],
+        $config['SMTP_FROM_NAME']
+    );
+
+    // =========================================================
+    // RECIPIENT (change this for testing)
+    // =========================================================
+
+    $mail->addAddress(
+        'mirshath.mmm@gmail.com',
+        'Mirshath Mmm TESTING'
+    );
+
+    // =========================================================
+    // EMAIL CONTENT
+    // =========================================================
+
+    $mail->isHTML(true);
+
+    $mail->Subject = 'Test Email from PHP Mailer (Config INI)';
+
+    $mail->Body = '
+        <html>
+        <body style="font-family: Arial, sans-serif;">
+
+            <h2 style="color:#333;">Test Email</h2>
+
+            <p>Hello,</p>
+
+            <p>
+                This is a test email sent using
+                <strong>PHPMailer</strong> with SMTP settings `
+            </p>
+
+            <p>
+                If you received this email successfully,
+                the SMTP configuration is working correctly.
+            </p>
+
+            <p style="margin-top:15px;">
+                <small>
+                    <strong>SMTP Host:</strong> ' . htmlspecialchars($config['SMTP_HOST']) . '<br>
+                    <strong>SMTP User:</strong> ' . htmlspecialchars($config['SMTP_USER']) . '<br>
+                    <strong>SMTP Port:</strong> ' . htmlspecialchars($config['SMTP_PORT']) . '<br>
+                </small>
+            </p>
+
+            <br>
+
+            <p>
+                Regards,<br>
+                <strong>' . htmlspecialchars($config['SMTP_FROM_NAME']) . '</strong>
+            </p>
+
+        </body>
+        </html>
+    ';
+
+    // Plain-text fallback
+    $mail->AltBody =
+        "Hello,\n\n" .
+        "This is a test email sent using PHPMailer with settings from config.ini.\n\n" .
+        "SMTP Host: " . $config['SMTP_HOST'] . "\n" .
+        "SMTP User: " . $config['SMTP_USER'] . "\n" .
+        "SMTP Port: " . $config['SMTP_PORT'] . "\n\n" .
+        "Regards,\n" .
+        $config['SMTP_FROM_NAME'];
+
+    // =========================================================
+    // SEND EMAIL
+    // =========================================================
+
+    if ($mail->send()) {
+
+        echo '<div style="
+            padding:15px;
+            background:#d4edda;
+            color:#155724;
+            border:1px solid #c3e6cb;
+            border-radius:5px;
+            font-family:Arial;
+        ">
+            <strong>Success!</strong><br>
+            Email sent successfully to <strong>' . htmlspecialchars($mail->getToAddresses()[0][0]) . '</strong>.<br>
+            <small>SMTP via config.ini: ' . htmlspecialchars($config['SMTP_HOST']) . ':' . htmlspecialchars($config['SMTP_PORT']) . '</small>
+        </div>';
+    } else {
+
+        echo '<div style="
+            padding:15px;
+            background:#f8d7da;
+            color:#721c24;
+            border:1px solid #f5c6cb;
+            border-radius:5px;
+            font-family:Arial;
+        ">
+            <strong>Failed!</strong><br>
+            Email could not be sent.
+        </div>';
+    }
+} catch (PHPMailerException $e) {
+
+    echo '<div style="
+        padding:15px;
+        background:#f8d7da;
+        color:#721c24;
+        border:1px solid #f5c6cb;
+        border-radius:5px;
+        font-family:Arial;
+    ">
+        <strong>PHPMailer Error:</strong><br>'
+        . htmlspecialchars($e->getMessage()) .
+        '<br><small>(Mailer ErrorInfo: ' . htmlspecialchars($mail->ErrorInfo ?? '') . ')</small>
+    </div>';
+} catch (Exception $e) {
+
+    echo '<div style="
+        padding:15px;
+        background:#f8d7da;
+        color:#721c24;
+        border:1px solid #f5c6cb;
+        border-radius:5px;
+        font-family:Arial;
+    ">
+        <strong>General Error:</strong><br>'
+        . htmlspecialchars($e->getMessage()) .
+        '</div>';
+}

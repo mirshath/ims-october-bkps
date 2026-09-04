@@ -1,0 +1,449 @@
+<?php
+session_start();
+include("database/connection.php");
+include("includes/header.php");
+?>
+
+<!-- Tailwind and Custom Fonts for Profile Design -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+<script id="tailwind-config">
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                colors: {
+                    "primary": "#3324bc",
+                    "primary-container": "#4c43d3",
+                    "on-primary": "#ffffff",
+                    "secondary": "#515f74",
+                    "surface": "#f7f9fb",
+                    "surface-container": "#eceef0",
+                    "surface-container-low": "#f2f4f6",
+                    "surface-container-high": "#e6e8ea",
+                    "surface-container-highest": "#e0e3e5",
+                    "surface-container-lowest": "#ffffff",
+                    "on-surface": "#191c1e",
+                    "on-surface-variant": "#454652",
+                    "outline": "#757684",
+                    "outline-variant": "#c5c5d4",
+                },
+                fontFamily: {
+                    "headline": ["Manrope", "sans-serif"],
+                    "body": ["Inter", "sans-serif"],
+                },
+                borderRadius: {
+                    "DEFAULT": "0.5rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+                },
+            },
+        },
+    }
+</script>
+<style>
+    .font-inter { font-family: 'Inter', sans-serif !important; }
+    .font-manrope { font-family: 'Manrope', sans-serif !important; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .card-elevation { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03); }
+    
+    /* Ensure the Tailwind content area integrates naturally */
+    .profile-content-area {
+        background-color: #f7f9fb;
+    }
+</style>
+
+<?php
+if (!isset($_SESSION['username'])) {
+    // header("location: login.php");
+    echo '<script>window.location.href = "login";</script>';
+    // exit();
+}
+
+$userID = $_SESSION['user_id'];
+// echo $userID;
+// getting role from session 
+$role = $_SESSION['role'] ?? '';
+if ($role === 'super_admin') {
+    $role = 'Super Admin';
+} elseif ($role === 'manager') {
+    $role = 'Manager';
+} elseif ($role === 'data_enter') {
+    $role = 'Data Enter';
+} else {
+    $role = 'not set role';
+}
+
+// echo $role;
+
+// Fetch Program Allocation
+$allocated_programs = [];
+$query_program = "
+    SELECT pt.program_name 
+    FROM program_allocation_user pau 
+    JOIN program_table pt ON pau.program_code = pt.program_code 
+    WHERE pau.user_id = ?";
+
+if ($stmt_prog = $conn->prepare($query_program)) {
+    $stmt_prog->bind_param("i", $userID);
+    $stmt_prog->execute();
+    $stmt_prog->bind_result($fetched_program_name);
+    while ($stmt_prog->fetch()) {
+        $allocated_programs[] = $fetched_program_name;
+    }
+    $stmt_prog->close();
+}
+
+$message = "";
+$messageType = "";
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['change_password'])) {
+    $current_password = $_POST['current_password'];
+    $new_password = $_POST['new_password'];
+    $confirm_password = $_POST['confirm_password'];
+
+    if ($new_password !== $confirm_password) {
+        $message = "New passwords do not match.";
+        $messageType = "danger";
+    } else {
+        $stmt = $conn->prepare("SELECT password FROM admin WHERE id = ?");
+        $stmt->bind_param("i", $userID);
+        $stmt->execute();
+        $stmt->bind_result($stored_hash);
+        $stmt->fetch();
+        $stmt->close();
+
+        if (password_verify($current_password, $stored_hash)) {
+            $new_hash = password_hash($new_password, PASSWORD_DEFAULT);
+            $update_stmt = $conn->prepare("UPDATE admin SET password = ? WHERE id = ?");
+            $update_stmt->bind_param("si", $new_hash, $userID);
+            if ($update_stmt->execute()) {
+                $message = "Password updated successfully.";
+                $messageType = "success";
+            } else {
+                $message = "Error updating password.";
+                $messageType = "danger";
+            }
+            $update_stmt->close();
+        } else {
+            $message = "Incorrect current password.";
+            $messageType = "danger";
+        }
+    }
+}
+
+?>
+
+<!-- Page Wrapper -->
+<div id="wrapper">
+    <!-- Sidebar -->
+    <?php include("nav.php"); ?>
+
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+        <!-- Main Content -->
+        <div id="content">
+            <!-- Topbar -->
+            <?php include("includes/topnav.php"); ?>
+
+            <!-- Begin Page Content (Tailwind Area) -->
+            <div class="font-inter profile-content-area p-6 lg:p-10">
+                <div class="max-w-6xl mx-auto">
+                    <!-- Page Header -->
+                    <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-[0.25em] text-primary mb-2 block">Account Management</span>
+                            <h2 class="text-3xl font-extrabold text-on-surface tracking-tight font-manrope">User Profile</h2>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button type="button" onclick="document.getElementById('passwordForm').submit()"
+                                class="px-5 py-2 rounded-lg text-sm font-bold bg-primary text-white shadow-md hover:bg-primary-container hover:shadow-lg transition-all active:scale-95">
+                                Save Changes
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        <!-- Left Column -->
+                        <div class="lg:col-span-5 space-y-8">
+                            <!-- Account Details Card -->
+                            <section class="bg-white rounded-xl p-8 border border-slate-200 card-elevation overflow-hidden relative group">
+                                <div class="absolute -top-16 -right-16 w-48 h-48 bg-slate-50 rounded-full -z-0"></div>
+                                <div class="relative z-10 flex flex-col items-center">
+                                    <div class="relative mb-6">
+                                        <div class="p-1 rounded-2xl bg-gradient-to-tr from-slate-200 to-white shadow-sm">
+                                            <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($_SESSION['username']); ?>&background=0D8ABC&color=fff&size=128"
+                                                alt="User Avatar" class="w-32 h-32 rounded-xl object-cover shadow">
+                                        </div>
+                                        <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-4 border-white flex items-center justify-center">
+                                            <span class="material-symbols-outlined text-white text-base">check</span>
+                                        </div>
+                                    </div>
+                                    <h3 class="text-xl font-extrabold text-on-surface uppercase tracking-tight font-manrope"><?php echo htmlspecialchars(strtoupper($_SESSION['username'])); ?></h3>
+                                    <p class="text-secondary text-sm font-medium"><?php echo $role; ?></p>
+                                    <div class="mt-6">
+                                        <span class="px-4 py-1.5 rounded-full bg-green-50 text-green-700 text-[10px] font-bold uppercase tracking-wider border border-green-100">
+                                            Active Account
+                                        </span>
+                                    </div>
+                                    <div class="mt-10 grid grid-cols-2 gap-4 w-full pt-8 border-t border-slate-100">
+                                        <div>
+                                            <p class="text-[9px] text-slate-400 uppercase tracking-widest font-bold mb-1">Status</p>
+                                            <p class="text-xs font-semibold text-on-surface">Active</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-[9px] text-slate-400 uppercase tracking-widest font-bold mb-1">User ID</p>
+                                            <p class="text-xs font-semibold text-on-surface">#<?php echo $userID; ?></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <!-- Program Allocation Card -->
+                            <section class="bg-white rounded-xl border border-slate-200 card-elevation overflow-hidden">
+                                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                    <h4 class="text-[11px] font-bold uppercase tracking-[0.15em] text-on-surface font-manrope">Program Allocations</h4>
+                                    <span class="material-symbols-outlined text-slate-400 text-xl">school</span>
+                                </div>
+                                <div class="p-6">
+                                    <?php if (($_SESSION['role'] ?? '') === 'super_admin'): ?>
+                                        <div class="bg-indigo-50/50 border border-indigo-100 rounded-lg p-5 flex gap-4 mb-6">
+                                            <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shrink-0 shadow-sm">
+                                                <span class="material-symbols-outlined text-white">shield_person</span>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs font-bold text-primary font-manrope">You are the Super Admin</p>
+                                                <p class="text-[11px] text-indigo-700/70 mt-1 leading-relaxed">Global administrative access enabled. You can manage all system parameters and user datasets.</p>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <div class="space-y-3">
+                                        <?php if (!empty($allocated_programs)): ?>
+                                            <?php foreach ($allocated_programs as $prog): ?>
+                                                <div class="flex items-center justify-between p-4 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors group cursor-default">
+                                                    <div class="flex items-center gap-3">
+                                                        <div class="w-1.5 h-1.5 rounded-full bg-primary group-hover:scale-125 transition-transform"></div>
+                                                        <p class="text-[13px] font-medium text-slate-700"><?php echo htmlspecialchars($prog); ?></p>
+                                                    </div>
+                                                    <span class="text-[9px] font-bold text-primary uppercase tracking-widest">Enrolled</span>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        <?php elseif (($_SESSION['role'] ?? '') !== 'super_admin'): ?>
+                                            <div class="text-center py-6">
+                                                <span class="material-symbols-outlined text-slate-300 text-4xl mb-2">assignment_late</span>
+                                                <p class="text-[11px] text-slate-400 font-bold uppercase tracking-widest">No programs allocated</p>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <!-- Right Column: Change Password Form -->
+                        <div class="lg:col-span-7">
+                            <section class="bg-white rounded-xl border border-slate-200 card-elevation h-full flex flex-col">
+                                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                    <h4 class="text-[11px] font-bold uppercase tracking-[0.15em] text-on-surface font-manrope">Security & Credentials</h4>
+                                    <span class="material-symbols-outlined text-slate-400 text-xl">lock</span>
+                                </div>
+                                <div class="p-8 lg:p-12 flex-grow">
+                                    <?php if (!empty($message)): ?>
+                                        <div class="p-4 rounded-lg bg-<?php echo $messageType === 'success' ? 'green' : 'red'; ?>-50 text-<?php echo $messageType === 'success' ? 'green' : 'red'; ?>-600 text-xs font-medium border border-<?php echo $messageType === 'success' ? 'green' : 'red'; ?>-100 mb-6">
+                                            <?php echo $message; ?>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <form id="passwordForm" method="POST" class="space-y-6 max-w-lg mx-auto">
+                                        <input type="hidden" name="change_password" value="1">
+                                        
+                                        <div class="space-y-1.5">
+                                            <label class="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">Current Password</label>
+                                            <div class="relative">
+                                                <input type="password" id="currentPassword" name="current_password" 
+                                                    class="w-full bg-slate-100/50 border-transparent focus:border-slate-200 focus:bg-white focus:ring-4 focus:ring-primary/5 rounded-lg py-3 px-4 text-sm transition-all"
+                                                    placeholder="Enter existing password" required>
+                                                <button type="button" onclick="togglePasswordVisibility('currentPassword')"
+                                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors">
+                                                    <span class="material-symbols-outlined text-xl" id="eye-icon-currentPassword">visibility</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                            <div class="space-y-1.5">
+                                                <label class="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">New Password</label>
+                                                <div class="relative">
+                                                    <input type="password" id="newPassword" name="new_password" 
+                                                        class="w-full bg-slate-100/50 border-transparent focus:border-slate-200 focus:bg-white focus:ring-4 focus:ring-primary/5 rounded-lg py-3 px-4 text-sm transition-all"
+                                                        placeholder="At least 8 chars" required>
+                                                    <button type="button" onclick="togglePasswordVisibility('newPassword')"
+                                                        class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors">
+                                                        <span class="material-symbols-outlined text-xl" id="eye-icon-newPassword">visibility</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="space-y-1.5">
+                                                <label class="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">Confirm Password</label>
+                                                <div class="relative">
+                                                    <input type="password" id="confirmPassword" name="confirm_password" 
+                                                        class="w-full bg-slate-100/50 border-transparent focus:border-slate-200 focus:bg-white focus:ring-4 focus:ring-primary/5 rounded-lg py-3 px-4 text-sm transition-all"
+                                                        placeholder="Repeat new password" required>
+                                                    <button type="button" onclick="togglePasswordVisibility('confirmPassword')"
+                                                        class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors">
+                                                        <span class="material-symbols-outlined text-xl" id="eye-icon-confirmPassword">visibility</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="bg-slate-50 rounded-lg p-6 border border-slate-100 mt-6">
+                                            <h5 class="text-[10px] font-bold uppercase tracking-widest text-slate-700 mb-4 font-manrope">Password Requirements</h5>
+                                            <ul class="space-y-2.5">
+                                                <li class="flex items-center gap-3 text-xs text-slate-500" id="req-length">
+                                                    <span class="material-symbols-outlined text-base text-slate-300">circle</span>
+                                                    Minimum of 8 characters
+                                                </li>
+                                                <li class="flex items-center gap-3 text-xs text-slate-500" id="req-match">
+                                                    <span class="material-symbols-outlined text-base text-slate-300">circle</span>
+                                                    Passwords must match
+                                                </li>
+                                            </ul>
+                                            <div id="statusMessage" class="mt-4 text-xs font-bold" style="display: none;"></div>
+                                        </div>
+
+                                        <div class="flex gap-4 pt-4">
+                                            <button type="submit" id="updateBtn" disabled
+                                                class="flex-1 py-3 px-4 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-primary-container disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                                                Update Password
+                                            </button>
+                                            <button type="button" id="cancelBtn"
+                                                class="px-6 py-3 border border-slate-200 text-slate-600 font-bold rounded-lg hover:bg-slate-50 transition-all">
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/js/select2.min.js"></script>
+    <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+
+<script>
+    const currentPassword = document.getElementById('currentPassword');
+    const newPassword = document.getElementById('newPassword');
+    const confirmPassword = document.getElementById('confirmPassword');
+    const statusMessage = document.getElementById('statusMessage');
+    const updateBtn = document.getElementById('updateBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+
+    // Requirements elements
+    const reqLength = document.getElementById('req-length');
+    const reqMatch = document.getElementById('req-match');
+
+    function togglePasswordVisibility(inputId) {
+        const input = document.getElementById(inputId);
+        const eyeIcon = document.getElementById(`eye-icon-${inputId}`);
+        if (input.type === "password") {
+            input.type = "text";
+            eyeIcon.textContent = "visibility_off";
+        } else {
+            input.type = "password";
+            eyeIcon.textContent = "visibility";
+        }
+    }
+
+    function updateRequirement(element, isValid) {
+        const icon = element.querySelector('.material-symbols-outlined');
+        if (isValid) {
+            element.classList.remove('text-slate-500');
+            element.classList.add('text-green-600', 'font-medium');
+            icon.textContent = 'check_circle';
+            icon.classList.remove('text-slate-300');
+            icon.classList.add('text-green-500');
+        } else {
+            element.classList.add('text-slate-500');
+            element.classList.remove('text-green-600', 'font-medium');
+            icon.textContent = 'circle';
+            icon.classList.add('text-slate-300');
+            icon.classList.remove('text-green-500');
+        }
+    }
+
+    function validatePasswords() {
+        const newPass = newPassword.value;
+        const confirmPass = confirmPassword.value;
+
+        // Length requirement
+        const isLengthValid = newPass.length >= 8;
+        updateRequirement(reqLength, isLengthValid);
+
+        // Match requirement
+        const isMatchValid = newPass && confirmPass && newPass === confirmPass;
+        updateRequirement(reqMatch, isMatchValid);
+
+        if (newPass && confirmPass) {
+            if (isMatchValid) {
+                statusMessage.textContent = 'Passwords match correctly';
+                statusMessage.className = 'mt-4 text-xs font-bold text-green-600';
+                statusMessage.style.display = 'block';
+                return isLengthValid;
+            } else {
+                statusMessage.textContent = 'Passwords do not match';
+                statusMessage.className = 'mt-4 text-xs font-bold text-red-500';
+                statusMessage.style.display = 'block';
+                return false;
+            }
+        } else {
+            statusMessage.style.display = 'none';
+            return false;
+        }
+    }
+
+    function updateButtonState() {
+        const isValid = currentPassword.value &&
+            newPassword.value &&
+            confirmPassword.value &&
+            validatePasswords();
+        updateBtn.disabled = !isValid;
+    }
+
+    // Event listeners
+    newPassword.addEventListener('input', () => {
+        validatePasswords();
+        updateButtonState();
+    });
+
+    confirmPassword.addEventListener('input', () => {
+        validatePasswords();
+        updateButtonState();
+    });
+
+    currentPassword.addEventListener('input', updateButtonState);
+
+    cancelBtn.addEventListener('click', function() {
+        currentPassword.value = '';
+        newPassword.value = '';
+        confirmPassword.value = '';
+        statusMessage.style.display = 'none';
+        updateRequirement(reqLength, false);
+        updateRequirement(reqMatch, false);
+        updateButtonState();
+    });
+</script>
+
+</body>

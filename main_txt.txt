@@ -1,0 +1,262 @@
+**************************************************************************
+                    here are the some main concept DONE entered_by
+**************************************************************************
+-------Upload Students ------- Not here wanna check again all code here 
+
+Add Lead
+Student Registration
+Allocate Program
+Edit Programme Allocation
+
+
+
+**********************************************
+        half done  (problems here)
+**********************************************
+
+1. upload scan copies  - wanna check again these section
+
+
+<!-- Include necessary CSS and JS for Select2 -->
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+            <script>
+                $(document).ready(function() {
+                    $('.select2').select2(); // Initialize Select2 for all dropdowns
+                });
+            </script>
+            
+
+    ----------------------------------------------- 27/01/ ----------------------------------
+
+    CREATE TABLE `final_student_results` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `student_id` INT(11) NOT NULL,
+  `student_registration_id` VARCHAR(50) NOT NULL,
+  `program_id` INT(11) NOT NULL,
+  `batch_id` INT(11) NOT NULL,
+  `module_id` INT(11) NOT NULL,
+  `final_result` VARCHAR(50) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+REPLACE INTO `final_student_results` (`student_id`, `student_registration_id`, `program_id`, `batch_id`, `module_id`, `final_result`)
+SELECT 
+    student_id, 
+    student_registration_id, 
+    program_id, 
+    batch_id, 
+    module_id, 
+    SUM(CAST(`converted_marks` AS SIGNED)) AS final_result
+FROM `student_results`
+WHERE `converted_marks` IS NOT NULL
+GROUP BY `student_id`, `program_id`, `batch_id`, `module_id`;
+
+
+
+ALTER TABLE final_student_results
+ADD COLUMN grades VARCHAR(10) AFTER final_result;
+    
+
+    CREATE TABLE user_permission (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    nav_items VARCHAR(255) NOT NULL,
+    sub_list_value VARCHAR(255) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES admin(id)
+);
+
+
+CREATE TABLE user_permission (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    nav_items INT NOT NULL,
+    sub_list_value VARCHAR(255) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES admin(id),
+    FOREIGN KEY (nav_items) REFERENCES nav_collections(id)
+);
+
+
+session exipred seen below
+
+session_start();
+if (isset($_SESSION['last_activity'])) {
+    if (time() - $_SESSION['last_activity'] > 1800) {  // 1800 seconds = 30 minutes
+        session_unset();
+        session_destroy();
+        echo "Session expired.";
+    }
+}
+$_SESSION['last_activity'] = time();  // Update last activity time
+-----------------------------------------------------------------------------------------------------
+
+$query = "SELECT sub_list_value FROM user_permission WHERE user_id = '$userId'";
+$result_for_up = mysqli_query($conn, $query);
+// Initialize an array to store sub_list_values
+$subListValues = [];
+
+if ($result_for_up) {
+    while ($row = mysqli_fetch_assoc($result_for_up)) {
+        $subListValues[] = $row['sub_list_value'];
+    }
+} else {
+    echo "Error fetching permissions: " . mysqli_error($conn); // Corrected connection variable
+}
+
+<?= !in_array('Values_Here', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>
+-----------------------------------------------------------------------------------------------------
+right icon 
+<i class="fas fa-check"></i>
+
+
+
+
+
+chart chart chart chart chart  
+----------------------------------------------------------------
+    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <!-- Bar Chart -->
+                            <div class="chart-container" style="position: relative; height:40vh; width:80vw">
+                                <canvas id="myBarChart"></canvas>
+                            </div>
+
+                        </div>
+                        <div class="col-md-6">
+                            <!-- Line Chart -->
+                            <div class="chart-container" style="position: relative; height:40vh; width:80vw">
+                                <canvas id="myLineChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                <script>
+                    // Bar Chart
+                    var ctxBar = document.getElementById('myBarChart').getContext('2d');
+                    var myBarChart = new Chart(ctxBar, {
+                        type: 'bar',
+                        data: {
+                            labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+                            datasets: [{
+                                label: 'Dataset 1',
+                                data: [65, 59, 80, 81, 56, 55, 40],
+                                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+
+                    // Line Chart
+                    var ctxLine = document.getElementById('myLineChart').getContext('2d');
+                    var myLineChart = new Chart(ctxLine, {
+                        type: 'line',
+                        data: {
+                            labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+                            datasets: [{
+                                label: 'Dataset 2',
+                                data: [28, 48, 40, 19, 86, 27, 90],
+                                fill: false,
+                                borderColor: 'rgba(153, 102, 255, 1)',
+                                tension: 0.1
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                </script>
+
+----------------------------------------------------------------
+
+#27a9e3 
+#28b779
+#2255a4
+#da542e
+#042d5c
+
+$userId = $_SESSION['user_id'];
+// Fetching sub_list_value from the user_permission table for the logged-in user
+$query = "SELECT sub_list_value FROM user_permission WHERE user_id = '$userId'";
+$result_for_up = mysqli_query($conn, $query);
+// Initialize an array to store sub_list_values
+$subListValues = [];
+
+if ($result_for_up) {
+    while ($row = mysqli_fetch_assoc($result_for_up)) {
+        $subListValues[] = $row['sub_list_value'];
+    }
+} else {
+    echo "Error fetching permissions: " . mysqli_error($conn); // Corrected connection variable
+}
+
+  if (in_array('exams_asses_send_button', $subListValues)) {}
+  
+   <?php if ($showSendToAllButton): ?>
+ <?php endif; ?>
+
+ ----------------------------------------------------------------
+ $Session_username = $_SESSION['username'];
+ 
+ TODO :
+ ----------------------------------------------------------------
+
+ $(document).ready(function() {
+        $('#documentsTable').DataTable({
+            "pageLength": 10,
+            "ordering": true
+        });
+    });
+
+    <!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+ ----------------------------------------------------------------
+
+ <th style="width: 5px;">#</th>
+  $index = 1; // Initialize index counter
+ <td>" . $index++ . "</td>
+
+
+
+
+ --------------------------------   
+ save payment 
+
+ $('form').submit(function(e) {
+    e.preventDefault();
+
+    // You can add form validation here
+
+    $.ajax({
+        url: 'save_payment_plan.php',
+        method: 'POST',
+        data: $(this).serialize(),
+        success: function(response) {
+            // Handle successful response (maybe show a success message)
+        },
+        error: function() {
+            alert('Error saving payment plan');
+        }
+    });
+});
+
+-------------------------

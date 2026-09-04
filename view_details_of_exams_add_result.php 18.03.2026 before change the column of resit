@@ -1,0 +1,2266 @@
+<?php
+session_start();
+include("database/connection.php");
+include("includes/header.php");
+
+$Session_username = $_SESSION['username'];
+$Session_role = $_SESSION['role'] ?? '';
+
+if (!isset($_SESSION['username'])) {
+    // header("location: login.php");
+    echo '<script>window.location.href = "login";</script>';
+    // exit();
+}
+
+// Fetch grades from the database
+$sql = "SELECT description_grad FROM description_grading";
+$result = $conn->query($sql);
+$grades = [];
+
+if ($result->num_rows > 0) {
+    // Fetch the grades and store them in an array
+    while ($row = $result->fetch_assoc()) {
+        $grades[] = $row['description_grad'];
+    }
+} else {
+    echo "No grades found.";
+}
+
+?>
+
+<!-- Page Wrapper -->
+<div id="wrapper">
+    <!-- Sidebar -->
+    <?php include("nav.php"); ?>
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+        <!-- Main Content -->
+        <div id="content">
+            <!-- Topbar -->
+            <?php include("includes/topnav.php"); ?>
+
+            <!-- Begin Page Content -->
+            <div class="p-3">
+                <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                    <h4 class="h4 mb-0 text-gray-800">Exam Result Add</h4>
+                    <div>
+
+                    </div>
+                </div>
+
+                <!-- Filter Form -->
+                <div class="row mb-5">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header d-flex align-items-center" style="height: 60px;">
+                                <span
+                                    class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center"
+                                    style="width: 30px; height: 30px;">
+                                    <i class="fas fa-plus-circle"></i>
+                                </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                                <h6 class="mb-0 me-2">Result Adding Details</h6>
+                            </div>
+                            <div class="card-body">
+                                <?php
+                                if (isset($_GET['id'])) {
+                                    $id = $_GET['id'];
+
+                                    $query = "
+                                        SELECT a.*, 
+                                            p.program_name, 
+                                            b.batch_name, 
+                                            m.module_name, 
+                                            ac.as_main_component_name, 
+                                            sc.sub_component_name 
+                                        FROM assessments a 
+                                        LEFT JOIN program_table p ON a.programme_id = p.program_code 
+                                        LEFT JOIN batch_table b ON a.batch_id = b.id 
+                                        LEFT JOIN modules m ON a.module_id = m.id 
+                                        LEFT JOIN assignment_components ac ON a.main_component_id = ac.id 
+                                        LEFT JOIN sub_assign_components sc ON a.sub_component_id = sc.id 
+                                        WHERE a.id = ?";
+
+                                    $stmt = $conn->prepare($query);
+                                    $stmt->bind_param("i", $id);
+                                    $stmt->execute();
+                                    $result = $stmt->get_result();
+                                    $assessment = $result->fetch_assoc();
+                                    if ($assessment) {
+                                        // Display assessment details in a table
+                                        ?>
+
+                                        <div class="table-responsive">
+                                            <table class="table table-striped table-hover" style="width: 80%; font-size: 11px;">
+                                                <tr>
+                                                    <td class="bg-secondary text-white" style="width: 40%;">ID</td>
+                                                    <td><?php echo htmlspecialchars($assessment['id']); ?></td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="bg-secondary text-white">Programme Name</td>
+                                                    <td><?php echo htmlspecialchars($assessment['program_name']); ?></td>
+                                                    <td><?php echo htmlspecialchars($assessment['programme_id']); ?></td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="bg-secondary text-white">Batch Name</td>
+                                                    <td><?php echo htmlspecialchars($assessment['batch_name']); ?></td>
+                                                    <td><?php echo htmlspecialchars($assessment['batch_id']); ?></td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="bg-secondary text-white">Module Name</td>
+                                                    <td><?php echo htmlspecialchars($assessment['module_name']); ?></td>
+                                                    <td><?php echo htmlspecialchars($assessment['module_id']); ?></td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="bg-secondary text-white">Main Component Name</td>
+                                                    <td><?php echo htmlspecialchars($assessment['as_main_component_name']); ?>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="bg-secondary text-white">Sub Component Name</td>
+                                                    <td><?php echo htmlspecialchars($assessment['sub_component_name']); ?></td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="bg-secondary text-white">Year</td>
+                                                    <td><?php echo htmlspecialchars($assessment['year_id']); ?></td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="bg-secondary text-white">Semester</td>
+                                                    <td><?php echo htmlspecialchars($assessment['semester_id']); ?></td>
+                                                </tr>
+
+                                                <tr>
+                                                    <td class="bg-secondary text-white">Description</td>
+                                                    <td>
+                                                        <?php
+                                                        // Get existing description from student_results if available
+                                                        $desc_query = "SELECT description_for_std FROM student_results 
+                                                                      WHERE program_id = ? AND batch_id = ? AND module_id = ? AND main_component_id = ? 
+                                                                      LIMIT 1";
+                                                        $desc_stmt = $conn->prepare($desc_query);
+                                                        $desc_stmt->bind_param("iiii", $assessment['programme_id'], $assessment['batch_id'], $assessment['module_id'], $assessment['main_component_id']);
+                                                        $desc_stmt->execute();
+                                                        $desc_result = $desc_stmt->get_result();
+                                                        $existing_description = '';
+                                                        if ($desc_row = $desc_result->fetch_assoc()) {
+                                                            $existing_description = $desc_row['description_for_std'] ?? '';
+                                                        }
+                                                        ?>
+                                                        <textarea id="description_editor"
+                                                            name="description"><?php echo htmlspecialchars($existing_description); ?></textarea>
+                                                    </td>
+                                                </tr>
+
+                                            </table>
+                                        </div>
+
+
+
+
+                                        <!-- Separate Card for Allocated Students -->
+                                        <div class="card mt-4">
+                                            <div class="card-header d-flex align-items-center" style="height: 60px;">
+                                                <h6 class="mb-0 me-2">Allocated Students & Add Results</h6>
+                                            </div>
+                                            <div class="card-body" style="font-size: 12px;">
+                                                <?php
+                                                $programme_id = $assessment['programme_id'];
+                                                $batch_id = $assessment['batch_id'];
+
+                                                // Updated query to include student_registration_id
+                                                $students_query = "
+                                                    SELECT s.*, a.student_registration_id
+                                                    FROM students s 
+                                                    INNER JOIN allocate_programme a ON s.student_code = a.student_code 
+                                                    WHERE a.programme_code = ? 
+                                                    AND a.batch_id = ? 
+                                                    AND a.status = 'active'
+                                                    ORDER BY LENGTH(a.student_registration_id) ASC, a.student_registration_id ASC";
+
+
+                                                $students_stmt = $conn->prepare($students_query);
+                                                $students_stmt->bind_param("ii", $programme_id, $batch_id);
+                                                $students_stmt->execute();
+                                                $students_result = $students_stmt->get_result();
+                                                $students = $students_result->fetch_all(MYSQLI_ASSOC);
+
+                                                // Display students in a DataTable with index
+                                                // Inside the students table section, first fetch the program's details
+                                                $program_query = "SELECT p.program_name, p.result_method 
+                                                    FROM program_table p 
+                                                    WHERE p.program_code = ?";
+                                                $program_stmt = $conn->prepare($program_query);
+                                                $program_stmt->bind_param("i", $assessment['programme_id']);
+                                                $program_stmt->execute();
+                                                $program_result = $program_stmt->get_result();
+                                                $program_data = $program_result->fetch_assoc();
+
+                                                // Add debugging information
+                                                echo "<script>
+                                                    console.log('Program Code:', " . json_encode($assessment['programme_id']) . ");
+                                                    console.log('Program Name:', " . json_encode($program_data['program_name']) . ");
+                                                    </script>";
+
+
+                                                // Display students in a DataTable with index
+                                                if ($students) {
+                                                    // UPDATED: Modified query to include comment and description_for_std fields
+                                                    $results_query = "SELECT *, comment, description_for_std FROM student_results 
+                                                                     WHERE program_id = ? 
+                                                                     AND batch_id = ? 
+                                                                     AND module_id = ? 
+                                                                     AND main_component_id = ?";
+
+                                                    $results_stmt = $conn->prepare($results_query);
+                                                    $results_stmt->bind_param(
+                                                        "iiii",
+                                                        $assessment['programme_id'],
+                                                        $assessment['batch_id'],
+                                                        $assessment['module_id'],
+                                                        $assessment['main_component_id']
+                                                    );
+                                                    $results_stmt->execute();
+                                                    $saved_results = $results_stmt->get_result();
+
+                                                    // Create an associative array of results
+                                                    $student_results = [];
+                                                    while ($row = $saved_results->fetch_assoc()) {
+                                                        $student_results[$row['student_id']] = $row;
+                                                    }
+
+                                                    echo "<div class='table-responsive'>";
+                                                    echo "<table id='studentsTable' class='table table-striped table-hover'>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>#</th>
+                                                                <th>Registration ID</th>
+                                                                <th>Student Name</th>
+                                                                <th>Comment</th>
+                                                                ";
+
+                                                    // Program-specific columns
+                                                    if (
+                                                        strpos($assessment['program_name'], 'International Foundation Diploma (Business) - ATHE Level 3') !== false ||
+                                                        strpos($assessment['program_name'], 'International Foundation Diploma (Applied Science) - ATHE Level 3') !== false ||
+                                                        // strpos($assessment['program_name'], 'BSc (Hons) in Software Engineering') !== false ||
+                                                        strpos($assessment['program_name'], 'BTEC') !== false ||
+                                                        strpos($assessment['program_name'], 'Graduate Diploma') !== false
+                                                    ) {
+                                                        echo "<th>Grade</th>";
+                                                    } elseif (strpos($assessment['program_name'], 'Executive Certificate') !== false) {
+                                                        // ------------------------
+                                                        // Fetch the main component name and percentage
+                                                        $mainComponentId = $assessment['main_component_id'];
+
+                                                        $mainComponentQuery = "
+                                                            SELECT ac.as_main_component_name, ac.main_component_percent
+                                                            FROM assignment_components ac
+                                                            WHERE ac.id = ?
+                                                        ";
+                                                        $mainComponentStmt = $conn->prepare($mainComponentQuery);
+                                                        $mainComponentStmt->bind_param("i", $mainComponentId);
+                                                        $mainComponentStmt->execute();
+                                                        $mainComponentResult = $mainComponentStmt->get_result();
+                                                        $mainComponentData = $mainComponentResult->fetch_assoc();
+
+                                                        $mainComponentName = trim($mainComponentData['as_main_component_name'] ?? 'N/A');
+                                                        $mainComponentPercent = $mainComponentData['main_component_percent'] ?? '0%';
+
+                                                        // Convert percentage to integer
+                                                        $mainComponentPercentValue = (int) filter_var($mainComponentPercent, FILTER_SANITIZE_NUMBER_INT);
+
+                                                        echo "Main Component Percentage: {$mainComponentPercentValue}%<br>";
+                                                        echo "Main Component Name: {$mainComponentName}<br>";
+
+                                                        // ------------------------
+                                                        // Fetch the pass_mark from modules
+                                                        $passMark = '';
+                                                        $pm_query = "
+                                                            SELECT pass_mark 
+                                                            FROM modules 
+                                                            WHERE programme_id = ? AND module_name = ? 
+                                                            LIMIT 1
+                                                        ";
+                                                        $pm_stmt = $conn->prepare($pm_query);
+                                                        $pm_stmt->bind_param("is", $assessment['programme_id'], $assessment['module_name']);
+                                                        $pm_stmt->execute();
+                                                        $pm_result = $pm_stmt->get_result();
+
+                                                        if ($pm_row = $pm_result->fetch_assoc()) {
+                                                            $passMark = $pm_row['pass_mark'];
+                                                        }
+
+                                                        echo "Pass Mark: " . htmlspecialchars($passMark) . "<br>";
+
+                                                        // ------------------------
+                                                        // Calculate pass marks range
+                                                        if (is_numeric($passMark)) {
+                                                            $passMarkRange = ($passMark / 100) * $mainComponentPercentValue;
+                                                            echo "Pass Marks Range: " . round($passMarkRange, 2) . "<br>";
+                                                        } else {
+                                                            echo "Pass Marks Range: N/A<br>";
+                                                        }
+
+                                                        // ------------------------
+                                                        echo "<th>Converted Marks</th>";
+                                                    } elseif (
+                                                        strpos($assessment['program_name'], 'Higher Diploma') !== false
+                                                        || strpos($assessment['program_name'], 'BSc (Hons) in Software Engineering') !== false
+                                                    ) {
+                                                        // Fetch the main component name and percentage
+                                                        $mainComponentId = $assessment['main_component_id']; // Get the main component ID from the assessment
+                                        
+                                                        // Fetch the main component name and percentage
+                                                        $mainComponentQuery = "
+                                                            SELECT ac.as_main_component_name, ac.main_component_percent
+                                                            FROM assignment_components ac
+                                                            WHERE ac.id = ?
+                                                        ";
+
+                                                        $mainComponentStmt = $conn->prepare($mainComponentQuery);
+                                                        $mainComponentStmt->bind_param("i", $mainComponentId);
+                                                        $mainComponentStmt->execute();
+                                                        $mainComponentResult = $mainComponentStmt->get_result();
+                                                        $mainComponentData = $mainComponentResult->fetch_assoc();
+
+                                                        $mainComponentName = $mainComponentData['as_main_component_name'] ?? 'N/A';
+                                                        $mainComponentPercent = $mainComponentData['main_component_percent'] ?? '0%'; // Default to '0%' if not found
+                                        
+                                                        // Convert percentage to integer for calculations
+                                                        $mainComponentPercentValue = (int) filter_var($mainComponentPercent, FILTER_SANITIZE_NUMBER_INT); // Extract the integer value
+                                                        echo "Main Component Percentage: " . $mainComponentPercentValue . "%";
+                                                        echo "<th>Results</th>
+                                                             
+                                                        "; // Display percentage
+                                                        // <th>" . htmlspecialchars($mainComponentPercent) . " Marks</th>
+                                                    }
+
+                                                    // Check if the program is BBM and add specific headers and data
+                                                    if (strpos($assessment['program_name'], 'Bachelor of Business Management (Hons)') !== false) {
+                                                        echo "<th>BBM Results</th>"; // Add a new header for BBM results
+                                                    }
+
+                                                    echo "</tr></thead><tbody>";
+
+                                                    $index = 1;
+                                                    foreach ($students as $student) {
+                                                        $savedResult = isset($student_results[$student['student_code']]) ?
+                                                            $student_results[$student['student_code']] : null;
+
+                                                        // UPDATED: Get saved comment value
+                                                        $savedComment = ($savedResult && isset($savedResult['comment'])) ?
+                                                            htmlspecialchars($savedResult['comment']) : '';
+
+                                                        echo "<tr data-program-id='" . htmlspecialchars($assessment['programme_id']) . "' 
+                                                            data-batch-id='" . htmlspecialchars($assessment['batch_id']) . "' 
+                                                            data-module-id='" . htmlspecialchars($assessment['module_id']) . "' 
+                                                            data-main-component-id='" . htmlspecialchars($assessment['main_component_id']) . "' 
+                                                            data-sub-component-id='" . (isset($assessment['sub_component_id']) ? htmlspecialchars($assessment['sub_component_id']) : 'N/A') . "'>
+                                                           <td style='width: 20px;'>" . $index++ . "</td>
+                                                            <td style='width: 200px;'>" . htmlspecialchars($student['student_registration_id']) . "</td>
+                                                            <td style='width: 200px;'>" . htmlspecialchars($student['first_name']) . " " . htmlspecialchars($student['last_name']) . "</td>
+                                                            <td style='width: 200px;'><textarea rows='2' style='width: 100%; resize: none;' name='comment[" . $student['student_code'] . "]'>" . $savedComment . "</textarea></td>
+                                                            
+                                                            
+                                                            ";
+
+                                                        // Program-specific input fields with saved values
+                                                        // Program-specific input fields with saved values
+                                                        if (
+                                                            strpos($assessment['program_name'], 'International Foundation Diploma (Business) - ATHE Level 3') !== false ||
+                                                            strpos($assessment['program_name'], 'International Foundation Diploma (Applied Science) - ATHE Level 3') !== false ||
+                                                            // strpos($assessment['program_name'], 'BSc (Hons) in Software Engineering') !== false ||
+                                                            strpos($assessment['program_name'], 'BTEC') !== false ||
+                                                            strpos($assessment['program_name'], 'Graduate Diploma') !== false
+                                                        ) {
+
+                                                            ?>
+                                                            <script>
+                                                                // Function to handle showing the next dropdown based on previous selections
+                                                                function handleDropdownChange(currentDropdown, nextDropdown) {
+                                                                    // Show next dropdown if current selection is either 'resit' or 'absent'
+                                                                    if (currentDropdown.value === 'resit' || currentDropdown.value === 'absent') {
+                                                                        nextDropdown.style.display = 'table-cell';
+                                                                    } else {
+                                                                        nextDropdown.style.display = 'none';
+                                                                    }
+                                                                }
+
+                                                                // Function to handle showing the dropdowns based on saved results
+                                                                function initializeDropdowns() {
+                                                                    var gradeSelect = document.getElementById('grade_<?php echo $student['student_code']; ?>');
+                                                                    var resitResult1 = document.getElementById('resit_result_1_<?php echo $student['student_code']; ?>');
+                                                                    var resitResult2 = document.getElementById('resit_result_2_<?php echo $student['student_code']; ?>');
+                                                                    var resitResult3 = document.getElementById('resit_result_3_<?php echo $student['student_code']; ?>');
+                                                                    var resitResult4 = document.getElementById('resit_result_4_<?php echo $student['student_code']; ?>');
+
+                                                                    // Show/hide based on saved results - check for both 'resit' and 'absent'
+                                                                    if (gradeSelect.value === 'resit' || gradeSelect.value === 'absent') {
+                                                                        resitResult1.style.display = 'table-cell';
+                                                                    }
+                                                                    if (resitResult1.value === 'resit' || resitResult1.value === 'absent') {
+                                                                        resitResult2.style.display = 'table-cell';
+                                                                    }
+                                                                    if (resitResult2.value === 'resit' || resitResult2.value === 'absent') {
+                                                                        resitResult3.style.display = 'table-cell';
+                                                                    }
+                                                                    if (resitResult3.value === 'resit' || resitResult3.value === 'absent') {
+                                                                        resitResult4.style.display = 'table-cell';
+                                                                    }
+                                                                }
+
+                                                                // window.onload = initializeDropdowns;
+                                                            </script>
+
+                                                            <td>
+                                                                <select class='form-control select2 form-control-sm grade-select'
+                                                                    id='grade_<?php echo $student['student_code']; ?>'
+                                                                    name='grade[<?php echo $student['student_code']; ?>]'
+                                                                    style='width: 100px;'
+                                                                    onchange="handleDropdownChange(this, document.getElementById('resit_result_1_<?php echo $student['student_code']; ?>'))"
+                                                                    <?php echo ($savedResult && (!empty($savedResult['result']) || !empty($savedResult['resit_result_1'])) && $Session_role !== 'super_admin') ? 'disabled' : ''; ?>>
+                                                                    <option value=''>Selects Grade</option>
+                                                                    <?php
+                                                                    // Loop through the grades fetched from the database
+                                                                    foreach ($grades as $grade) {
+                                                                        $selected = ($savedResult && $savedResult['result'] == $grade) ? 'selected' : '';
+                                                                        echo "<option value='" . $grade . "' " . $selected . ">" . ucfirst($grade) . "</option>";
+                                                                    }
+                                                                    ?>
+                                                                </select>
+                                                            </td>
+
+                                                            <!-- Resit Result 1 -->
+                                                            <td id="resit_result_1_<?php echo $student['student_code']; ?>"
+                                                                style="display:<?php echo ($savedResult && ($savedResult['result'] == 'resit' || $savedResult['result'] == 'absent' || $savedResult['result'] == 'not submitted')) ? 'table-cell' : 'none'; ?>;">
+                                                                <select class='form-control select2 form-control-sm grade-select'
+                                                                    name='resit_result_1[<?php echo $student['student_code']; ?>]'
+                                                                    style='width: 100px;'
+                                                                    onchange="handleDropdownChange(this, document.getElementById('resit_result_2_<?php echo $student['student_code']; ?>'))"
+                                                                    <?php echo ($savedResult && (!empty($savedResult['resit_result_1']) || !empty($savedResult['resit_result_2'])) && $Session_role !== 'super_admin') ? 'disabled' : ''; ?>>
+                                                                    <option value=''>Select Resit Grade 1</option>
+                                                                    <?php
+                                                                    foreach ($grades as $grade) {
+                                                                        $selected = ($savedResult && $savedResult['resit_result_1'] == $grade) ? 'selected' : '';
+                                                                        echo "<option value='" . $grade . "' " . $selected . ">" . ucfirst($grade) . "</option>";
+                                                                    }
+                                                                    ?>
+                                                                </select>
+                                                            </td>
+
+                                                            <!-- Resit Result 2 -->
+                                                            <td id="resit_result_2_<?php echo $student['student_code']; ?>"
+                                                                style="display:<?php echo ($savedResult && ($savedResult['resit_result_1'] == 'resit' || $savedResult['resit_result_1'] == 'absent' || $savedResult['resit_result_1'] == 'not submitted')) ? 'table-cell' : 'none'; ?>;">
+                                                                <select class='form-control select2 form-control-sm grade-select'
+                                                                    name='resit_result_2[<?php echo $student['student_code']; ?>]'
+                                                                    style='width: 100px;'
+                                                                    onchange="handleDropdownChange(this, document.getElementById('resit_result_3_<?php echo $student['student_code']; ?>'))"
+                                                                    <?php echo ($savedResult && (!empty($savedResult['resit_result_2']) || !empty($savedResult['resit_result_3'])) && $Session_role !== 'super_admin') ? 'disabled' : ''; ?>>
+                                                                    <option value=''>Select Resit Grade 2</option>
+                                                                    <?php
+                                                                    foreach ($grades as $grade) {
+                                                                        $selected = ($savedResult && $savedResult['resit_result_2'] == $grade) ? 'selected' : '';
+                                                                        echo "<option value='" . $grade . "' " . $selected . ">" . ucfirst($grade) . "</option>";
+                                                                    }
+                                                                    ?>
+                                                                </select>
+                                                            </td>
+
+                                                            <!-- Resit Result 3 -->
+                                                            <td id="resit_result_3_<?php echo $student['student_code']; ?>"
+                                                                style="display:<?php echo ($savedResult && ($savedResult['resit_result_2'] == 'resit' || $savedResult['resit_result_2'] == 'absent' || $savedResult['resit_result_2'] == 'not submitted')) ? 'table-cell' : 'none'; ?>;">
+                                                                <select class='form-control select2 form-control-sm grade-select'
+                                                                    name='resit_result_3[<?php echo $student['student_code']; ?>]'
+                                                                    style='width: 100px;'
+                                                                    onchange="handleDropdownChange(this, document.getElementById('resit_result_4_<?php echo $student['student_code']; ?>'))"
+                                                                    <?php echo ($savedResult && (!empty($savedResult['resit_result_3']) || !empty($savedResult['resit_result_4'])) && $Session_role !== 'super_admin') ? 'disabled' : ''; ?>>
+                                                                    <option value=''>Select Resit Grade 3</option>
+                                                                    <?php
+                                                                    foreach ($grades as $grade) {
+                                                                        $selected = ($savedResult && $savedResult['resit_result_3'] == $grade) ? 'selected' : '';
+                                                                        echo "<option value='" . $grade . "' " . $selected . ">" . ucfirst($grade) . "</option>";
+                                                                    }
+                                                                    ?>
+                                                                </select>
+                                                            </td>
+
+                                                            <!-- Resit Result 4 -->
+                                                            <td id="resit_result_4_<?php echo $student['student_code']; ?>"
+                                                                style="display:<?php echo ($savedResult && ($savedResult['resit_result_3'] == 'resit' || $savedResult['resit_result_3'] == 'absent' || $savedResult['resit_result_3'] == 'not submitted')) ? 'table-cell' : 'none'; ?>;">
+                                                                <select class='form-control select2 form-control-sm grade-select'
+                                                                    name='resit_result_4[<?php echo $student['student_code']; ?>]'
+                                                                    style='width: 100px;'
+                                                                    <?php echo ($savedResult && !empty($savedResult['resit_result_4']) && $Session_role !== 'super_admin') ? 'disabled' : ''; ?>>
+                                                                    <option value=''>Select Resit Grade 4</option>
+                                                                    <?php
+                                                                    foreach ($grades as $grade) {
+                                                                        $selected = ($savedResult && $savedResult['resit_result_4'] == $grade) ? 'selected' : '';
+                                                                        echo "<option value='" . $grade . "' " . $selected . ">" . ucfirst($grade) . "</option>";
+                                                                    }
+                                                                    ?>
+                                                                </select>
+                                                            </td>
+
+                                                            <?php
+                                                        } elseif (
+                                                            strpos($assessment['program_name'], 'Executive Certificate') !== false
+                                                            // strpos($assessment['program_name'], 'BSc (Hons) in Software Engineering') !== false
+                                                        ) {
+                                                            // Fetching saved marks and resit/absent status, if available
+                                                            $savedMarks = ($savedResult) ? $savedResult['converted_marks'] : '';
+                                                            $r1savedMarks = ($savedResult) ? $savedResult['ecm_r1_converted_marks'] : '';
+                                                            $r2savedMarks = ($savedResult) ? $savedResult['ecm_r2_converted_marks'] : '';
+                                                            $r3savedMarks = ($savedResult) ? $savedResult['ecm_r3_converted_marks'] : '';
+                                                            $r4savedMarks = ($savedResult) ? $savedResult['ecm_r4_converted_marks'] : '';
+
+                                                            echo "<td>
+                                                              
+                                                            <input type='text' 
+                                                                    class='form-control mb-2 form-control-sm marks-input' 
+                                                                    name='marks[" . htmlspecialchars($student['student_code']) . "]'
+                                                                    value='" . htmlspecialchars($savedMarks) . "'
+                                                                    style='width: 100px;'
+                                                                    min='0' 
+                                                                    max='100'
+                                                                    placeholder='Enter Marks'
+                                                                    oninput='ECMcalculateGrade(\"" . htmlspecialchars($student['student_code']) . "\", " . intval($mainComponentPercentValue) . ")'>
+
+                                                                <select class='form-control select2 form-control-sm grade-select'
+                                                                    name='resit_absent[" . htmlspecialchars($student['student_code']) . "]'
+                                                                    style='width: 100px;' 
+                                                                    onchange='updateMarksInput(this, \"" . htmlspecialchars($student['student_code']) . "\")'>
+                                                                    <option value=''>Select</option>
+                                                                    <option value='Not Submitted'>Not Submitted</option>
+                                                                    <option value='Absent'>Absent</option>
+                                                                     <option value='Resit'>Re sit</option>
+                                                                </select>
+
+                                                                <input type='text' 
+                                                                    class='form-control mb-2 mt-2 form-control-sm additional-input' 
+                                                                    name='additional_input[" . htmlspecialchars($student['student_code']) . "]'
+                                                                    value=''
+                                                                    id='ecmM1'
+                                                                    style='width: 100px;'
+                                                                    placeholder='Additional Input'
+                                                                    readonly>
+                                                            </td>";
+
+
+                                                            ?>
+
+
+                                                            <script>
+                                                                document.addEventListener("input", function (e) {
+                                                                    if (e.target.classList.contains("marks-input")) {
+                                                                        let value = e.target.value.replace(/\D/g, ""); // remove non-digits
+                                                                        if (value !== "") {
+                                                                            let num = parseInt(value, 10);
+                                                                            if (num < 1) num = 1;
+                                                                            if (num > 100) num = 100;
+                                                                            e.target.value = num;
+                                                                        } else {
+                                                                            e.target.value = "";
+                                                                        }
+                                                                    }
+                                                                });
+
+                                                                function ECMcalculateGrade(studentCode, percentValue) {
+                                                                    let markInput = document.querySelector(`input[name='marks[${studentCode}]']`);
+                                                                    let additionalInput = document.querySelector(`input[name='additional_input[${studentCode}]']`);
+                                                                    let marks = parseFloat(markInput.value);
+
+                                                                    if (isNaN(marks)) {
+                                                                        additionalInput.value = "";
+                                                                        return;
+                                                                    }
+
+                                                                    let grade = "";
+
+                                                                    switch (percentValue) {
+                                                                        case 50:
+                                                                            if (marks < 25) grade = "Resit";
+                                                                            else if (marks >= 25 && marks <= 29) grade = "Pass";
+                                                                            else if (marks >= 30 && marks <= 34) grade = "Merit";
+                                                                            else if (marks >= 35) grade = "Distinction";
+                                                                            break;
+                                                                        case 80:
+                                                                            // grade = (marks > 40) ? "Pass" : "Resit";
+                                                                             grade = (marks >= 40) ? "Pass" : "Resit";
+                                                                            break;
+                                                                        case 20:
+                                                                            // grade = (marks > 10) ? "Pass" : "Resit";
+                                                                             grade = (marks >= 10) ? "Pass" : "Resit";
+                                                                            break;
+                                                                        case 100:
+                                                                            if (marks < 50) grade = "Resit";
+                                                                            else if (marks >= 50 && marks <= 59) grade = "Pass";
+                                                                            else if (marks >= 60 && marks <= 69) grade = "Merit";
+                                                                            else if (marks >= 70) grade = "Distinction";
+                                                                            break;
+                                                                    }
+
+                                                                    additionalInput.value = grade;
+                                                                }
+
+
+
+                                                                function ECMcalculateGradeR1(studentCode, percentValue) {
+                                                                    let markInput = document.querySelector(`input[name='marks_resit1[${studentCode}]']`);
+                                                                    let additionalInput = document.querySelector(`input[name='additional_input_r1[${studentCode}]']`);
+                                                                    let marks = parseFloat(markInput.value);
+
+                                                                    if (isNaN(marks)) {
+                                                                        additionalInput.value = "";
+                                                                        return;
+                                                                    }
+
+                                                                    let grade = "";
+
+                                                                    switch (percentValue) {
+                                                                        case 50:
+                                                                            if (marks < 25) grade = "Resit";
+                                                                            else if (marks <= 29) grade = "Pass";
+                                                                            else if (marks <= 34) grade = "Merit";
+                                                                            else grade = "Distinction";
+                                                                            break;
+                                                                        case 80:
+                                                                            // grade = (marks > 40) ? "Pass" : "Resit";
+                                                                             grade = (marks >= 40) ? "Pass" : "Resit";
+                                                                            break;
+                                                                        case 20:
+                                                                            // grade = (marks > 10) ? "Pass" : "Resit";
+                                                                             grade = (marks >= 10) ? "Pass" : "Resit";
+                                                                            break;
+                                                                        case 100:
+                                                                            if (marks < 50) grade = "Resit";
+                                                                            else if (marks <= 59) grade = "Pass";
+                                                                            else if (marks <= 69) grade = "Merit";
+                                                                            else grade = "Distinction";
+                                                                            break;
+                                                                    }
+
+                                                                    additionalInput.value = grade;
+                                                                }
+
+
+                                                                function ECMcalculateGradeR2(studentCode, percentValue) {
+                                                                    let markInput = document.querySelector(`input[name='marks_resit2[${studentCode}]']`);
+                                                                    let additionalInput = document.querySelector(`input[name='additional_input_r2[${studentCode}]']`);
+                                                                    let marks = parseFloat(markInput.value);
+
+                                                                    if (isNaN(marks)) {
+                                                                        additionalInput.value = "";
+                                                                        return;
+                                                                    }
+
+                                                                    let grade = "";
+
+                                                                    switch (percentValue) {
+                                                                        case 50:
+                                                                            if (marks < 25) grade = "Resit";
+                                                                            else if (marks <= 29) grade = "Pass";
+                                                                            else if (marks <= 34) grade = "Merit";
+                                                                            else grade = "Distinction";
+                                                                            break;
+                                                                        case 80:
+                                                                            // grade = (marks > 40) ? "Pass" : "Resit";
+                                                                             grade = (marks >= 40) ? "Pass" : "Resit";
+                                                                            break;
+                                                                        case 20:
+                                                                            // grade = (marks > 10) ? "Pass" : "Resit";
+                                                                             grade = (marks >= 10) ? "Pass" : "Resit";
+                                                                            break;
+                                                                        case 100:
+                                                                            if (marks < 50) grade = "Resit";
+                                                                            else if (marks <= 59) grade = "Pass";
+                                                                            else if (marks <= 69) grade = "Merit";
+                                                                            else grade = "Distinction";
+                                                                            break;
+                                                                    }
+
+                                                                    additionalInput.value = grade;
+                                                                }
+
+
+                                                                function ECMcalculateGradeR3(studentCode, percentValue) {
+                                                                    let markInput = document.querySelector(`input[name='marks_resit3[${studentCode}]']`);
+                                                                    let additionalInput = document.querySelector(`input[name='additional_input_r3[${studentCode}]']`);
+                                                                    let marks = parseFloat(markInput.value);
+
+                                                                    if (isNaN(marks)) {
+                                                                        additionalInput.value = "";
+                                                                        return;
+                                                                    }
+
+                                                                    let grade = "";
+
+                                                                    switch (percentValue) {
+                                                                        case 50:
+                                                                            if (marks < 25) grade = "Resit";
+                                                                            else if (marks <= 29) grade = "Pass";
+                                                                            else if (marks <= 34) grade = "Merit";
+                                                                            else grade = "Distinction";
+                                                                            break;
+                                                                        case 80:
+                                                                            // grade = (marks > 40) ? "Pass" : "Resit";
+                                                                             grade = (marks >= 40) ? "Pass" : "Resit";
+                                                                            break;
+                                                                        case 20:
+                                                                            // grade = (marks > 10) ? "Pass" : "Resit";
+                                                                             grade = (marks >= 10) ? "Pass" : "Resit";
+                                                                            break;
+                                                                        case 100:
+                                                                            if (marks < 50) grade = "Resit";
+                                                                            else if (marks <= 59) grade = "Pass";
+                                                                            else if (marks <= 69) grade = "Merit";
+                                                                            else grade = "Distinction";
+                                                                            break;
+                                                                    }
+
+                                                                    additionalInput.value = grade;
+                                                                }
+
+                                                                function ECMcalculateGradeR4(studentCode, percentValue) {
+                                                                    let markInput = document.querySelector(`input[name='marks_resit4[${studentCode}]']`);
+                                                                    let additionalInput = document.querySelector(`input[name='additional_input_r4[${studentCode}]']`);
+                                                                    let marks = parseFloat(markInput.value);
+
+                                                                    if (isNaN(marks)) {
+                                                                        additionalInput.value = "";
+                                                                        return;
+                                                                    }
+
+                                                                    let grade = "";
+
+                                                                    switch (percentValue) {
+                                                                        case 50:
+                                                                            if (marks < 25) grade = "Resit";
+                                                                            else if (marks <= 29) grade = "Pass";
+                                                                            else if (marks <= 34) grade = "Merit";
+                                                                            else grade = "Distinction";
+                                                                            break;
+                                                                        case 80:
+                                                                            // grade = (marks > 40) ? "Pass" : "Resit";
+                                                                             grade = (marks >= 40) ? "Pass" : "Resit";
+                                                                            break;
+                                                                        case 20:
+                                                                            // grade = (marks > 10) ? "Pass" : "Resit";
+                                                                             grade = (marks >= 10) ? "Pass" : "Resit";
+                                                                            break;
+                                                                        case 100:
+                                                                            if (marks < 50) grade = "Resit";
+                                                                            else if (marks <= 59) grade = "Pass";
+                                                                            else if (marks <= 69) grade = "Merit";
+                                                                            else grade = "Distinction";
+                                                                            break;
+                                                                    }
+
+                                                                    additionalInput.value = grade;
+                                                                }
+                                                            </script>
+
+                                                            <?php
+
+
+                                                            // <!-- ------------------------------------------------------------------------------------------------------  -->
+                                                            // <!-- Resit 1  -->
+                                                            // <!-- ------------------------------------------------------------------------------------------------------  -->
+                                        
+
+
+                                                            if (($savedResult['converted_marks'] ?? '') === 'Not Submitted' || ($savedResult['converted_marks'] ?? '') === 'Absent' || ($savedResult['converted_marks_grade'] ?? '') === 'Resit') {
+                                                                echo "<td>
+                                                                    <input type='text' 
+                                                                        class='form-control mb-2 form-control-sm marks-input' 
+                                                                        name='marks_resit1[" . htmlspecialchars($student['student_code']) . "]'
+                                                                        value='" . htmlspecialchars($r1savedMarks) . "'
+                                                                        style='width: 100px;'
+                                                                        min='0' 
+                                                                        max='100'
+                                                                        placeholder='Enter resit 1 Marks'
+                                                                        oninput='ECMcalculateGradeR1(\"" . htmlspecialchars($student['student_code']) . "\", " . intval($mainComponentPercentValue) . ")'>
+                                                            
+                                                                    <select class='form-control select2 form-control-sm grade-select'
+                                                                        name='resit_absent_additional1[" . htmlspecialchars($student['student_code']) . "]'
+                                                                        style='width: 100px;'
+                                                                        onchange='updateMarksInputr1(this, \"" . htmlspecialchars($student['student_code']) . "\")'>
+                                                                        <option value=''>Select</option>
+                                                                        <option value='Not Submitted'>Not Submitted</option>
+                                                                        <option value='Absent'>Absent</option>
+                                                                          <option value='Resit'>Re sit</option>
+                                                                    </select>
+                                                            
+                                                                    <input type='text' 
+                                                                        class='form-control mb-2 mt-2 form-control-sm additional-input' 
+                                                                        name='additional_input_r1[" . htmlspecialchars($student['student_code']) . "]'
+                                                                        value=''
+                                                                        style='width: 100px;'
+                                                                        placeholder='Additional Input'
+                                                                        readonly>
+                                                                </td>";
+                                                            }
+
+
+
+                                                            // <!-- ------------------------------------------------------------------------------------------------------  -->
+                                                            // <!-- Resit 2  -->
+                                                            // <!-- ------------------------------------------------------------------------------------------------------  -->
+                                        
+
+
+                                                            if (($savedResult['ecm_r1_converted_marks'] ?? '') === 'Not Submitted' || ($savedResult['ecm_r1_converted_marks'] ?? '') === 'Absent' || ($savedResult['ecm_r1_converted_marks_grade'] ?? '') === 'Resit') {
+                                                                echo "<td>
+                                                                    <input type='text' 
+                                                                        class='form-control mb-2 form-control-sm marks-input' 
+                                                                        name='marks_resit2[" . htmlspecialchars($student['student_code']) . "]'
+                                                                        value='" . htmlspecialchars($r2savedMarks) . "'
+                                                                        style='width: 100px;'
+                                                                        min='0' 
+                                                                        max='100'
+                                                                        placeholder='Enter resit 2 Marks'
+                                                                        oninput='ECMcalculateGradeR2(\"" . htmlspecialchars($student['student_code']) . "\", " . intval($mainComponentPercentValue) . ")'>
+                                                            
+                                                                    <select class='form-control select2 form-control-sm grade-select'
+                                                                        name='resit_absent_additional2[" . htmlspecialchars($student['student_code']) . "]'
+                                                                        style='width: 100px;'
+                                                                        onchange='updateMarksInputr2(this, \"" . htmlspecialchars($student['student_code']) . "\")'>
+                                                                        <option value=''>Select</option>
+                                                                        <option value='Not Submitted'>Not Submitted</option>
+                                                                        <option value='Absent'>Absent</option>
+                                                                          <option value='Resit'>Re sit</option>
+                                                                    </select>
+                                                            
+                                                                    <input type='text' 
+                                                                        class='form-control mb-2 mt-2 form-control-sm additional-input' 
+                                                                        name='additional_input_r2[" . htmlspecialchars($student['student_code']) . "]'
+                                                                        value=''
+                                                                        style='width: 100px;'
+                                                                        placeholder='Additional Input'
+                                                                        readonly>
+                                                                </td>";
+                                                            }
+
+
+
+                                                            // <!-- ------------------------------------------------------------------------------------------------------  -->
+                                                            // <!-- Resit 3  -->
+                                                            // <!-- ------------------------------------------------------------------------------------------------------  -->
+                                        
+
+
+                                                            if (($savedResult['ecm_r2_converted_marks'] ?? '') === 'Not Submitted' || ($savedResult['ecm_r2_converted_marks'] ?? '') === 'Absent' || ($savedResult['ecm_r2_converted_marks_grade'] ?? '') === 'Resit') {
+                                                                echo "<td>
+                                                                    <input type='text' 
+                                                                        class='form-control mb-2 form-control-sm marks-input' 
+                                                                        name='marks_resit3[" . htmlspecialchars($student['student_code']) . "]'
+                                                                        value='" . htmlspecialchars($r3savedMarks) . "'
+                                                                        style='width: 100px;'
+                                                                        min='0' 
+                                                                        max='100'
+                                                                        placeholder='Enter resit 3 Marks'
+                                                                        oninput='ECMcalculateGradeR3(\"" . htmlspecialchars($student['student_code']) . "\", " . intval($mainComponentPercentValue) . ")'>
+                                                            
+                                                                    <select class='form-control select2 form-control-sm grade-select'
+                                                                        name='resit_absent_additional3[" . htmlspecialchars($student['student_code']) . "]'
+                                                                        style='width: 100px;'
+                                                                        onchange='updateMarksInputr3(this, \"" . htmlspecialchars($student['student_code']) . "\")'>
+                                                                        <option value=''>Select</option>
+                                                                        <option value='Not Submitted'>Not Submitted</option>
+                                                                        <option value='Absent'>Absent</option>
+                                                                          <option value='Resit'>Re sit</option>
+                                                                    </select>
+                                                            
+                                                                    <input type='text' 
+                                                                        class='form-control mb-2 mt-2 form-control-sm additional-input' 
+                                                                        name='additional_input_r3[" . htmlspecialchars($student['student_code']) . "]'
+                                                                        value=''
+                                                                        style='width: 100px;'
+                                                                        placeholder='Additional Input'
+                                                                        readonly>
+                                                                </td>";
+                                                            }
+
+
+
+                                                            // <!-- ------------------------------------------------------------------------------------------------------  -->
+                                                            // <!-- Resit 4 -->
+                                                            // <!-- ------------------------------------------------------------------------------------------------------  -->
+                                        
+
+
+                                                            if (($savedResult['ecm_r3_converted_marks'] ?? '') === 'Not Submitted' || ($savedResult['ecm_r3_converted_marks'] ?? '') === 'Absent' || ($savedResult['ecm_r3_converted_marks_grade'] ?? '') === 'Resit') {
+                                                                echo "<td>
+                                                                    <input type='text' 
+                                                                        class='form-control mb-2 form-control-sm marks-input' 
+                                                                        name='marks_resit4[" . htmlspecialchars($student['student_code']) . "]'
+                                                                        value='" . htmlspecialchars($r4savedMarks) . "' 
+                                                                        style='width: 100px;'
+                                                                        min='0' 
+                                                                        max='100'
+                                                                        placeholder='Enter resit 4 Marks'
+                                                                        oninput='ECMcalculateGradeR4(\"" . htmlspecialchars($student['student_code']) . "\", " . intval($mainComponentPercentValue) . ")'>
+                                                            
+                                                                    <select class='form-control select2 form-control-sm grade-select'
+                                                                        name='resit_absent_additional4[" . htmlspecialchars($student['student_code']) . "]'
+                                                                        style='width: 100px;'
+                                                                        onchange='updateMarksInputr4(this, \"" . htmlspecialchars($student['student_code']) . "\")'>
+                                                                        <option value=''>Select</option>
+                                                                        <option value='Not Submitted'>Not Submitted</option>
+                                                                        <option value='Absent'>Absent</option>
+                                                                          <option value='Resit'>Re sit</option>
+                                                                    </select>
+                                                            
+                                                                    <input type='text' 
+                                                                        class='form-control mb-2 mt-2 form-control-sm additional-input' 
+                                                                        name='additional_input_r4[" . htmlspecialchars($student['student_code']) . "]'
+                                                                        value=''
+                                                                        style='width: 100px;'
+                                                                        placeholder='Additional Input'
+                                                                        readonly>
+                                                                </td>";
+                                                            }
+                                                        }
+
+
+
+                                                        // For Higher Diploma
+                                                        elseif (
+                                                            strpos($assessment['program_name'], 'Higher Diploma') !== false
+                                                            || strpos($assessment['program_name'], 'BSc (Hons) in Software Engineering') !== false
+                                                        ) {
+                                                            $savedFullMarks = ($savedResult) ? $savedResult['hd_full_marks'] : '';
+                                                            // $savedFullMarks = ($savedResult) ? (($savedResult['hd_full_marks'] == 0) ? 'Absent' : $savedResult['hd_full_marks']) : '';
+
+
+                                                            // $savedConvertedMarks = ($savedResult) ? $savedResult['hd_converted_marks'] : '';
+                                                            // $savedConvertedMarks = ($savedResult) ? (($savedResult['hd_converted_marks'] == 0) ? 'Absent' : $savedResult['hd_converted_marks']) : '';
+                                                            
+                                                            
+                                                            if ($savedResult) {
+                                                                if ($savedResult['hd_converted_marks'] == -2 ) {
+                                                                    $savedConvertedMarks = 'Absent';
+                                                                } elseif ($savedResult['hd_converted_marks'] == -1) {
+                                                                    $savedConvertedMarks = 'Not Submitted';
+                                                                } else {
+                                                                    $savedConvertedMarks = $savedResult['hd_converted_marks'];
+                                                                }
+                                                            } else {
+                                                                $savedConvertedMarks = '';
+                                                            }
+
+                                                          
+
+
+                                                            // Assuming you have the main component ID available
+                                                            $mainComponentId = $assessment['main_component_id']; // Get the main component ID from the assessment
+                                        
+                                                            // Fetch the main component name and percentage
+                                                            $mainComponentQuery = "
+                                                                SELECT ac.as_main_component_name, ac.main_component_percent
+                                                                FROM assignment_components ac
+                                                                WHERE ac.id = ?
+                                                            ";
+
+                                                            $mainComponentStmt = $conn->prepare($mainComponentQuery);
+                                                            $mainComponentStmt->bind_param("i", $mainComponentId);
+                                                            $mainComponentStmt->execute();
+                                                            $mainComponentResult = $mainComponentStmt->get_result();
+                                                            $mainComponentData = $mainComponentResult->fetch_assoc();
+
+                                                            $mainComponentName = $mainComponentData['as_main_component_name'] ?? 'N/A';
+                                                            $mainComponentPercent = $mainComponentData['main_component_percent'] ?? '0%'; // Default to '0%' if not found
+                                        
+                                                            // Convert percentage to integer for calculations
+                                                            $mainComponentPercentValue = (int) filter_var($mainComponentPercent, FILTER_SANITIZE_NUMBER_INT); // Extract the integer value
+                                        
+
+                                                            ?>
+
+
+                                                            <!-- 1st marks input and converted marks input and grade input -->
+                                                            <td style="width: 150px;">
+                                                                <b>100% Marks:</b>
+                                                                <input type="text"
+                                                                    class="form-control form-control-sm full-marks-input mb-2"
+                                                                    name="fullmarks[<?php echo $student['student_code']; ?>]"
+                                                                    value="<?php echo htmlspecialchars($savedFullMarks); ?>"
+                                                                    oninput="calculateDividedMarkAndGrade(this)" style="width: 100px;"
+                                                                    min="0" step="0.01" placeholder="Marks"
+                                                                    id="fullMarks_<?php echo $student['student_code']; ?>" <?php if ((($savedResult['hd_grade'] ?? '') == 'Re-sit' || ($savedResult['hd_grade'] ?? '') == 'Absent' || ($savedResult['hd_grade'] ?? '') == 'Not Submitted') && $Session_role !== 'super_admin')
+                                                                           echo 'disabled'; ?>>
+
+                                                                <b><?= htmlspecialchars($mainComponentPercent) ?> marks:</b>
+                                                                <input type="text" class="form-control form-control-sm divided-mark mb-2"
+                                                                    name="dividedmark[<?php echo $student['student_code']; ?>]"
+                                                                    value="<?php echo htmlspecialchars($savedConvertedMarks); ?>" readonly
+                                                                    placeholder="Automated Value" style="width: 100px;" step="0.01"
+                                                                    id="convertedMarks_<?php echo $student['student_code']; ?>">
+
+                                                                <b>Grades:</b>
+                                                                <input type="text" class="form-control form-control-sm grade-input"
+                                                                    name="automated[<?php echo $student['student_code']; ?>]"
+                                                                    value="<?php echo htmlspecialchars($savedResult['hd_grade'] ?? ''); ?>"
+                                                                    readonly
+                                                                    style="width: 100px; <?php echo ($savedResult['hd_grade'] == 'Re-sit') ? 'background-color: red; color: white;' : ''; ?>"
+                                                                    placeholder="Automated Value"
+                                                                    id="grade_<?php echo $student['student_code']; ?>">
+
+                                                                <div class="form-check mt-1">
+                                                                    <input type="checkbox" class="form-check-input"
+                                                                        id="absent_<?php echo $student['student_code']; ?>"
+                                                                        onclick="toggleAbsent('<?php echo $student['student_code']; ?>')"
+                                                                        <?php echo (($savedResult['hd_converted_marks'] ?? '') == -2) ? 'checked' : ''; ?>>
+                                                                    <label class="form-check-label"
+                                                                        for="absent_<?php echo $student['student_code']; ?>">Absent</label>
+                                                                </div>
+                                                                <div class="form-check mt-1">
+                                                                    <input type="checkbox" class="form-check-input"
+                                                                        id="ns_<?php echo $student['student_code']; ?>"
+                                                                        onclick="toggleNotSubmitted('<?php echo $student['student_code']; ?>')"
+                                                                        <?php echo (($savedResult['hd_converted_marks'] ?? '') == -1) ? 'checked' : ''; ?>>
+                                                                    <label class="form-check-label"
+                                                                        for="ns_<?php echo $student['student_code']; ?>">Not Submitted</label>
+                                                                </div>
+                                                            </td>
+
+                                                            <!-- ------------------------------------------------------------------------------------------------------  -->
+                                                            <!-- Resit 1  -->
+                                                            <!-- ------------------------------------------------------------------------------------------------------  -->
+
+                                                            <!-- Resit 1 -->
+                                                            <?php if (($savedResult['hd_grade'] ?? '') == 'Re-sit' || ($savedResult['hd_grade'] ?? '') == 'Absent' || ($savedResult['hd_grade'] ?? '') == 'Not Submitted'): ?>
+                                                                <td style="width: 150px;">
+                                                                    <b> 100% Marks :</b>
+                                                                    <input type="text"
+                                                                        class="form-control form-control-sm full-marks-input mb-2"
+                                                                        name="resit1_fullmarks[<?php echo $student['student_code']; ?>]"
+                                                                        value="<?php echo htmlspecialchars($savedResult['hd_resit1_full_marks'] ?? ''); ?>"
+                                                                        oninput="calculateResitDividedMarkAndGrade(this)" style="width: 100px;"
+                                                                        min="0" max="100" placeholder="Marks" <?php if ((($savedResult['hd_resit1_grade'] ?? '') == 'Re-sit' || ($savedResult['hd_resit1_grade'] ?? '') == 'Absent' || ($savedResult['hd_resit1_grade'] ?? '') == 'Not Submitted') && $Session_role !== 'super_admin')
+                                                                            echo 'disabled'; ?>>
+
+                                                                    <b> <?= htmlspecialchars($mainComponentPercent) ?> marks :</b>
+                                                                    <input type="text"
+                                                                        class="form-control form-control-sm divided-mark-resit1 mb-2"
+                                                                        name="resit1_dividedmark[<?php echo $student['student_code']; ?>]"
+                                                                        value="<?php
+                                                                            if (isset($savedResult['hd_resit1_converted_marks'])) {
+                                                                                if ($savedResult['hd_resit1_converted_marks'] == -2) {
+                                                                                    echo htmlspecialchars('Absent');
+                                                                                } elseif ($savedResult['hd_resit1_converted_marks'] == -1) {
+                                                                                    echo htmlspecialchars('Not Submitted');
+                                                                                } else {
+                                                                                    echo htmlspecialchars($savedResult['hd_resit1_converted_marks']);
+                                                                                }
+                                                                            } else {
+                                                                                echo '';
+                                                                            }
+                                                                        ?>"
+                                                                        readonly placeholder="Automated Value" style="width: 100px;">
+
+                                                                    <b> Grades :</b>
+                                                                    <input type="text" class="form-control form-control-sm grade-input-resit1"
+                                                                        name="resit1_automated[<?php echo $student['student_code']; ?>]"
+                                                                        value="<?php echo htmlspecialchars($savedResult['hd_resit1_grade'] ?? ''); ?>"
+                                                                        readonly
+                                                                        style="width: 100px; <?php echo ($savedResult['hd_resit1_grade'] == 'Re-sit') ? 'background-color: red; color: white;' : ''; ?>"
+                                                                        placeholder="Automated Value">
+
+                                                                    <!-- Absent Checkbox -->
+                                                                    <div class="form-check mt-1">
+                                                                        <input type="checkbox" class="form-check-input"
+                                                                            id="resit1_absent_<?php echo $student['student_code']; ?>"
+                                                                            onclick="toggleAbsent1('<?php echo $student['student_code']; ?>')"
+                                                                            <?php echo (($savedResult['hd_resit1_converted_marks'] ?? '') == -2) ? 'checked' : ''; ?>>
+                                                                        <label class="form-check-label"
+                                                                            for="resit1_absent_<?php echo $student['student_code']; ?>">Absent</label>
+                                                                    </div>
+                                                                    <div class="form-check mt-1">
+                                                                        <input type="checkbox" class="form-check-input"
+                                                                            id="resit1_ns_<?php echo $student['student_code']; ?>"
+                                                                            onclick="toggleNotSubmitted1('<?php echo $student['student_code']; ?>')"
+                                                                            <?php echo (($savedResult['hd_resit1_converted_marks'] ?? '') == -1) ? 'checked' : ''; ?>>
+                                                                        <label class="form-check-label"
+                                                                            for="resit1_ns_<?php echo $student['student_code']; ?>">Not Submitted</label>
+                                                                    </div>
+                                                                </td>
+                                                            <?php endif; ?>
+
+                                                            <!-- ------------------------------------------------------------------------------------------------------  -->
+                                                            <!-- Resit 2  -->
+                                                            <!-- ------------------------------------------------------------------------------------------------------  -->
+                                                            <!-- Resit 2 -->
+                                                            <?php if (($savedResult['hd_resit1_grade'] ?? '') == 'Re-sit' || ($savedResult['hd_resit1_grade'] ?? '') == 'Absent' || ($savedResult['hd_resit1_grade'] ?? '') == 'Not Submitted'): ?>
+                                                                <td style="width: 150px;">
+                                                                    <b> 100% Marks :</b>
+                                                                    <input type="text"
+                                                                        class="form-control form-control-sm full-marks-input mb-2"
+                                                                        name="resit2_fullmarks[<?php echo $student['student_code']; ?>]"
+                                                                        value="<?php echo htmlspecialchars($savedResult['hd_resit2_full_marks'] ?? ''); ?>"
+                                                                        oninput="calculateResitDividedMarkAndGrade2(this)" style="width: 100px;"
+                                                                        min="0" max="100" placeholder="Marks" <?php if ((($savedResult['hd_resit2_grade'] ?? '') == 'Re-sit' || ($savedResult['hd_resit2_grade'] ?? '') == 'Absent' || ($savedResult['hd_resit2_grade'] ?? '') == 'Not Submitted') && $Session_role !== 'super_admin')
+                                                                            echo 'disabled'; ?>>
+
+                                                                    <b> <?= htmlspecialchars($mainComponentPercent) ?> marks :</b>
+                                                                    <input type="text"
+                                                                        class="form-control form-control-sm divided-mark-resit2 mb-2"
+                                                                        name="resit2_dividedmark[<?php echo $student['student_code']; ?>]"
+                                                                        value="<?php
+                                                                            if (isset($savedResult['hd_resit2_converted_marks'])) {
+                                                                                if ($savedResult['hd_resit2_converted_marks'] == -2) {
+                                                                                    echo htmlspecialchars('Absent');
+                                                                                } elseif ($savedResult['hd_resit2_converted_marks'] == -1) {
+                                                                                    echo htmlspecialchars('Not Submitted');
+                                                                                } else {
+                                                                                    echo htmlspecialchars($savedResult['hd_resit2_converted_marks']);
+                                                                                }
+                                                                            } else {
+                                                                                echo '';
+                                                                            }
+                                                                        ?>"
+                                                                        readonly placeholder="Automated Value" style="width: 100px;">
+
+                                                                    <b> Grades :</b>
+                                                                    <input type="text" class="form-control form-control-sm grade-input-resit2"
+                                                                        name="resit2_automated[<?php echo $student['student_code']; ?>]"
+                                                                        value="<?php echo htmlspecialchars($savedResult['hd_resit2_grade'] ?? ''); ?>"
+                                                                        readonly
+                                                                        style="width: 100px; <?php echo ($savedResult['hd_resit2_grade'] == 'Re-sit') ? 'background-color: red; color: white;' : ''; ?>"
+                                                                        placeholder="Automated Value">
+
+                                                                    <!-- Absent Checkbox -->
+                                                                    <div class="form-check mt-1">
+                                                                        <input type="checkbox" class="form-check-input"
+                                                                            id="resit2_absent_<?php echo $student['student_code']; ?>"
+                                                                            onclick="toggleAbsent2('<?php echo $student['student_code']; ?>')"
+                                                                            <?php echo (($savedResult['hd_resit2_converted_marks'] ?? '') == -2) ? 'checked' : ''; ?>>
+                                                                        <label class="form-check-label"
+                                                                            for="resit2_absent_<?php echo $student['student_code']; ?>">Absent</label>
+                                                                    </div>
+                                                                    <div class="form-check mt-1">
+                                                                        <input type="checkbox" class="form-check-input"
+                                                                            id="resit2_ns_<?php echo $student['student_code']; ?>"
+                                                                            onclick="toggleNotSubmitted2('<?php echo $student['student_code']; ?>')"
+                                                                            <?php echo (($savedResult['hd_resit2_converted_marks'] ?? '') == -1) ? 'checked' : ''; ?>>
+                                                                        <label class="form-check-label"
+                                                                            for="resit2_ns_<?php echo $student['student_code']; ?>">Not Submitted</label>
+                                                                    </div>
+                                                                </td>
+                                                            <?php endif; ?>
+
+
+                                                            <!-- ------------------------------------------------------------------------------------------------------  -->
+                                                            <!-- Resit 3  -->
+                                                            <!-- ------------------------------------------------------------------------------------------------------  -->
+
+                                                            <!-- Resit 3 -->
+                                                            <?php if (($savedResult['hd_resit3_grade'] ?? '') == 'Re-sit' || ($savedResult['hd_resit3_grade'] ?? '') == 'Absent' || ($savedResult['hd_resit3_grade'] ?? '') == 'Not Submitted'): ?>
+                                                                <td style="width: 150px;">
+                                                                    <b> 100% Marks :</b>
+                                                                    <input type="text"
+                                                                        class="form-control form-control-sm full-marks-input mb-2"
+                                                                        name="resit3_fullmarks[<?php echo $student['student_code']; ?>]"
+                                                                        value="<?php echo htmlspecialchars($savedResult['hd_resit3_full_marks'] ?? ''); ?>"
+                                                                        oninput="calculateResitDividedMarkAndGrade3(this)" style="width: 100px;"
+                                                                        min="0" max="100" placeholder="Marks" <?php if ((($savedResult['hd_resit3_grade'] ?? '') == 'Re-sit' || ($savedResult['hd_resit3_grade'] ?? '') == 'Absent' || ($savedResult['hd_resit3_grade'] ?? '') == 'Not Submitted') && $Session_role !== 'super_admin')
+                                                                            echo 'disabled'; ?>>
+
+                                                                    <b> <?= htmlspecialchars($mainComponentPercent) ?> marks :</b>
+                                                                    <input type="text"
+                                                                        class="form-control form-control-sm divided-mark-resit3 mb-2"
+                                                                        name="resit3_dividedmark[<?php echo $student['student_code']; ?>]"
+                                                                        value="<?php
+                                                                            if (isset($savedResult['hd_resit3_converted_marks'])) {
+                                                                                if ($savedResult['hd_resit3_converted_marks'] == -2) {
+                                                                                    echo htmlspecialchars('Absent');
+                                                                                } elseif ($savedResult['hd_resit3_converted_marks'] == -1) {
+                                                                                    echo htmlspecialchars('Not Submitted');
+                                                                                } else {
+                                                                                    echo htmlspecialchars($savedResult['hd_resit3_converted_marks']);
+                                                                                }
+                                                                            } else {
+                                                                                echo '';
+                                                                            }
+                                                                        ?>"
+                                                                        readonly placeholder="Automated Value" style="width: 100px;">
+
+                                                                    <b> Grades :</b>
+                                                                    <input type="text" class="form-control form-control-sm grade-input-resit3"
+                                                                        name="resit3_automated[<?php echo $student['student_code']; ?>]"
+                                                                        value="<?php echo htmlspecialchars($savedResult['hd_resit3_grade'] ?? ''); ?>"
+                                                                        readonly
+                                                                        style="width: 100px; <?php echo ($savedResult['hd_resit3_grade'] == 'Re-sit') ? 'background-color: red; color: white;' : ''; ?>"
+                                                                        placeholder="Automated Value">
+
+                                                                    <!-- Absent Checkbox -->
+                                                                    <div class="form-check mt-1">
+                                                                        <input type="checkbox" class="form-check-input"
+                                                                            id="resit3_absent_<?php echo $student['student_code']; ?>"
+                                                                            onclick="toggleAbsent3('<?php echo $student['student_code']; ?>')"
+                                                                            <?php echo (($savedResult['hd_resit3_converted_marks'] ?? '') == -2) ? 'checked' : ''; ?>>
+                                                                        <label class="form-check-label"
+                                                                            for="resit3_absent_<?php echo $student['student_code']; ?>">Absent</label>
+                                                                    </div>
+                                                                    <div class="form-check mt-1">
+                                                                        <input type="checkbox" class="form-check-input"
+                                                                            id="resit3_ns_<?php echo $student['student_code']; ?>"
+                                                                            onclick="toggleNotSubmitted3('<?php echo $student['student_code']; ?>')"
+                                                                            <?php echo (($savedResult['hd_resit3_converted_marks'] ?? '') == -1) ? 'checked' : ''; ?>>
+                                                                        <label class="form-check-label"
+                                                                            for="resit3_ns_<?php echo $student['student_code']; ?>">Not Submitted</label>
+                                                                    </div>
+                                                                </td>
+                                                            <?php endif; ?>
+
+                                                            <!-- ------------------------------------------------------------------------------------------------------  -->
+                                                            <script>
+                                                                function toggleAbsent(studentCode) {
+                                                                    const absentCheckbox = document.getElementById('absent_' + studentCode);
+                                                                    const nsCheckbox = document.getElementById('ns_' + studentCode);
+                                                                    const fullMarks = document.getElementById('fullMarks_' + studentCode);
+                                                                    const convertedMarks = document.getElementById('convertedMarks_' + studentCode);
+                                                                    const grade = document.getElementById('grade_' + studentCode);
+
+                                                                    if (absentCheckbox.checked) {
+                                                                        if (nsCheckbox) nsCheckbox.checked = false;
+                                                                        fullMarks.value = 0;
+                                                                        convertedMarks.value = -2;
+                                                                        grade.value = 'Absent';
+
+                                                                        fullMarks.readOnly = true;
+                                                                        fullMarks.style.backgroundColor = '#f8d7da';
+                                                                        convertedMarks.style.backgroundColor = '#f8d7da';
+                                                                        grade.style.backgroundColor = '#f8d7da';
+                                                                    } else {
+                                                                        fullMarks.readOnly = false;
+                                                                        fullMarks.value = '';
+                                                                        convertedMarks.value = '';
+                                                                        grade.value = '';
+
+                                                                        fullMarks.style.backgroundColor = '';
+                                                                        convertedMarks.style.backgroundColor = '';
+                                                                        grade.style.backgroundColor = '';
+                                                                    }
+
+                                                                    if (typeof calculateDividedMarkAndGrade === "function" && !absentCheckbox.checked) {
+                                                                        calculateDividedMarkAndGrade(fullMarks);
+                                                                    }
+                                                                }
+
+                                                                function toggleNotSubmitted(studentCode) {
+                                                                    const nsCheckbox = document.getElementById('ns_' + studentCode);
+                                                                    const absentCheckbox = document.getElementById('absent_' + studentCode);
+                                                                    const fullMarks = document.getElementById('fullMarks_' + studentCode);
+                                                                    const convertedMarks = document.getElementById('convertedMarks_' + studentCode);
+                                                                    const grade = document.getElementById('grade_' + studentCode);
+
+                                                                    if (nsCheckbox.checked) {
+                                                                        if (absentCheckbox) absentCheckbox.checked = false;
+                                                                        fullMarks.value = 0;
+                                                                        convertedMarks.value = -1;
+                                                                        grade.value = 'Not Submitted';
+                                                                        fullMarks.readOnly = true;
+                                                                        fullMarks.style.backgroundColor = '#f8d7da';
+                                                                        convertedMarks.style.backgroundColor = '#f8d7da';
+                                                                        grade.style.backgroundColor = '#f8d7da';
+                                                                    } else {
+                                                                        fullMarks.readOnly = false;
+                                                                        fullMarks.value = '';
+                                                                        convertedMarks.value = '';
+                                                                        grade.value = '';
+                                                                        fullMarks.style.backgroundColor = '';
+                                                                        convertedMarks.style.backgroundColor = '';
+                                                                        grade.style.backgroundColor = '';
+                                                                    }
+
+                                                                    if (typeof calculateDividedMarkAndGrade === "function" && !nsCheckbox.checked) {
+                                                                        calculateDividedMarkAndGrade(fullMarks);
+                                                                    }
+                                                                }
+
+                                                                function toggleAbsent1(studentCode) {
+                                                                    const absentCheckbox = document.getElementById('resit1_absent_' + studentCode);
+                                                                    const nsCheckbox = document.getElementById('resit1_ns_' + studentCode);
+                                                                    const fullMarks = document.querySelector(`input[name="resit1_fullmarks[${studentCode}]"]`);
+                                                                    const convertedMarks = document.querySelector(`input[name="resit1_dividedmark[${studentCode}]"]`);
+                                                                    const grade = document.querySelector(`input[name="resit1_automated[${studentCode}]"]`);
+
+                                                                    if (absentCheckbox.checked) {
+                                                                        if (nsCheckbox) nsCheckbox.checked = false;
+                                                                        fullMarks.value = 0;
+                                                                        convertedMarks.value = -2;
+                                                                        grade.value = 'Absent';
+                                                                        fullMarks.readOnly = true;
+                                                                        fullMarks.style.backgroundColor = '#f8d7da';
+                                                                        convertedMarks.style.backgroundColor = '#f8d7da';
+                                                                        grade.style.backgroundColor = '#f8d7da';
+                                                                    } else {
+                                                                        fullMarks.readOnly = false;
+                                                                        fullMarks.value = '';
+                                                                        convertedMarks.value = '';
+                                                                        grade.value = '';
+                                                                        fullMarks.style.backgroundColor = '';
+                                                                        convertedMarks.style.backgroundColor = '';
+                                                                        grade.style.backgroundColor = '';
+                                                                    }
+
+                                                                    if (typeof calculateResitDividedMarkAndGrade === "function" && !absentCheckbox.checked) {
+                                                                        calculateResitDividedMarkAndGrade(fullMarks);
+                                                                    }
+                                                                }
+
+                                                                function toggleNotSubmitted1(studentCode) {
+                                                                    const nsCheckbox = document.getElementById('resit1_ns_' + studentCode);
+                                                                    const absentCheckbox = document.getElementById('resit1_absent_' + studentCode);
+                                                                    const fullMarks = document.querySelector(`input[name="resit1_fullmarks[${studentCode}]"]`);
+                                                                    const convertedMarks = document.querySelector(`input[name="resit1_dividedmark[${studentCode}]"]`);
+                                                                    const grade = document.querySelector(`input[name="resit1_automated[${studentCode}]"]`);
+
+                                                                    if (nsCheckbox.checked) {
+                                                                        if (absentCheckbox) absentCheckbox.checked = false;
+                                                                        fullMarks.value = 0;
+                                                                        convertedMarks.value = -1;
+                                                                        grade.value = 'Not Submitted';
+                                                                        fullMarks.readOnly = true;
+                                                                        fullMarks.style.backgroundColor = '#f8d7da';
+                                                                        convertedMarks.style.backgroundColor = '#f8d7da';
+                                                                        grade.style.backgroundColor = '#f8d7da';
+                                                                    } else {
+                                                                        fullMarks.readOnly = false;
+                                                                        fullMarks.value = '';
+                                                                        convertedMarks.value = '';
+                                                                        grade.value = '';
+                                                                        fullMarks.style.backgroundColor = '';
+                                                                        convertedMarks.style.backgroundColor = '';
+                                                                        grade.style.backgroundColor = '';
+                                                                    }
+
+                                                                    if (typeof calculateResitDividedMarkAndGrade === "function" && !nsCheckbox.checked) {
+                                                                        calculateResitDividedMarkAndGrade(fullMarks);
+                                                                    }
+                                                                }
+
+                                                                function toggleAbsent2(studentCode) {
+                                                                    const absentCheckbox = document.getElementById('resit2_absent_' + studentCode);
+                                                                    const nsCheckbox = document.getElementById('resit2_ns_' + studentCode);
+                                                                    const fullMarks = document.querySelector(`input[name="resit2_fullmarks[${studentCode}]"]`);
+                                                                    const convertedMarks = document.querySelector(`input[name="resit2_dividedmark[${studentCode}]"]`);
+                                                                    const grade = document.querySelector(`input[name="resit2_automated[${studentCode}]"]`);
+
+                                                                    if (absentCheckbox.checked) {
+                                                                        if (nsCheckbox) nsCheckbox.checked = false;
+                                                                        fullMarks.value = 0;
+                                                                        convertedMarks.value = -2;
+                                                                        grade.value = 'Absent';
+                                                                        fullMarks.readOnly = true;
+                                                                        fullMarks.style.backgroundColor = '#f8d7da';
+                                                                        convertedMarks.style.backgroundColor = '#f8d7da';
+                                                                        grade.style.backgroundColor = '#f8d7da';
+                                                                    } else {
+                                                                        fullMarks.readOnly = false;
+                                                                        fullMarks.value = '';
+                                                                        convertedMarks.value = '';
+                                                                        grade.value = '';
+                                                                        fullMarks.style.backgroundColor = '';
+                                                                        convertedMarks.style.backgroundColor = '';
+                                                                        grade.style.backgroundColor = '';
+                                                                    }
+
+                                                                    if (typeof calculateResitDividedMarkAndGrade2 === "function" && !absentCheckbox.checked) {
+                                                                        calculateResitDividedMarkAndGrade2(fullMarks);
+                                                                    }
+                                                                }
+
+                                                                function toggleNotSubmitted2(studentCode) {
+                                                                    const nsCheckbox = document.getElementById('resit2_ns_' + studentCode);
+                                                                    const absentCheckbox = document.getElementById('resit2_absent_' + studentCode);
+                                                                    const fullMarks = document.querySelector(`input[name="resit2_fullmarks[${studentCode}]"]`);
+                                                                    const convertedMarks = document.querySelector(`input[name="resit2_dividedmark[${studentCode}]"]`);
+                                                                    const grade = document.querySelector(`input[name="resit2_automated[${studentCode}]"]`);
+
+                                                                    if (nsCheckbox.checked) {
+                                                                        if (absentCheckbox) absentCheckbox.checked = false;
+                                                                        fullMarks.value = 0;
+                                                                        convertedMarks.value = -1;
+                                                                        grade.value = 'Not Submitted';
+                                                                        fullMarks.readOnly = true;
+                                                                        fullMarks.style.backgroundColor = '#f8d7da';
+                                                                        convertedMarks.style.backgroundColor = '#f8d7da';
+                                                                        grade.style.backgroundColor = '#f8d7da';
+                                                                    } else {
+                                                                        fullMarks.readOnly = false;
+                                                                        fullMarks.value = '';
+                                                                        convertedMarks.value = '';
+                                                                        grade.value = '';
+                                                                        fullMarks.style.backgroundColor = '';
+                                                                        convertedMarks.style.backgroundColor = '';
+                                                                        grade.style.backgroundColor = '';
+                                                                    }
+
+                                                                    if (typeof calculateResitDividedMarkAndGrade2 === "function" && !nsCheckbox.checked) {
+                                                                        calculateResitDividedMarkAndGrade2(fullMarks);
+                                                                    }
+                                                                }
+
+                                                                function toggleAbsent3(studentCode) {
+                                                                    const absentCheckbox = document.getElementById('resit3_absent_' + studentCode);
+                                                                    const nsCheckbox = document.getElementById('resit3_ns_' + studentCode);
+                                                                    const fullMarks = document.querySelector(`input[name="resit3_fullmarks[${studentCode}]"]`);
+                                                                    const convertedMarks = document.querySelector(`input[name="resit3_dividedmark[${studentCode}]"]`);
+                                                                    const grade = document.querySelector(`input[name="resit3_automated[${studentCode}]"]`);
+
+                                                                    if (absentCheckbox.checked) {
+                                                                        if (nsCheckbox) nsCheckbox.checked = false;
+                                                                        fullMarks.value = 0;
+                                                                        convertedMarks.value = -2;
+                                                                        grade.value = 'Absent';
+                                                                        fullMarks.readOnly = true;
+                                                                        fullMarks.style.backgroundColor = '#f8d7da';
+                                                                        convertedMarks.style.backgroundColor = '#f8d7da';
+                                                                        grade.style.backgroundColor = '#f8d7da';
+                                                                    } else {
+                                                                        fullMarks.readOnly = false;
+                                                                        fullMarks.value = '';
+                                                                        convertedMarks.value = '';
+                                                                        grade.value = '';
+                                                                        fullMarks.style.backgroundColor = '';
+                                                                        convertedMarks.style.backgroundColor = '';
+                                                                        grade.style.backgroundColor = '';
+                                                                    }
+
+                                                                    if (typeof calculateResitDividedMarkAndGrade3 === "function" && !absentCheckbox.checked) {
+                                                                        calculateResitDividedMarkAndGrade3(fullMarks);
+                                                                    }
+                                                                }
+
+                                                                function toggleNotSubmitted3(studentCode) {
+                                                                    const nsCheckbox = document.getElementById('resit3_ns_' + studentCode);
+                                                                    const absentCheckbox = document.getElementById('resit3_absent_' + studentCode);
+                                                                    const fullMarks = document.querySelector(`input[name="resit3_fullmarks[${studentCode}]"]`);
+                                                                    const convertedMarks = document.querySelector(`input[name="resit3_dividedmark[${studentCode}]"]`);
+                                                                    const grade = document.querySelector(`input[name="resit3_automated[${studentCode}]"]`);
+
+                                                                    if (nsCheckbox.checked) {
+                                                                        if (absentCheckbox) absentCheckbox.checked = false;
+                                                                        fullMarks.value = 0;
+                                                                        convertedMarks.value = -1;
+                                                                        grade.value = 'Not Submitted';
+                                                                        fullMarks.readOnly = true;
+                                                                        fullMarks.style.backgroundColor = '#f8d7da';
+                                                                        convertedMarks.style.backgroundColor = '#f8d7da';
+                                                                        grade.style.backgroundColor = '#f8d7da';
+                                                                    } else {
+                                                                        fullMarks.readOnly = false;
+                                                                        fullMarks.value = '';
+                                                                        convertedMarks.value = '';
+                                                                        grade.value = '';
+                                                                        fullMarks.style.backgroundColor = '';
+                                                                        convertedMarks.style.backgroundColor = '';
+                                                                        grade.style.backgroundColor = '';
+                                                                    }
+
+                                                                    if (typeof calculateResitDividedMarkAndGrade3 === "function" && !nsCheckbox.checked) {
+                                                                        calculateResitDividedMarkAndGrade3(fullMarks);
+                                                                    }
+                                                                }
+
+                                                                // Initialize HD fields styling on load
+                                                                function initializeHDStyles() {
+                                                                    const rows = document.querySelectorAll('#studentsTable tbody tr');
+                                                                    rows.forEach(row => {
+                                                                        const studentCodeMatch = row.querySelector('input[name^="fullmarks"]')?.name.match(/\[(.*?)\]/);
+                                                                        if (studentCodeMatch) {
+                                                                            const studentCode = studentCodeMatch[1];
+                                                                            
+                                                                            // Main
+                                                                            const absentCb = document.getElementById('absent_' + studentCode);
+                                                                            const nsCb = document.getElementById('ns_' + studentCode);
+                                                                            if (absentCb?.checked || nsCb?.checked) {
+                                                                                const fm = document.getElementById('fullMarks_' + studentCode);
+                                                                                const cm = document.getElementById('convertedMarks_' + studentCode);
+                                                                                const gi = document.getElementById('grade_' + studentCode);
+                                                                                if (fm) {
+                                                                                    fm.readOnly = true;
+                                                                                    fm.style.backgroundColor = '#f8d7da';
+                                                                                }
+                                                                                if (cm) cm.style.backgroundColor = '#f8d7da';
+                                                                                if (gi) gi.style.backgroundColor = '#f8d7da';
+                                                                            }
+
+                                                                            // Resit 1
+                                                                            const r1absentCb = document.getElementById('resit1_absent_' + studentCode);
+                                                                            const r1nsCb = document.getElementById('resit1_ns_' + studentCode);
+                                                                            if (r1absentCb?.checked || r1nsCb?.checked) {
+                                                                                const fm = row.querySelector(`input[name="resit1_fullmarks[${studentCode}]"]`);
+                                                                                const cm = row.querySelector(`input[name="resit1_dividedmark[${studentCode}]"]`);
+                                                                                const gi = row.querySelector(`input[name="resit1_automated[${studentCode}]"]`);
+                                                                                if (fm) {
+                                                                                    fm.readOnly = true;
+                                                                                    fm.style.backgroundColor = '#f8d7da';
+                                                                                }
+                                                                                if (cm) cm.style.backgroundColor = '#f8d7da';
+                                                                                if (gi) gi.style.backgroundColor = '#f8d7da';
+                                                                            }
+
+                                                                            // Resit 2
+                                                                            const r2absentCb = document.getElementById('resit2_absent_' + studentCode);
+                                                                            const r2nsCb = document.getElementById('resit2_ns_' + studentCode);
+                                                                            if (r2absentCb?.checked || r2nsCb?.checked) {
+                                                                                const fm = row.querySelector(`input[name="resit2_fullmarks[${studentCode}]"]`);
+                                                                                const cm = row.querySelector(`input[name="resit2_dividedmark[${studentCode}]"]`);
+                                                                                const gi = row.querySelector(`input[name="resit2_automated[${studentCode}]"]`);
+                                                                                if (fm) {
+                                                                                    fm.readOnly = true;
+                                                                                    fm.style.backgroundColor = '#f8d7da';
+                                                                                }
+                                                                                if (cm) cm.style.backgroundColor = '#f8d7da';
+                                                                                if (gi) gi.style.backgroundColor = '#f8d7da';
+                                                                            }
+
+                                                                            // Resit 3
+                                                                            const r3absentCb = document.getElementById('resit3_absent_' + studentCode);
+                                                                            const r3nsCb = document.getElementById('resit3_ns_' + studentCode);
+                                                                            if (r3absentCb?.checked || r3nsCb?.checked) {
+                                                                                const fm = row.querySelector(`input[name="resit3_fullmarks[${studentCode}]"]`);
+                                                                                const cm = row.querySelector(`input[name="resit3_dividedmark[${studentCode}]"]`);
+                                                                                const gi = row.querySelector(`input[name="resit3_automated[${studentCode}]"]`);
+                                                                                if (fm) {
+                                                                                    fm.readOnly = true;
+                                                                                    fm.style.backgroundColor = '#f8d7da';
+                                                                                }
+                                                                                if (cm) cm.style.backgroundColor = '#f8d7da';
+                                                                                if (gi) gi.style.backgroundColor = '#f8d7da';
+                                                                            }
+                                                                        }
+                                                                    });
+                                                                }
+                                                                
+                                                                // Combine initializations
+                                                                window.addEventListener('load', function() {
+                                                                    if (typeof initializeDropdowns === 'function') initializeDropdowns();
+                                                                    initializeHDStyles();
+                                                                });
+                                                            </script>
+                                                            <!-- ------------------------------------------------------------------------------------------------------  -->
+
+                                                            <!-- Conditionally display BBM specific data -->
+                                                            <?php if (strpos($assessment['program_name'], 'Bachelor of Business Management (Hons)') !== false): ?>
+                                                                <!-- <td><?php echo htmlspecialchars($student['bbm_result']); ?></td> -->
+                                                                <td><input type="text"
+                                                                        value="<?php echo htmlspecialchars($student['bbm_result']); ?>"></td>
+                                                            <?php endif; ?>
+
+                                                            <?php
+                                                        }
+                                                        echo "</tr>";
+                                                    }
+
+                                                    echo "</tbody></table>";
+                                                    // Add Save Results button
+                                                    echo "<div class='mt-3 text-end'>
+                                                        <button type='button' id='saveResults' class='btn btn-primary'>
+                                                            <i class='fas fa-save'></i> Save Results
+                                                        </button>
+                                                    </div>";
+
+                                                    echo "</div>"; // Close table-responsive div
+                                                } else {
+                                                    echo "<p>No students allocated for this program and batch.</p>";
+                                                }
+                                                ?>
+                                            </div>
+                                        </div>
+
+                                        <?php
+                                    } else {
+                                        echo "<p>Assessment not found.</p>";
+                                    }
+                                } else {
+                                    echo "<p>No ID provided.</p>";
+                                }
+                                ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Store the main component percentage value from PHP to JavaScript
+    const mainComponentPercentValue = <?php echo json_encode($mainComponentPercentValue); ?>;
+    console.log("Main Component Percentage Value:", mainComponentPercentValue);
+
+    // ------------------------------------------------------------------------------------- 
+    // ------------------------------------------------------------------------------------- 
+    // HD Grade finder 
+    // ------------------------------------------------------------------------------------- 
+    // ------------------------------------------------------------------------------------- 
+    // Function to determine the grade based on divided mark
+    function getGrade(dividedMark) {
+        let grade = '';
+        switch (mainComponentPercentValue) {
+            case 20:
+                if (dividedMark < 0) grade = 'Absent';
+                else if (dividedMark <= 5) grade = 'Re-sit';
+                else if (dividedMark <= 9) grade = 'Pending';
+                else if (dividedMark <= 11) grade = 'Pass';
+                else if (dividedMark <= 13) grade = 'Merit';
+                else if (dividedMark <= 20) grade = 'Distinction';
+                break;
+            case 25:
+                if (dividedMark <= 0) grade = 'Absent';
+                else if (dividedMark <= 7) grade = 'Re-sit';
+                else if (dividedMark <= 12) grade = 'Pending';
+                else if (dividedMark <= 14) grade = 'Pass';
+                else if (dividedMark <= 17) grade = 'Merit';
+                else if (dividedMark <= 25) grade = 'Distinction';
+                break;
+            case 40:
+                if (dividedMark < 0) grade = 'Absent';
+                else if (dividedMark <= 11) grade = 'Re-sit';
+                else if (dividedMark <= 19) grade = 'Pending';
+                else if (dividedMark <= 23) grade = 'Pass';
+                else if (dividedMark <= 27) grade = 'Merit';
+                else if (dividedMark <= 40) grade = 'Distinction';
+                break;
+            case 50:
+                if (dividedMark < 0) grade = 'Absent';
+                else if (dividedMark <= 14) grade = 'Re-sit'; // 0- 14
+                else if (dividedMark <= 24) grade = 'Pending'; // 15 - 24 
+                else if (dividedMark <= 29) grade = 'Pass'; // 25 - 29
+                else if (dividedMark <= 34) grade = 'Merit'; // 30 - 34
+                else if (dividedMark <= 50) grade = 'Distinction'; // 35 - 50
+                break;
+            case 60:
+                if (dividedMark < 0) grade = 'Absent';
+                else if (dividedMark <= 17) grade = 'Re-sit';
+                else if (dividedMark <= 29) grade = 'Pending';
+                else if (dividedMark <= 35) grade = 'Pass';
+                else if (dividedMark <= 41) grade = 'Merit';
+                else if (dividedMark <= 60) grade = 'Distinction';
+                break;
+            case 80:
+                if (dividedMark < 0) grade = 'Absent';
+                else if (dividedMark <= 23) grade = 'Re-sit';
+                else if (dividedMark <= 39) grade = 'Pending';
+                else if (dividedMark <= 47) grade = 'Pass';
+                else if (dividedMark <= 55) grade = 'Merit';
+                else if (dividedMark <= 80) grade = 'Distinction';
+                break;
+            case 100:
+                if (dividedMark < 0) grade = 'Absent'; // 0 - Absent
+                else if (dividedMark <= 29) grade = 'Re-sit'; // 1 - 29
+                else if (dividedMark <= 49) grade = 'Pending'; // 30 - 49
+                else if (dividedMark <= 59) grade = 'Pass'; // 50 - 59      
+                else if (dividedMark <= 69) grade = 'Merit'; // 60 - 69
+                else if (dividedMark <= 100) grade = 'Distinction'; // 70 - 100 
+                break;
+            default:
+                grade = 'Unknown';
+        }
+        return grade;
+    }
+
+    function calculateDividedMarkAndGrade(input) {
+        const row = input.closest('tr');
+        if (input.id && input.id.indexOf('fullMarks_') === 0) {
+            const studentCode = input.id.substring('fullMarks_'.length);
+            const absentCb = document.getElementById('absent_' + studentCode);
+            const nsCb = document.getElementById('ns_' + studentCode);
+            if (absentCb && absentCb.checked) {
+                const dividedMarkInputA = row.querySelector('.divided-mark');
+                const gradeInputA = row.querySelector('.grade-input');
+                if (dividedMarkInputA) dividedMarkInputA.value = -2;
+                if (gradeInputA) gradeInputA.value = 'Absent';
+                if (dividedMarkInputA) dividedMarkInputA.style.backgroundColor = '#f8d7da';
+                if (gradeInputA) gradeInputA.style.backgroundColor = '#f8d7da';
+                return;
+            }
+            if (nsCb && nsCb.checked) {
+                const dividedMarkInputB = row.querySelector('.divided-mark');
+                const gradeInputB = row.querySelector('.grade-input');
+                if (dividedMarkInputB) dividedMarkInputB.value = -1;
+                if (gradeInputB) gradeInputB.value = 'Not Submitted';
+                if (dividedMarkInputB) dividedMarkInputB.style.backgroundColor = '#f8d7da';
+                if (gradeInputB) gradeInputB.style.backgroundColor = '#f8d7da';
+                return;
+            }
+        }
+        const fullMarks = parseFloat(input.value) || 0;
+        const dividedMarkInput = row.querySelector('.divided-mark');
+        const gradeInput = row.querySelector('.grade-input');
+
+        // Calculate divided mark based on the main component percentage
+        // const dividedMark = (fullMarks * mainComponentPercentValue) / 100;
+
+        const dividedMark = Math.round((fullMarks * mainComponentPercentValue) / 100);
+
+        dividedMarkInput.value = dividedMark;
+
+        // Get the grade based on the divided mark
+        const grade = getGrade(dividedMark);
+        gradeInput.value = grade;
+    }
+
+    function calculateResitDividedMarkAndGrade(input) {
+        const row = input.closest('tr');
+        if (input.name) {
+            const match = input.name.match(/resit1_fullmarks\[(.+)\]/);
+            if (match) {
+                const studentCode = match[1];
+                const absentCb = document.getElementById('resit1_absent_' + studentCode);
+                const nsCb = document.getElementById('resit1_ns_' + studentCode);
+                if (absentCb && absentCb.checked) {
+                    const dm = row.querySelector('.divided-mark-resit1');
+                    const gi = row.querySelector('.grade-input-resit1');
+                    if (dm) dm.value = -2;
+                    if (gi) gi.value = 'Absent';
+                    if (dm) dm.style.backgroundColor = '#f8d7da';
+                    if (gi) gi.style.backgroundColor = '#f8d7da';
+                    return;
+                }
+                if (nsCb && nsCb.checked) {
+                    const dm = row.querySelector('.divided-mark-resit1');
+                    const gi = row.querySelector('.grade-input-resit1');
+                    if (dm) dm.value = -1;
+                    if (gi) gi.value = 'Not Submitted';
+                    if (dm) dm.style.backgroundColor = '#f8d7da';
+                    if (gi) gi.style.backgroundColor = '#f8d7da';
+                    return;
+                }
+            }
+        }
+        const fullMarks = parseInt(input.value, 10) || 0;
+        const dividedMarkInputResit1 = row.querySelector('.divided-mark-resit1');
+        const gradeInputResit1 = row.querySelector('.grade-input-resit1');
+
+        // Calculate divided mark for resit exam based on the percentage
+        const dividedMarkResit1 = Math.round((fullMarks * mainComponentPercentValue) / 100);
+        dividedMarkInputResit1.value = dividedMarkResit1;
+
+        // Get the grade for resit exam
+        const gradeResit1 = getGrade(dividedMarkResit1);
+        gradeInputResit1.value = gradeResit1;
+    }
+
+
+    function calculateResitDividedMarkAndGrade2(input) {
+        const row = input.closest('tr');
+        if (input.name) {
+            const match = input.name.match(/resit2_fullmarks\[(.+)\]/);
+            if (match) {
+                const studentCode = match[1];
+                const absentCb = document.getElementById('resit2_absent_' + studentCode);
+                const nsCb = document.getElementById('resit2_ns_' + studentCode);
+                if (absentCb && absentCb.checked) {
+                    const dm = row.querySelector('.divided-mark-resit2');
+                    const gi = row.querySelector('.grade-input-resit2');
+                    if (dm) dm.value = -2;
+                    if (gi) gi.value = 'Absent';
+                    if (dm) dm.style.backgroundColor = '#f8d7da';
+                    if (gi) gi.style.backgroundColor = '#f8d7da';
+                    return;
+                }
+                if (nsCb && nsCb.checked) {
+                    const dm = row.querySelector('.divided-mark-resit2');
+                    const gi = row.querySelector('.grade-input-resit2');
+                    if (dm) dm.value = -1;
+                    if (gi) gi.value = 'Not Submitted';
+                    if (dm) dm.style.backgroundColor = '#f8d7da';
+                    if (gi) gi.style.backgroundColor = '#f8d7da';
+                    return;
+                }
+            }
+        }
+        const fullMarks = parseInt(input.value, 10) || 0;
+        const dividedMarkInputResit2 = row.querySelector('.divided-mark-resit2');
+        const gradeInputResit2 = row.querySelector('.grade-input-resit2');
+
+        // Calculate divided mark for resit exam based on the percentage
+        const dividedMarkResit2 = Math.round((fullMarks * mainComponentPercentValue) / 100);
+        dividedMarkInputResit2.value = dividedMarkResit2;
+
+        // Get the grade for resit exam
+        const gradeResit2 = getGrade(dividedMarkResit2);
+        gradeInputResit2.value = gradeResit2;
+    }
+
+    function calculateResitDividedMarkAndGrade3(input) {
+        const row = input.closest('tr');
+        if (input.name) {
+            const match = input.name.match(/resit3_fullmarks\[(.+)\]/);
+            if (match) {
+                const studentCode = match[1];
+                const absentCb = document.getElementById('resit3_absent_' + studentCode);
+                const nsCb = document.getElementById('resit3_ns_' + studentCode);
+                if (absentCb && absentCb.checked) {
+                    const dm = row.querySelector('.divided-mark-resit3');
+                    const gi = row.querySelector('.grade-input-resit3');
+                    if (dm) dm.value = -2;
+                    if (gi) gi.value = 'Absent';
+                    if (dm) dm.style.backgroundColor = '#f8d7da';
+                    if (gi) gi.style.backgroundColor = '#f8d7da';
+                    return;
+                }
+                if (nsCb && nsCb.checked) {
+                    const dm = row.querySelector('.divided-mark-resit3');
+                    const gi = row.querySelector('.grade-input-resit3');
+                    if (dm) dm.value = -1;
+                    if (gi) gi.value = 'Not Submitted';
+                    if (dm) dm.style.backgroundColor = '#f8d7da';
+                    if (gi) gi.style.backgroundColor = '#f8d7da';
+                    return;
+                }
+            }
+        }
+        const fullMarks = parseInt(input.value, 10) || 0;
+        const dividedMarkInputResit3 = row.querySelector('.divided-mark-resit3');
+        const gradeInputResit3 = row.querySelector('.grade-input-resit3');
+
+        // Calculate divided mark for resit exam based on the percentage 
+        const dividedMarkResit3 = Math.round((fullMarks * mainComponentPercentValue) / 100);
+        dividedMarkInputResit3.value = dividedMarkResit3;
+
+        // Get the grade for resit exam
+        const gradeResit3 = getGrade(dividedMarkResit3);
+        gradeInputResit3.value = gradeResit3;
+    }
+</script>
+
+
+<!-- DataTables JavaScript -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        $('#studentsTable').DataTable({
+            "paging": true,
+            "searching": true,
+            "lengthChange": true,
+            "pageLength": 100,
+            "responsive": true,
+            "autoWidth": false,
+            "order": [
+                [1, "asc"]
+            ] // Order table by Registration ID column (index 1) ascending
+        });
+    });
+</script>
+
+<!-- DataTables CSS -->
+<link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+
+<!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/js/select2.min .js"></script>
+<!-- <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script> -->
+<!-- <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script> -->
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+
+<!-- Include necessary CSS and JS for Select2 -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        $('.select2').select2();
+
+        // $('#ecmM1').hide();
+
+        $('#saveResults').click(function () {
+            const results = [];
+            const programName = <?php echo json_encode($assessment['program_name']); ?>;
+
+            $('#studentsTable tbody tr').each(function () {
+                const row = $(this);
+                const studentId = row.find('input, select').first().attr('name').match(/\d+/)[0];
+                const studentRegId = row.find('td:eq(1)').text().trim();
+                const comment = row.find('textarea[name^="comment"]').val();
+
+
+                let resultData = {
+                    studentId: studentId,
+                    studentRegId: studentRegId,
+                    comment: comment,
+                    programId: <?php echo $assessment['programme_id']; ?>,
+                    batchId: <?php echo $assessment['batch_id']; ?>,
+                    moduleId: <?php echo $assessment['module_id']; ?>,
+                    mainComponentId: <?php echo $assessment['main_component_id']; ?>,
+                    subComponentId: <?php echo isset($assessment['sub_component_id']) ? $assessment['sub_component_id'] : 'null'; ?>,
+                    result: null,
+                    resit_result_1: null,
+                    resit_result_2: null,
+                    resit_result_3: null,
+                    resit_result_4: null,
+                    fullMarks: null,
+                    convertedMarks: null,
+                    ecm_r1_converted_marks: null,
+                    ecm_r2_converted_marks: null,
+                    ecm_r3_converted_marks: null,
+                    ecm_r4_converted_marks: null,
+                    additional_input: null,
+                    additional_input_r1: null,
+                    additional_input_r2: null,
+                    additional_input_r3: null,
+                    additional_input_r4: null,
+                    hd_full_marks: null,
+                    hd_converted_marks: null,
+                    hd_grade: null,
+                    hd_resit1_full_marks: null,
+                    hd_resit1_converted_marks: null,
+                    hd_resit1_grade: null,
+                    hd_resit2_full_marks: null,
+                    hd_resit2_converted_marks: null,
+                    hd_resit2_grade: null,
+                    hd_resit3_full_marks: null,
+                    hd_resit3_converted_marks: null,
+                    hd_resit3_grade: null
+                };
+
+
+                if (programName.includes('Graduate Diploma') ||
+                    programName.includes('BTEC') ||
+                    programName.includes('International Foundation Diploma (Applied Science) - ATHE Level 3') ||
+                    programName.includes('International Foundation Diploma (Business) - ATHE Level 3')) {
+
+                    resultData.result = row.find('select[name^="grade"]').val() ? row.find('select[name^="grade"]').val() : null;
+                    resultData.resit_result_1 = row.find('select[name^="resit_result_1"]').val() ? row.find('select[name^="resit_result_1"]').val() : null;
+                    resultData.resit_result_2 = row.find('select[name^="resit_result_2"]').val() ? row.find('select[name^="resit_result_2"]').val() : null;
+                    resultData.resit_result_3 = row.find('select[name^="resit_result_3"]').val() ? row.find('select[name^="resit_result_3"]').val() : null;
+                    resultData.resit_result_4 = row.find('select[name^="resit_result_4"]').val() ? row.find('select[name^="resit_result_4"]').val() : null;
+
+                } else if (programName.includes('Executive Certificate')) {
+
+                    resultData.convertedMarks = row.find('.marks-input').val();
+
+
+                    resultData.ecm_r1_converted_marks = row.find('input[name^="marks_resit1"]').val() || null;
+                    resultData.ecm_r2_converted_marks = row.find('input[name^="marks_resit2"]').val() || null;
+                    resultData.ecm_r3_converted_marks = row.find('input[name^="marks_resit3"]').val() || null;
+                    resultData.ecm_r4_converted_marks = row.find('input[name^="marks_resit4"]').val() || null;
+
+                    resultData.additional_input = row.find('input[name^="additional_input"]').val() || null;
+                    resultData.additional_input_r1 = row.find('input[name^="additional_input_r1"]').val();
+                    resultData.additional_input_r2 = row.find('input[name^="additional_input_r2"]').val();
+                    resultData.additional_input_r3 = row.find('input[name^="additional_input_r3"]').val();
+                    resultData.additional_input_r4 = row.find('input[name^="additional_input_r4"]').val();
+
+
+
+                } else if (programName.includes('Higher Diploma') ||
+                    programName.includes('BSc (Hons) in Software Engineering')) {
+
+                    resultData.hd_full_marks = row.find('input[name^="fullmarks"]').val();
+                    
+                    let hd_conv_val = row.find('input[name^="dividedmark"]').val();
+                    if (hd_conv_val === 'Absent') hd_conv_val = -2;
+                    else if (hd_conv_val === 'Not Submitted') hd_conv_val = -1;
+                    resultData.hd_converted_marks = hd_conv_val;
+
+                    resultData.hd_grade = row.find('input.grade-input').val();
+
+                    const hd_resit1_full_marks = row.find('input[name^="resit1_fullmarks"]').val();
+                    let hd_resit1_converted_marks = row.find('input[name^="resit1_dividedmark"]').val();
+                    if (hd_resit1_converted_marks === 'Absent') hd_resit1_converted_marks = -2;
+                    else if (hd_resit1_converted_marks === 'Not Submitted') hd_resit1_converted_marks = -1;
+
+                    const hd_resit1_grade_val = row.find('input[name^="resit1_automated"]').val();
+                    if (hd_resit1_full_marks !== '' || hd_resit1_converted_marks !== '' || hd_resit1_grade_val !== '') {
+                        resultData.hd_resit1_full_marks = hd_resit1_full_marks;
+                        resultData.hd_resit1_converted_marks = hd_resit1_converted_marks;
+                        resultData.hd_resit1_grade = hd_resit1_grade_val;
+                    }
+
+                    const hd_resit2_full_marks = row.find('input[name^="resit2_fullmarks"]').val();
+                    let hd_resit2_converted_marks = row.find('input[name^="resit2_dividedmark"]').val();
+                    if (hd_resit2_converted_marks === 'Absent') hd_resit2_converted_marks = -2;
+                    else if (hd_resit2_converted_marks === 'Not Submitted') hd_resit2_converted_marks = -1;
+
+                    const hd_resit2_grade_val = row.find('input[name^="resit2_automated"]').val();
+                    if (hd_resit2_full_marks !== '' || hd_resit2_converted_marks !== '' || hd_resit2_grade_val !== '') {
+                        resultData.hd_resit2_full_marks = hd_resit2_full_marks;
+                        resultData.hd_resit2_converted_marks = hd_resit2_converted_marks;
+                        resultData.hd_resit2_grade = hd_resit2_grade_val;
+                    }
+
+                    const hd_resit3_full_marks = row.find('input[name^="resit3_fullmarks"]').val();
+                    let hd_resit3_converted_marks = row.find('input[name^="resit3_dividedmark"]').val();
+                    if (hd_resit3_converted_marks === 'Absent') hd_resit3_converted_marks = -2;
+                    else if (hd_resit3_converted_marks === 'Not Submitted') hd_resit3_converted_marks = -1;
+
+                    const hd_resit3_grade_val = row.find('input[name^="resit3_automated"]').val();
+                    if (hd_resit3_full_marks !== '' || hd_resit3_converted_marks !== '' || hd_resit3_grade_val !== '') {
+                        resultData.hd_resit3_full_marks = hd_resit3_full_marks;
+                        resultData.hd_resit3_converted_marks = hd_resit3_converted_marks;
+                        resultData.hd_resit3_grade = hd_resit3_grade_val;
+                    }
+
+                }
+
+                if (resultData.result || resultData.resit_result_1 || resultData.resit_result_2 || resultData.resit_result_3 || resultData.resit_result_4 ||
+                    resultData.fullMarks || resultData.convertedMarks ||
+                    resultData.ecm_r1_converted_marks ||
+                    resultData.additional_input ||
+                    resultData.additional_input_r1 ||
+                    resultData.additional_input_r2 ||
+                    resultData.additional_input_r3 ||
+                    resultData.additional_input_r4 ||
+                    resultData.ecm_r2_converted_marks ||
+                    resultData.ecm_r3_converted_marks ||
+                    resultData.ecm_r4_converted_marks || resultData.hd_full_marks || resultData.hd_converted_marks || resultData.hd_resit1_full_marks || resultData.hd_resit1_converted_marks || resultData.hd_resit1_grade ||
+                    resultData.hd_resit2_full_marks || resultData.hd_resit2_converted_marks || resultData.hd_resit2_grade ||
+                    resultData.hd_resit3_full_marks || resultData.hd_resit3_converted_marks || resultData.hd_resit3_grade) {
+                    results.push(resultData);
+                }
+
+
+            });
+
+            if (results.length === 0) {
+                alert('All results are required before saving.');
+                return;
+            }
+
+            const saveButton = $('#saveResults');
+            saveButton.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...');
+
+            $.ajax({
+                url: 'exam_result_folder/save_results.php',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    results: results,
+                    program_name: <?php echo json_encode($program_data['program_name']); ?>,
+                    description: CKEDITOR.instances.description_editor.getData(),
+                    assessment_id: <?php echo $assessment['id']; ?>
+                }),
+                beforeSend: function () {
+                    console.log("Sending data to server:", {
+                        results: results,
+                        program_name: <?php echo json_encode($program_data['program_name']); ?>,
+                        description: CKEDITOR.instances.description_editor.getData(),
+                        assessment_id: <?php echo $assessment['id']; ?>
+                    });
+                },
+                success: function (response) {
+                    try {
+                        if (typeof response !== "object") {
+                            response = JSON.parse(response);
+                        }
+
+                        console.log("Server Response:", response);
+                        if (response.success) {
+                            console.log("Received program name:", response.program_name);
+                            alert('Results saved successfully for program: ' + response.program_name);
+                            location.reload();
+                        } else {
+                            alert('Error saving results: ' + (response.message || 'Unknown error'));
+                        }
+                    } catch (e) {
+                        console.error("Error parsing response:", e);
+                        alert('Unexpected server response. Please try again.');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error details:', xhr.responseText);
+                    alert('Error saving results. Please try again.');
+                },
+                complete: function () {
+                    saveButton.prop('disabled', false).html('<i class="fas fa-save"></i> Save Results');
+                }
+            });
+        });
+    });
+</script>
+
+<script>
+    function showValues(studentCode, button) {
+        const row = button.closest('tr');
+        const fullMarks = row.querySelector('input[name^="fullmarks"]').value;
+        const dividedMark = row.querySelector('input[name^="dividedmark"]').value;
+
+        const programId = row.getAttribute('data-program-id');
+        const batchId = row.getAttribute('data-batch-id');
+        const moduleId = row.getAttribute('data-module-id');
+        const mainComponentId = row.getAttribute('data-main-component-id');
+        const subComponentId = row.getAttribute('data-sub-component-id');
+
+        alert("Student Code: " + studentCode +
+            "\nProgram ID: " + programId +
+            "\nBatch ID: " + batchId +
+            "\nModule ID: " + moduleId +
+            "\nMain Component ID: " + mainComponentId +
+            "\nSub Component ID: " + subComponentId +
+            "\nFull Marks: " + fullMarks +
+            "\nDivided Mark: " + dividedMark);
+    }
+</script>
+
+<script src="https://cdn.ckeditor.com/4.16.2/standard/ckeditor.js"></script>
+<script>
+    CKEDITOR.replace('description_editor', {
+        readOnly: false,
+        toolbar: [],
+        height: '200px',
+        removePlugins: 'elementspath,resize',
+        allowedContent: true
+    });
+</script>
+
+
+<!-- ---------------------------------------------------------------------------------------------------------------------------------------------------- -->
+<!-- ------------------------------------- ECM resit changes ------------------------------------- -->
+<!-- ---------------------------------------------------------------------------------------------------------------------------------------------------- -->
+<script>
+    function updateMarksInput(selectElem, studentCode) {
+        // Find the input field by the student code in the name attribute
+        // Using querySelector attribute selector for name attribute with the studentCode inside brackets
+        const input = document.querySelector(`input[name='marks[${studentCode}]']`);
+        if (!input) return; // safety check
+
+        if (selectElem.value === 'Not Submitted') {
+            input.value = 'Not Submitted';
+            const additionalInput = document.querySelector(`input[name='additional_input[${studentCode}]']`);
+            if (additionalInput) {
+                additionalInput.value = 'Not Submitted';
+            }
+
+        } else if (selectElem.value === 'Absent') {
+            input.value = 'Absent';
+            const additionalInput = document.querySelector(`input[name='additional_input[${studentCode}]']`);
+            if (additionalInput) {
+                additionalInput.value = 'Absent';
+            }
+        } else if (selectElem.value === 'Resit') {
+            input.value = 'Resit';
+            const additionalInput = document.querySelector(`input[name='additional_input[${studentCode}]']`);
+            if (additionalInput) {
+                additionalInput.value = 'Resit';
+            }
+        } else {
+            input.value = 'ss'; // Clear input if "Select" or empty is chosen
+        }
+    }
+
+
+    function updateMarksInputr1(selectElem, studentCode) {
+        const input = document.querySelector(`input[name='marks_resit1[${studentCode}]']`);
+        if (!input) return;
+
+        if (selectElem.value === 'Not Submitted') {
+            input.value = 'Not Submitted';
+            const additionalInput = document.querySelector(`input[name='additional_input_r1[${studentCode}]']`);
+            if (additionalInput) {
+                additionalInput.value = 'Not Submitted';
+            }
+        } else if (selectElem.value === 'Absent') {
+            input.value = 'Absent';
+            const additionalInput = document.querySelector(`input[name='additional_input_r1[${studentCode}]']`);
+            if (additionalInput) {
+                additionalInput.value = 'Absent';
+            }
+        } else if (selectElem.value === 'Resit') {
+            input.value = 'Resit';
+            const additionalInput = document.querySelector(`input[name='additional_input_r1[${studentCode}]']`);
+            if (additionalInput) {
+                additionalInput.value = 'Resit';
+            }
+        } else {
+            input.value = ''; // Clear input if "Select" or empty is chosen
+        }
+    }
+
+
+    function updateMarksInputr2(selectElem, studentCode) {
+        const input = document.querySelector(`input[name='marks_resit2[${studentCode}]']`);
+        if (!input) return;
+
+        if (selectElem.value === 'Not Submitted') {
+            input.value = 'Not Submitted';
+            const additionalInput = document.querySelector(`input[name='additional_input_r2[${studentCode}]']`);
+            if (additionalInput) {
+                additionalInput.value = 'Not Submitted';
+            }
+        } else if (selectElem.value === 'Absent') {
+            input.value = 'Absent';
+            const additionalInput = document.querySelector(`input[name='additional_input_r2[${studentCode}]']`);
+            if (additionalInput) {
+                additionalInput.value = 'Absent';
+            }
+        } else if (selectElem.value === 'Resit') {
+            input.value = 'Resit';
+            const additionalInput = document.querySelector(`input[name='additional_input_r2[${studentCode}]']`);
+            if (additionalInput) {
+                additionalInput.value = 'Resit';
+            }
+        } else {
+            input.value = ''; // Clear input if "Select" or empty is chosen
+        }
+    }
+
+    function updateMarksInputr3(selectElem, studentCode) {
+        const input = document.querySelector(`input[name='marks_resit3[${studentCode}]']`);
+        if (!input) return;
+
+        if (selectElem.value === 'Not Submitted') {
+            input.value = 'Not Submitted';
+            const additionalInput = document.querySelector(`input[name='additional_input_r3[${studentCode}]']`);
+            if (additionalInput) {
+                additionalInput.value = 'Not Submitted';
+            }
+        } else if (selectElem.value === 'Absent') {
+            input.value = 'Absent';
+            const additionalInput = document.querySelector(`input[name='additional_input_r3[${studentCode}]']`);
+            if (additionalInput) {
+                additionalInput.value = 'Absent';
+            }
+        } else if (selectElem.value === 'Resit') {
+            input.value = 'Resit';
+            const additionalInput = document.querySelector(`input[name='additional_input_r3[${studentCode}]']`);
+            if (additionalInput) {
+                additionalInput.value = 'Resit';
+            }
+        } else {
+            input.value = ''; // Clear input if "Select" or empty is chosen
+        }
+    }
+
+    function updateMarksInputr4(selectElem, studentCode) {
+        const input = document.querySelector(`input[name='marks_resit4[${studentCode}]']`);
+        if (!input) return;
+
+        if (selectElem.value === 'Not Submitted') {
+            input.value = 'Not Submitted';
+            const additionalInput = document.querySelector(`input[name='additional_input_r4[${studentCode}]']`);
+            if (additionalInput) {
+                additionalInput.value = 'Not Submitted';
+            }
+        } else if (selectElem.value === 'Absent') {
+            input.value = 'Absent';
+            const additionalInput = document.querySelector(`input[name='additional_input_r4[${studentCode}]']`);
+            if (additionalInput) {
+                additionalInput.value = 'Absent';
+            }
+        } else if (selectElem.value === 'Resit') {
+            input.value = 'Resit';
+            const additionalInput = document.querySelector(`input[name='additional_input_r4[${studentCode}]']`);
+            if (additionalInput) {
+                additionalInput.value = 'Resit';
+            }
+        } else {
+            input.value = ''; // Clear input if "Select" or empty is chosen
+        }
+    }
+</script>
+<!-- ---------------------------------------------------------------------------------------------------------------------------------------------------- -->
+<!-- ---------------------------------------------------------------------------------------------------------------------------------------------------- -->
+<!-- ---------------------------------------------------------------------------------------------------------------------------------------------------- -->
+
+</body>
+
+</html>
