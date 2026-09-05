@@ -95,8 +95,8 @@ require_once 'PermissionChecking.php';
                     <table class="table table-bordered table-striped" id="studentsDataTable">
                         <thead>
                             <tr>
-                                <th>BMS Registration ID (AG)</th>
-                                <th>Program Registration ID</th>
+                                <th>Student New ID (AG)</th>
+                                <th>BMS Registration Code</th>
                                 <th>Student Code (System)</th>
                                 <th>NIC</th>
                                 <th>Title</th>
@@ -127,24 +127,24 @@ require_once 'PermissionChecking.php';
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/js/select2.min.js"></script>
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
             let dataTable = null;
 
             // Initialize Select2
             $('.select2').select2();
-
-            // Directly load all programs
+            
+             // Directly load all programs
             $.ajax({
                 url: 'Batch_transer/fetch_programs_without_uni.php',
                 type: 'POST',
-                success: function(data) {
+                success: function (data) {
                     $('#programDropdown').html(data).trigger('change');
                 }
             });
 
 
             // Fetch batches based on selected program
-            $('#programDropdown').on('change', function() {
+            $('#programDropdown').on('change', function () {
                 const programId = $(this).val();
                 if (programId) {
                     $.ajax({
@@ -153,7 +153,7 @@ require_once 'PermissionChecking.php';
                         data: {
                             program_id: programId
                         },
-                        success: function(data) {
+                        success: function (data) {
                             $('#batchDropdown').html(data).trigger('change');
                         }
                     });
@@ -163,7 +163,7 @@ require_once 'PermissionChecking.php';
             });
 
             // Submit Button Click Handler
-            $('#submitBtn').on('click', function() {
+            $('#submitBtn').on('click', function () {
                 const $btn = $(this);
                 const filters = {
                     // university_id: 1, 
@@ -195,7 +195,7 @@ require_once 'PermissionChecking.php';
                     url: 'reports/AllStudents/fetch_student_details.php',
                     type: 'POST',
                     data: filters,
-                    success: function(response) {
+                    success: function (response) {
                         $('#resultsBody').html(response);
 
                         // Only initialize DataTable if data is found
@@ -221,7 +221,7 @@ require_once 'PermissionChecking.php';
                                         orientation: 'landscape',
                                         pageSize: 'A4',
                                         title: 'Student Details',
-                                        customize: function(doc) {
+                                        customize: function (doc) {
                                             doc.pageMargins = [20, 20, 20, 20];
                                         }
                                     },
@@ -231,7 +231,7 @@ require_once 'PermissionChecking.php';
                                         orientation: 'landscape',
                                         pageSize: 'A4',
                                         title: 'Student Details',
-                                        customize: function(win) {
+                                        customize: function (win) {
                                             $(win.document.body)
                                                 .css('font-size', '12px')
                                                 .find('h1')
@@ -251,11 +251,11 @@ require_once 'PermissionChecking.php';
                             });
                         }
                     },
-                    error: function(xhr, status, error) {
+                    error: function (xhr, status, error) {
                         console.error('Error:', error);
                         $('#resultsBody').html('<tr><td colspan="17" class="text-center text-danger">Error loading data: ' + error + '</td></tr>');
                     },
-                    complete: function() {
+                    complete: function () {
                         // Re-enable button
                         $btn.prop('disabled', false).html('Submit');
                     }
@@ -263,7 +263,7 @@ require_once 'PermissionChecking.php';
             });
 
             // Add error handling for empty or invalid responses
-            $(document).ajaxError(function(event, jqxhr, settings, thrownError) {
+            $(document).ajaxError(function (event, jqxhr, settings, thrownError) {
                 console.error('Ajax error:', thrownError);
             });
 

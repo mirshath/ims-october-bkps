@@ -18,7 +18,7 @@ JOIN students s
   ON ap.programme_code = p.program_code
 JOIN batch_table b
   ON ap.batch_id = b.id
-  WHERE ap.status NOT IN ('batchSwap', 'completed', 'inactive')
+  WHERE ap.status NOT IN ('batchSwap', 'completed', 'inactive','progressionTo','ReRegister','drop')
 ";
 //   WHERE ap.status != 'batchSwap' OR ap.status != 'completed'
 
@@ -26,26 +26,25 @@ $result = mysqli_query($conn, $sql);
 
 // Check for query errors
 if (!$result) {
-    echo json_encode([
-        'error' => true,
-        'message' => 'Database error: ' . mysqli_error($conn)
-    ]);
-    exit;
+  echo json_encode([
+    'error' => true,
+    'message' => 'Database error: ' . mysqli_error($conn)
+  ]);
+  exit;
 }
 
 $students = [];
 while ($row = mysqli_fetch_assoc($result)) {
-    $students[] = $row;
+  $students[] = $row;
 }
 
 // Check if any students were found
 if (empty($students)) {
-    echo json_encode([
-        'error' => true,
-        'message' => 'No students found with payment plans'
-    ]);
-    exit;
+  echo json_encode([
+    'error' => true,
+    'message' => 'No students found with payment plans'
+  ]);
+  exit;
 }
 
 echo json_encode($students);
-?>
