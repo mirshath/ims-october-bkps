@@ -286,7 +286,7 @@ require 'vendor/autoload.php';
                                         </div>
 
                                         <div class="mb-3 row" id="last_reg_ID_row" style="color: red;">
-                                            <label for="last_student_reg_id" class="col-sm-3 col-form-label fw-bolder">Last Program Registration ID:</label>
+                                            <label for="last_student_reg_id" class="col-sm-3 col-form-label fw-bolder">Last Student Reg ID:</label>
                                             <div class="col-sm-9">
                                                 <input type="text" style="color: red;" class="form-control" id="last_student_reg_id" readonly>
                                             </div>
@@ -294,7 +294,7 @@ require 'vendor/autoload.php';
 
                                         <!-- <p style="color: red; font-weight: bolder;" id="bms_automatic_ID">here wanna allocate the BMS Registration ID </p> -->
                                         <div class="mb-3 row align-items-center" id="currect_reg_id_row">
-                                            <label for="specific_student_reg_id" class="col-sm-3 col-form-label">Program Registration ID:</label>
+                                            <label for="specific_student_reg_id" class="col-sm-3 col-form-label">BMS Registration ID:</label>
                                             <div class="col-sm-9">
                                                 <input type="text" class="form-control" id="specific_student_reg_id">
                                             </div>
@@ -305,7 +305,7 @@ require 'vendor/autoload.php';
                                         <!-- -----------------------------------------------------------------  -->
 
                                         <div class="mb-3 row" id="Last_new_std_reg_id_row">
-                                            <label for="Last_new_std_reg_ids" class="col-sm-3 col-form-label" style="color: red; font-weight: bolder;">Last BMS Registration ID:</label>
+                                            <label for="Last_new_std_reg_ids" class="col-sm-3 col-form-label" style="color: red; font-weight: bolder;">Last Entered New Student Reg ID:</label>
                                             <div class="col-sm-9">
                                                 <input type="text" style="color: red;" class="form-control" id="Last_new_std_reg_id" readonly>
                                             </div>
@@ -319,7 +319,7 @@ require 'vendor/autoload.php';
                                         </div>
 
                                         <div class="mb-3 row" id="already_have_new_id_row" style="display:none;">
-                                            <label class="col-sm-3 col-form-label" style="color: green; font-weight: bolder;">BMS Registration ID:</label>
+                                            <label class="col-sm-3 col-form-label" style="color: green; font-weight: bolder;">Already have New ID :</label>
                                             <div class="col-sm-9">
                                                 <input type="text" class="form-control" style="color: green; font-weight: bolder;" id="already_have_new_id_value" readonly>
                                             </div>

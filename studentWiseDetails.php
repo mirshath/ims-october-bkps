@@ -247,7 +247,7 @@ require_once 'PermissionChecking.php';
                                                     <thead class="table-light">
                                                         <tr>
                                                             <th>BMS Registration ID</th>
-                                                            <th>BMS New Registration ID</th>
+                                                            <th>Program Registration ID</th>
                                                             <th>Program & Batch</th>
                                                             <th>Status</th>
                                                         </tr>
@@ -261,8 +261,8 @@ require_once 'PermissionChecking.php';
                                                             $programs[] = $program_data; // Store for module display
                                                         ?>
                                                             <tr>
-                                                                <td><?php echo $program_data['student_registration_id']; ?></td>
                                                                 <td><?php echo $program_data['new_student_registration_id']; ?></td>
+                                                                <td><?php echo $program_data['student_registration_id']; ?></td>
                                                                 <td>
                                                                     <?php if ($row_count === 1) { ?>
                                                                         <strong>Program:</strong> <?php echo $program_data['program_name']; ?><br>

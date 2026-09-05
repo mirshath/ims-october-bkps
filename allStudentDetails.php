@@ -73,11 +73,13 @@ require_once 'PermissionChecking.php';
                         </div>
                         <div class="col-md-8">
                             <select id="statusDropdown" class="form-select select2">
-                                <option value="">Select Status</option>
                                 <option value="active" selected>Active</option>
-                                <option value="drop">Dropped</option>
                                 <option value="transferred">Transferred</option>
                                 <option value="completed">Completed</option>
+                                <option value="progressionTo">Progression</option>
+                                <option value="drop">Dropped</option>
+                                <option value="ReRegister">Re-Register</option>
+                                <option value="batchSwap">Batch Swap</option>
                             </select>
                         </div>
                     </div>
