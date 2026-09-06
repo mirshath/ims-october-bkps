@@ -108,7 +108,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $checkStmt->close();
     }
 
-
     // Insert into allocate_programme
     $allocateQuery = "INSERT INTO allocate_programme 
                       (student_code, university_id, programme_code, batch_id, student_registration_id, new_student_registration_id, compulsory_sub, entered_by) 
@@ -352,15 +351,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // ------------------------------------------------------------------------------------------------------ 
 
             // ======= STUDENT Progression ENTRY ======
-            $query = "INSERT INTO program_progression_table 
+            $query = "INSERT INTO program_reregister_table 
                 (student_id, from_student, from_university, from_programme, from_batch, 
                  from_registration_code, university_id, programme_code, batch_id, allocated_id, entered_by, OLD_registration_id) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             if ($stmt = $conn->prepare($query)) {
-                // Types: i=int, s=string
-                // 1. student_id (i), 2. from_student (s), 3. from_university (s), 4. from_programme (s), 5. from_batch (s), 
-                // 6. from_registration_code (s) [NEW CODE], 7. university_id (i), 8. programme_code (i), 9. batch_id (i), 
-                // 10. allocated_id (i), 11. entered_by (s), 12. OLD_registration_id (s) [OLD CODE]
+
                 $stmt->bind_param(
                     "isssssiiiiss",
                     $student_id,
@@ -393,14 +389,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
 
                     echo "<script>
-                        alert('Student Program Progression, Allocation & Payment Plan have been successfully recorded!');
+                        alert('Student Program Re Register, Allocation & Payment Plan have been successfully recorded!');
                         window.location.href = window.location.href;
                     </script>";
                 }
                 $stmt->close();
             }
-
-            // ----------------------------------------------------------------------------------------------------------------------------- 
 
             // ----------------------------------------------------------------------------------------------------------------------------- 
 
@@ -427,11 +421,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <!-- Begin Page Content -->
             <div class="p-3">
                 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                    <h4 class="h4 mb-0 text-gray-800">Program Progression</h4>
+                    <h4 class="h4 mb-0 text-gray-800">Program Re Register</h4>
                 </div>
 
                 <!-- Filter Form -->
-                <form action="programProgression.php" method="POST">
+                <form action="re_register.php" method="POST">
                     <div class="row mb-5">
                         <div class="col-md-6 mb-3">
                             <label for="select_student" class="form-label">Select Student:</label>
@@ -443,7 +437,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     SELECT s.*, s.student_code, s.nic, s.first_name, s.last_name
                                     FROM students s
                                     INNER JOIN allocate_programme a ON a.student_code = s.student_code
-                                    WHERE a.status = 'progressionTo'  AND s.transfer_status = 0
+                                    WHERE a.status = 'ReRegister'  AND s.transfer_status = 0
                                     ";
                                 $result = $conn->query($query);
                                 while ($row = $result->fetch_assoc()) {
@@ -527,19 +521,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="col-md-6">
                             <div class="card">
                                 <div class="card-header bg-dark text-white">
-                                    Progression To
+                                    Re Register To
                                 </div>
                                 <div class="card-body">
-
-                                    <div class="form-group">
-                                        <div class="row">
-                                            <div class="col-md-4"> <label for="university">University</label></div>
-                                            <div class="col-md-8">
-                                                <select id="university" name="university_id"
-                                                    class="form-control select2" required></select>
-                                            </div>
-                                        </div>
-                                    </div>
 
                                     <div class="form-group">
                                         <div class="row">
@@ -578,7 +562,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <div class="form-group">
                                         <div class="row">
                                             <div class="col-md-4">
-                                                <label for="from_registration_code"><s>Current Registration Last Code</s>
+                                                <label for="from_registration_code"><s>Current Registration Last
+                                                        Code</s>
                                                 </label>
                                             </div>
                                             <div class="col-md-8">
@@ -592,7 +577,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <div class="form-group fw-bolder">
                                         <div class="row">
                                             <div class="col-md-4">
-                                                <label for="from_registration_code"> <s> Registration Code New For Selected
+                                                <label for="from_registration_code"> <s> Registration Code New For
+                                                        Selected
                                                         Batch</s></label>
                                             </div>
                                             <div class="col-md-8">
@@ -603,6 +589,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             </div>
                                         </div>
                                     </div>
+                                    <!-- New BMS Registration Code Auto Gen -->
                                     <!-- New BMS Registration Code Auto Gen -->
 
 
@@ -682,9 +669,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                             <div class="mt-4 text-right">
                                 <button type="submit" class="btn btn-primary" id="transfer_sbt_btn">Submit Program
-                                    Progression</button>
+                                    Re Register</button>
                             </div>
                         </div>
+
                     </div>
                 </form>
             </div>
@@ -765,51 +753,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 type: 'GET',
                 success: function(data) {
                     $('#university').html(data);
-                    $('#programme').html('<option value="">-- Select Programme --</option>');
+                }
+            });
+
+            // Batch_transer\fetch_programs_all_programs_without_uni.php
+            $.ajax({
+                url: 'Batch_transer/fetch_programs_all_programs_without_uni.php',
+                type: 'POST',
+                success: function(data) {
+                    $('#programme').html(data);
                     $('#batch').html('<option value="">-- Select Batch --</option>');
                 }
             });
 
 
-            // When university is selected, load programs
-            $('#university').on('change', function() {
-                const universityId = $(this).val();
-                $('#programme').html('<option value="">-- Select Programme --</option>');
-                $('#batch').html('<option value="">-- Select Batch --</option>');
-                $('#compulsory_subjects').html('');
-
-                if (universityId) {
-                    $.ajax({
-                        url: 'Batch_transer/fetch_programs_all_programs.php',
-                        type: 'POST',
-                        data: {
-                            university_id: universityId
-                        },
-                        success: function(data) {
-                            $('#programme').html(data);
-                        }
-                    });
-                }
-            });
-
             $('#programme').on('change', function() {
                 const programId = $(this).val();
-                const universityId = $('#university').val();
                 // Get display text of selected program option
                 const programText = $(this).find("option:selected").text();
 
-                if (programId && universityId) {
+                if (programId) {
                     $.ajax({
-                        url: 'Batch_transer/fetch_batches.php',
+                        url: 'Batch_transer/fetch_batches_without_uni.php',
                         type: 'POST',
                         data: {
-                            program_id: programId,
-                            university_id: universityId
+                            program_id: programId
                         },
                         success: function(data) {
                             $('#batch').html(data);
                             // Show more detailed info in the console
-                            console.log("Selected University ID :", universityId);
                             console.log("Selected Program Name :", programText);
                             console.log("Selected Program ID :", programId);
                         }
@@ -819,6 +791,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             });
 
+            // -----------------------------------    15-12-2025   Changing    --------------------------------------------------------------- 
             // -------------------------------------------------------------------------------------------------- 
             //   Use new fetch_registration_ids.php output structure for current/next registration codes (see file lines 1-36)
             $(document).on('change', '#batch', function() {
@@ -969,7 +942,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 console.log('Batch ID OLD:', response.batch_id);
                                 $('#batch_old_code').val(response.batch_id);
 
-
                                 // Set default red background color
                                 $('#from_registration_code_old').css({
                                     'background-color': 'red',
@@ -1010,14 +982,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $('#programme').on('change', function() {
                 const programId = $(this).val();
-                const universityId = $('#university').val();
-                if (programId && universityId) {
+                if (programId) {
                     $.ajax({
-                        url: 'Batch_transer/fetch_subjects.php',
+                        url: 'Batch_transer/fetch_subjects_without_uni.php',
                         type: 'POST',
                         data: {
-                            program_id: programId,
-                            university_id: universityId
+                            program_id: programId
                         },
                         success: function(data) {
                             const subjects = JSON.parse(data);
@@ -1096,6 +1066,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             }
         });
+
         // ----------------------------- 
 
         $('#programme, #batch').change(function() {

@@ -516,7 +516,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                                     <div class="form-group">
                                         <div class="row">
+                                            <!-- Paid amount initial -->
+                                            <!-- <div class="col-md-4">
+                                                <label for="paid_amount_initial" class="text-danger">Paid Amount (initial)</label>
+                                                <input type="text" id="paid_amount_initial" name="paid_amount_initial" class="form-control" placeholder="Paid Amount initial" readonly>
+                                            </div> -->
 
+                                            <!-- Paid amount installment -->
+                                            <!-- <div class="col-md-4">
+                                                <label for="paid_amount_installment" class="text-danger">Paid Amount (installment)</label>
+                                                <input type="text" id="paid_amount_installment" name="paid_amount_installment" class="form-control" placeholder="Paid Amount installment" readonly>
+                                            </div> -->
+
+                                            <!-- Paid amount uni -->
+                                            <!-- <div class="col-md-4">
+                                                <label for="paid_amount_uni" class="text-danger">Paid Amount (uni)</label>
+                                                <input type="text" id="paid_amount_uni" name="paid_amount_uni" class="form-control" placeholder="Paid Amount Uni" readonly>
+                                            </div> -->
                                         </div>
                                     </div>
                                 </div>
@@ -530,16 +546,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     Progression To
                                 </div>
                                 <div class="card-body">
-
-                                    <div class="form-group">
-                                        <div class="row">
-                                            <div class="col-md-4"> <label for="university">University</label></div>
-                                            <div class="col-md-8">
-                                                <select id="university" name="university_id"
-                                                    class="form-control select2" required></select>
-                                            </div>
-                                        </div>
-                                    </div>
 
                                     <div class="form-group">
                                         <div class="row">
@@ -603,6 +609,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             </div>
                                         </div>
                                     </div>
+                                    <!-- New BMS Registration Code Auto Gen -->
                                     <!-- New BMS Registration Code Auto Gen -->
 
 
@@ -711,6 +718,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
             </div>
+
+
         </div>
     </div>
 
@@ -765,51 +774,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 type: 'GET',
                 success: function(data) {
                     $('#university').html(data);
-                    $('#programme').html('<option value="">-- Select Programme --</option>');
-                    $('#batch').html('<option value="">-- Select Batch --</option>');
                 }
             });
 
+            // Use fetch_programs_all_programs.php as in lines 22-37 (ignoring university_id filter)
+            // Directly load all programs for programme select on page load (no need for university select/change)
 
-            // When university is selected, load programs
-            $('#university').on('change', function() {
-                const universityId = $(this).val();
-                $('#programme').html('<option value="">-- Select Programme --</option>');
-                $('#batch').html('<option value="">-- Select Batch --</option>');
-                $('#compulsory_subjects').html('');
-
-                if (universityId) {
-                    $.ajax({
-                        url: 'Batch_transer/fetch_programs_all_programs.php',
-                        type: 'POST',
-                        data: {
-                            university_id: universityId
-                        },
-                        success: function(data) {
-                            $('#programme').html(data);
-                        }
-                    });
+            // Batch_transer\fetch_programs_all_programs_without_uni.php
+            $.ajax({
+                url: 'Batch_transer/fetch_programs_all_programs_without_uni.php',
+                type: 'POST',
+                success: function(data) {
+                    $('#programme').html(data);
+                    $('#batch').html('<option value="">-- Select Batch --</option>');
                 }
             });
 
             $('#programme').on('change', function() {
                 const programId = $(this).val();
-                const universityId = $('#university').val();
                 // Get display text of selected program option
                 const programText = $(this).find("option:selected").text();
 
-                if (programId && universityId) {
+                if (programId) {
                     $.ajax({
-                        url: 'Batch_transer/fetch_batches.php',
+                        url: 'Batch_transer/fetch_batches_without_uni.php',
                         type: 'POST',
                         data: {
-                            program_id: programId,
-                            university_id: universityId
+                            program_id: programId
                         },
                         success: function(data) {
                             $('#batch').html(data);
                             // Show more detailed info in the console
-                            console.log("Selected University ID :", universityId);
                             console.log("Selected Program Name :", programText);
                             console.log("Selected Program ID :", programId);
                         }
@@ -976,6 +971,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     'color': 'white'
                                 });
 
+                                // let totalInstallment = 0;
+
+                                // for (const [installment, amount] of Object.entries(response.installments)) {
+                                //     const key = installment.toLowerCase().replace(/\s/g, ''); // remove spaces and lowercase
+                                //     if (key === 'initialpayment') {
+                                //         // Initial Payment goes here
+                                //         $('#paid_amount_initial').val(amount).prop('readonly', true);
+                                //     } else {
+                                //         // Sum all other installments
+                                //         totalInstallment += parseFloat(amount);
+                                //     }
+                                //     console.log(`${installment}: ${amount}`);
+                                // }
+
+                                // Set the summed total to the installment input
+                                // $('#paid_amount_installment').val(totalInstallment.toFixed(2)).prop('readonly', true);
+
+                                // Set university total
+                                // console.log('Total University Paid:', response.total_uni_paid);
+                                // $('#paid_amount_uni').val(response.total_uni_paid).prop('readonly', true);
+
 
                                 // Real-time checking for registration code
                                 $('#from_registration_code_old').on('input', function() {
@@ -1010,14 +1026,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $('#programme').on('change', function() {
                 const programId = $(this).val();
-                const universityId = $('#university').val();
-                if (programId && universityId) {
+                if (programId) {
                     $.ajax({
-                        url: 'Batch_transer/fetch_subjects.php',
+                        url: 'Batch_transer/fetch_subjects_without_uni.php',
                         type: 'POST',
                         data: {
-                            program_id: programId,
-                            university_id: universityId
+                            program_id: programId
                         },
                         success: function(data) {
                             const subjects = JSON.parse(data);

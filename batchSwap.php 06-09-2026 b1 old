@@ -13,12 +13,12 @@ require_once 'PermissionChecking.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Get form data
-    $student_id = $_POST['student_id'];
-    $from_student = $_POST['from_student'];
-    $from_university = $_POST['from_university'];
-    $from_programme = $_POST['from_programme'];
-    $from_batch = $_POST['from_batch'];
-    $from_registration_code = $_POST['from_registration_code'];  // New BMS student ID after Swap
+    $student_id              = $_POST['student_id'];
+    $from_student            = $_POST['from_student'];
+    $from_university         = $_POST['from_university'];
+    $from_programme          = $_POST['from_programme'];
+    $from_batch              = $_POST['from_batch'];
+    $from_registration_code  = $_POST['from_registration_code'];  // New BMS student ID after Swap
     $from_registration_code_old = isset($_POST['from_registration_code_old']) ? $_POST['from_registration_code_old'] : null; // this is OLD BMS student ID Before Swap
 
     // ------------------------------------------------------------------------------------------------------ 
@@ -28,18 +28,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // ------------------------------------------------------------------------------------------------------ 
 
-    $bms_registration_code = isset($_POST['bms_registration_code']) ? $_POST['bms_registration_code'] : null; // new registration BMS Auto gen 
+    $bms_registration_code   = isset($_POST['bms_registration_code']) ? $_POST['bms_registration_code'] : null; // new registration BMS Auto gen 
     // $university_id           = $_POST['university_id'];
-    // $university_id = isset($_POST['university_id']) ? $_POST['university_id'] : null;
-    $university_id = isset($_POST['university_id']) ? $_POST['university_id'] : 1;
-    $programme_code = $_POST['programme_code'];
-    $batch_id = $_POST['batch_id'];
+    $university_id           = isset($_POST['university_id']) ? $_POST['university_id'] : 1;
+    $programme_code          = $_POST['programme_code'];
+    $batch_id                = $_POST['batch_id'];
 
     // ------------------------------------------------------------------------------------------------------ 
-    $paid_amount_initial = isset($_POST['paid_amount_initial']) ? $_POST['paid_amount_initial'] : 0;
+    $paid_amount_initial     = isset($_POST['paid_amount_initial']) ? $_POST['paid_amount_initial'] : 0;
     $paid_amount_installment = isset($_POST['paid_amount_installment']) ? $_POST['paid_amount_installment'] : 0;
-    $paid_amount_uni = isset($_POST['paid_amount_uni']) ? $_POST['paid_amount_uni'] : 0;
-    $program_status = isset($_POST['program_status']) ? $_POST['program_status'] : '';
+    $paid_amount_uni         = isset($_POST['paid_amount_uni']) ? $_POST['paid_amount_uni'] : 0;
+    $program_status          = isset($_POST['program_status']) ? $_POST['program_status'] : '';
     // ------------------------------------------------------------------------------------------------------ 
 
     // Fetch program_name and batch_name correctly for constructing programme_batch
@@ -76,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Reset transfer_status if needed
     $checkTransferStatusQuery = "SELECT transfer_status FROM students WHERE student_code = ?";
     $checkTransferStatusStmt = $conn->prepare($checkTransferStatusQuery);
-    $checkTransferStatusStmt->bind_param("i", $student_id);
+    $checkTransferStatusStmt->bind_param("s", $student_id);
     $checkTransferStatusStmt->execute();
     $checkTransferStatusStmt->bind_result($transfer_status);
     $checkTransferStatusStmt->fetch();
@@ -85,29 +84,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($transfer_status == 1) {
         $resetTransferStatusQuery = "UPDATE students SET transfer_status = 0 WHERE student_code = ?";
         $resetTransferStatusStmt = $conn->prepare($resetTransferStatusQuery);
-        $resetTransferStatusStmt->bind_param("i", $student_id);
+        $resetTransferStatusStmt->bind_param("s", $student_id);
         $resetTransferStatusStmt->execute();
         $resetTransferStatusStmt->close();
     }
     // ------------------------------------------------------------------------------------------------------ 
-    // Check if the student is already active in the same program and batch
-    $checkActiveQuery = "SELECT id FROM allocate_programme WHERE student_code = ? AND programme_code = ? AND batch_id = ? AND status = 'active'";
-    if ($checkStmt = $conn->prepare($checkActiveQuery)) {
-        $checkStmt->bind_param("iii", $student_id, $programme_code, $batch_id);
-        $checkStmt->execute();
-        $checkStmt->store_result();
-
-        if ($checkStmt->num_rows > 0) {
-            echo "<script>
-                alert('Same Student, same program and same batch Already active');
-                window.location.href = window.location.href;
-            </script>";
-            $checkStmt->close();
-            exit;
-        }
-        $checkStmt->close();
-    }
-
 
     // Insert into allocate_programme
     $allocateQuery = "INSERT INTO allocate_programme 
@@ -133,16 +114,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // ======= Add Payment Plan: insert correct programme_batch ======
             $university_fee_lkr = $_POST['university_fee_lkr'] ?? null;
-            $course_fee_lkr = $_POST['course_fee_lkr'] ?? null;
-            $only_course_fee = $_POST['only_course_fee'] ?? null;
-            $fee_type = $_POST['fee_type'] ?? 'installment';
-            $installment_no = $_POST['installment_no'] ?? 0;
-            $registration_fee = $_POST['registration_fee'] ?? 0.0;
-            $uni_fee_gbp = $_POST['uni_fee_gbp'] ?? null;
-            $uni_fee_usd = $_POST['uni_fee_usd'] ?? null;
-            $lkr_reg_date = $_POST['register_date'] ?? null;
-            $lkr_reg_due_date = date('Y-m-d', strtotime("$lkr_reg_date +7 days"));
-            $entered_by = $Session_username;
+            $course_fee_lkr     = $_POST['course_fee_lkr'] ?? null;
+            $only_course_fee    = $_POST['only_course_fee'] ?? null;
+            $fee_type           = $_POST['fee_type'] ?? 'installment';
+            $installment_no     = $_POST['installment_no'] ?? 0;
+            $registration_fee   = $_POST['registration_fee'] ?? 0.0;
+            $uni_fee_gbp        = $_POST['uni_fee_gbp'] ?? null;
+            $uni_fee_usd        = $_POST['uni_fee_usd'] ?? null;
+            $lkr_reg_date       = $_POST['register_date'] ?? null;
+            $lkr_reg_due_date   = date('Y-m-d', strtotime("$lkr_reg_date +7 days"));
+            $entered_by         = $Session_username;
 
             $stmt3 = $conn->prepare("INSERT INTO add_payment_plan_table
                 (student_id, programme_batch, university_fee_LKR, courseFeeLKR_total, course_fee_LKR, course_fee_type_LKR,
@@ -183,17 +164,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 coursefee, registrationfee, discounted_percentage, dis_yes_no) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             if ($stmt4) {
-                $unifee_lkr_total = $university_fee_lkr ?? 0;
-                $unifee_lkr = $university_fee_lkr ?? 0;
-                $unifee_gbp_total = $uni_fee_gbp ?? 0;
-                $unifee_gbp = $uni_fee_gbp ?? 0;
-                $unifee_usd_total = $uni_fee_usd ?? 0;
-                $unifee_usd = $uni_fee_usd ?? 0;
-                $coursefee_total = $only_course_fee ?? 0;
-                $coursefee = $only_course_fee ?? 0;
-                $registrationfee = $registration_fee ?? 0;
+                $unifee_lkr_total      = $university_fee_lkr ?? 0;
+                $unifee_lkr            = $university_fee_lkr ?? 0;
+                $unifee_gbp_total      = $uni_fee_gbp ?? 0;
+                $unifee_gbp            = $uni_fee_gbp ?? 0;
+                $unifee_usd_total      = $uni_fee_usd ?? 0;
+                $unifee_usd            = $uni_fee_usd ?? 0;
+                $coursefee_total       = $only_course_fee ?? 0;
+                $coursefee             = $only_course_fee ?? 0;
+                $registrationfee       = $registration_fee ?? 0;
                 $discounted_percentage = 0.00;
-                $dis_yes_no = 0;
+                $dis_yes_no            = 0;
 
                 $stmt4->bind_param(
                     "iisiiiiiisiiidi",
@@ -222,8 +203,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     if ($program_status === 'same_program') {
                         $adjusted_registration_fee = $registrationfee - $paid_amount_initial;
-                        if ($adjusted_registration_fee < 0)
-                            $adjusted_registration_fee = 0;
+                        if ($adjusted_registration_fee < 0) $adjusted_registration_fee = 0;
 
                         $updateStmt = $conn->prepare("UPDATE installment_payment_table SET registrationfee = ? WHERE id = ?");
                         if ($updateStmt) {
@@ -243,24 +223,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             if ($uniLKR > 0) {
                                 $newUniLKR = $uniLKR - $paid_amount_uni;
-                                if ($newUniLKR < 0)
-                                    $newUniLKR = 0;
+                                if ($newUniLKR < 0) $newUniLKR = 0;
                                 $updateUniStmt = $conn->prepare("UPDATE installment_payment_table SET unifee_lkr = ? WHERE id = ?");
                                 $updateUniStmt->bind_param("di", $newUniLKR, $installment_payment_table_id);
                                 $updateUniStmt->execute();
                                 $updateUniStmt->close();
                             } elseif ($uniGBP > 0) {
                                 $newUniGBP = $uniGBP - $paid_amount_uni;
-                                if ($newUniGBP < 0)
-                                    $newUniGBP = 0;
+                                if ($newUniGBP < 0) $newUniGBP = 0;
                                 $updateUniStmt = $conn->prepare("UPDATE installment_payment_table SET unifee_gbp = ? WHERE id = ?");
                                 $updateUniStmt->bind_param("di", $newUniGBP, $installment_payment_table_id);
                                 $updateUniStmt->execute();
                                 $updateUniStmt->close();
                             } elseif ($uniUSD > 0) {
                                 $newUniUSD = $uniUSD - $paid_amount_uni;
-                                if ($newUniUSD < 0)
-                                    $newUniUSD = 0;
+                                if ($newUniUSD < 0) $newUniUSD = 0;
                                 $updateUniStmt = $conn->prepare("UPDATE installment_payment_table SET unifee_usd = ? WHERE id = ?");
                                 $updateUniStmt->bind_param("di", $newUniUSD, $installment_payment_table_id);
                                 $updateUniStmt->execute();
@@ -278,16 +255,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // ======= Add Installment Details correct programme_batch ======
             if ($fee_type === 'installment' && $installment_no > 0 && isset($installment_payment_table_id)) {
                 $coursefee = $only_course_fee;
-                $devided_values = $coursefee / $installment_no;
+                $devided_values   = $coursefee / $installment_no;
                 $installment_amount = $devided_values;
                 $stmt5 = $conn->prepare("INSERT INTO installment_details_table 
                     (installment_payment_table_id, student_id, programme_batch, installment_numbers, 
                     devided_values, installment_amount, discount_type, discount_value, due_date, remark, entered_by) 
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 if ($stmt5) {
-                    $discount_type = 'N/A';
+                    $discount_type  = 'N/A';
                     $discount_value = null;
-                    $remark = '';
+                    $remark         = '';
 
                     // Paid amount already received
                     $remaining_paid = floatval($_POST['paid_amount_installment'] ?? 0);
@@ -351,18 +328,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             // ------------------------------------------------------------------------------------------------------ 
 
-            // ======= STUDENT Progression ENTRY ======
-            $query = "INSERT INTO program_progression_table 
+            // ======= STUDENT TRANSFER ENTRY ======
+            $query = "INSERT INTO batch_swap_table 
                 (student_id, from_student, from_university, from_programme, from_batch, 
                  from_registration_code, university_id, programme_code, batch_id, allocated_id, entered_by, OLD_registration_id) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)";
             if ($stmt = $conn->prepare($query)) {
-                // Types: i=int, s=string
-                // 1. student_id (i), 2. from_student (s), 3. from_university (s), 4. from_programme (s), 5. from_batch (s), 
-                // 6. from_registration_code (s) [NEW CODE], 7. university_id (i), 8. programme_code (i), 9. batch_id (i), 
-                // 10. allocated_id (i), 11. entered_by (s), 12. OLD_registration_id (s) [OLD CODE]
                 $stmt->bind_param(
-                    "isssssiiiiss",
+                    "ssssssssssss",
                     $student_id,
                     $from_student,
                     $from_university,
@@ -380,30 +353,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Update students table: set transfer_status = 1
                     $updateQuery = "UPDATE students SET transfer_status = 1 WHERE student_code = ?";
                     if ($updateStmt = $conn->prepare($updateQuery)) {
-                        $updateStmt->bind_param("i", $student_id);
+                        $updateStmt->bind_param("s", $student_id);
                         $updateStmt->execute();
                         $updateStmt->close();
                     }
 
+                    // After successful update, set student_registration_id = NULL in allocate_programme for old allocation
                     $nullRegQuery = "UPDATE allocate_programme SET student_registration_id = NULL WHERE student_code = ? AND programme_code = ? AND batch_id = ?";
                     if ($nullRegStmt = $conn->prepare($nullRegQuery)) {
-                        $nullRegStmt->bind_param("iii", $student_id, $program_old_code, $batch_old_code);
+                        $nullRegStmt->bind_param("sii", $student_id, $program_old_code, $batch_old_code);
                         $nullRegStmt->execute();
                         $nullRegStmt->close();
                     }
 
                     echo "<script>
-                        alert('Student Program Progression, Allocation & Payment Plan have been successfully recorded!');
+                        alert('Student Batch SWAP , Allocation & Payment Plan have been successfully recorded!');
                         window.location.href = window.location.href;
                     </script>";
                 }
                 $stmt->close();
             }
-
-            // ----------------------------------------------------------------------------------------------------------------------------- 
-
-            // ----------------------------------------------------------------------------------------------------------------------------- 
-
         } else {
             echo "<script>alert('Error inserting into allocate_programme: " . $allocateStmt->error . "');</script>";
         }
@@ -411,7 +380,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+
 ?>
+
+<!-- The rest of your page (HTML form etc.) remains unchanged - the JS handles user input and population as before -->
 
 <!-- Page Wrapper -->
 <div id="wrapper">
@@ -427,11 +399,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <!-- Begin Page Content -->
             <div class="p-3">
                 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                    <h4 class="h4 mb-0 text-gray-800">Program Progression</h4>
+                    <h4 class="h4 mb-0 text-gray-800">Student Batch SWAP</h4>
                 </div>
 
                 <!-- Filter Form -->
-                <form action="programProgression.php" method="POST">
+                <form action="batchSwap.php" method="POST">
                     <div class="row mb-5">
                         <div class="col-md-6 mb-3">
                             <label for="select_student" class="form-label">Select Student:</label>
@@ -443,7 +415,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     SELECT s.*, s.student_code, s.nic, s.first_name, s.last_name
                                     FROM students s
                                     INNER JOIN allocate_programme a ON a.student_code = s.student_code
-                                    WHERE a.status = 'progressionTo'  AND s.transfer_status = 0
+                                    WHERE a.status = 'batchSwap' AND s.transfer_status = 0
                                     ";
                                 $result = $conn->query($query);
                                 while ($row = $result->fetch_assoc()) {
@@ -453,6 +425,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </select>
                         </div>
                     </div>
+
 
                     <div class="row">
                         <!-- From Transfer -->
@@ -469,8 +442,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                 <label for="from_student">Student</label>
                                             </div>
                                             <div class="col-md-8">
-                                                <input type="text" id="from_student" name="from_student"
-                                                    class="form-control" placeholder="Student Name" required>
+                                                <input type="text" id="from_student" name="from_student" class="form-control" placeholder="Student Name" required>
                                             </div>
                                         </div>
                                     </div>
@@ -482,8 +454,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                 <label for="from_university">University</label>
                                             </div>
                                             <div class="col-md-8">
-                                                <input type="text" id="from_university" name="from_university"
-                                                    class="form-control" placeholder="From University" required>
+                                                <input type="text" id="from_university" name="from_university" class="form-control" placeholder="From University" required>
                                             </div>
                                         </div>
                                     </div>
@@ -495,8 +466,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                 <label for="from_programme">Programme</label>
                                             </div>
                                             <div class="col-md-8">
-                                                <input type="text" id="from_programme" name="from_programme"
-                                                    class="form-control" placeholder="From Programme" required>
+                                                <input type="text" id="from_programme" name="from_programme" class="form-control" placeholder="From Programme" required>
                                             </div>
                                         </div>
                                     </div>
@@ -508,17 +478,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                 <label for="from_batch">Batch</label>
                                             </div>
                                             <div class="col-md-8">
-                                                <input type="text" id="from_batch" name="from_batch"
-                                                    class="form-control" placeholder="From Batch" required>
+                                                <input type="text" id="from_batch" name="from_batch" class="form-control" placeholder="From Batch" required>
                                             </div>
                                         </div>
                                     </div>
 
                                     <div class="form-group">
                                         <div class="row">
+                                            <!-- Paid amount initial -->
+                                            <div class="col-md-4">
+                                                <label for="paid_amount_initial" class="text-danger">Paid Amount (initial)</label>
+                                                <input type="text" id="paid_amount_initial" name="paid_amount_initial" class="form-control" placeholder="Paid Amount initial" readonly>
+                                            </div>
 
+                                            <!-- Paid amount installment -->
+                                            <div class="col-md-4">
+                                                <label for="paid_amount_installment" class="text-danger">Paid Amount (installment)</label>
+                                                <input type="text" id="paid_amount_installment" name="paid_amount_installment" class="form-control" placeholder="Paid Amount installment" readonly>
+                                            </div>
+
+                                            <!-- Paid amount uni -->
+                                            <div class="col-md-4">
+                                                <label for="paid_amount_uni" class="text-danger">Paid Amount (uni)</label>
+                                                <input type="text" id="paid_amount_uni" name="paid_amount_uni" class="form-control" placeholder="Paid Amount Uni" readonly>
+                                            </div>
                                         </div>
                                     </div>
+
                                 </div>
                             </div>
                         </div>
@@ -527,26 +513,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="col-md-6">
                             <div class="card">
                                 <div class="card-header bg-dark text-white">
-                                    Progression To
+                                    SWAP To
                                 </div>
                                 <div class="card-body">
-
-                                    <div class="form-group">
-                                        <div class="row">
-                                            <div class="col-md-4"> <label for="university">University</label></div>
-                                            <div class="col-md-8">
-                                                <select id="university" name="university_id"
-                                                    class="form-control select2" required></select>
-                                            </div>
-                                        </div>
-                                    </div>
+                                 
 
                                     <div class="form-group">
                                         <div class="row">
                                             <div class="col-md-4"> <label for="programme">Programme</label></div>
                                             <div class="col-md-8">
-                                                <select id="programme" name="programme_code"
-                                                    class="form-control select2" required></select>
+                                                <select id="programme" name="programme_code" class="form-control select2" required></select>
                                             </div>
                                         </div>
                                     </div>
@@ -555,8 +531,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <div class="row">
                                             <div class="col-md-4"> <label for="batch">Batch</label></div>
                                             <div class="col-md-8">
-                                                <select required id="batch" name="batch_id" class="form-control select2"
-                                                    required></select>
+                                                <select required id="batch" name="batch_id" class="form-control select2" required></select>
                                             </div>
                                         </div>
                                     </div>
@@ -568,72 +543,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                 <label for="from_registration_code">Registration Code OLD</label>
                                             </div>
                                             <div class="col-md-8">
-                                                <input type="text" readonly id="from_registration_code_old"
-                                                    name="from_registration_code_old" class="form-control"
-                                                    placeholder="New Registration Number"
-                                                    style="border: 2px solid red;">
+                                                <input type="text" readonly id="from_registration_code_old" name="from_registration_code_old" class="form-control" placeholder="New Registration Number" style="border: 2px solid red;">
                                             </div>
                                         </div>
                                     </div>
                                     <div class="form-group">
                                         <div class="row">
                                             <div class="col-md-4">
-                                                <label for="from_registration_code"><s>Current Registration Last Code</s>
-                                                </label>
+                                                <label for="from_registration_code">Current Registration Last Code </label>
                                             </div>
                                             <div class="col-md-8">
-                                                <input type="text" readonly id="current_registration_last_code"
-                                                    name="current_registration_last_code" class="form-control"
-                                                    placeholder="New Registration Number"
-                                                    style="border: 2px solid red;">
+                                                <input type="text" readonly id="current_registration_last_code" name="current_registration_last_code" class="form-control" placeholder="New Registration Number" style="border: 2px solid red;">
                                             </div>
                                         </div>
                                     </div>
                                     <div class="form-group fw-bolder">
                                         <div class="row">
                                             <div class="col-md-4">
-                                                <label for="from_registration_code"> <s> Registration Code New For Selected
-                                                        Batch</s></label>
+                                                <label for="from_registration_code">Registration Code New For Selected Batch</label>
                                             </div>
                                             <div class="col-md-8">
-                                                <input type="text" readonly id="from_registration_code"
-                                                    name="from_registration_code" class="form-control"
-                                                    placeholder="New Registration Number"
-                                                    style="border: 2px solid red;">
+                                                <input type="text" readonly id="from_registration_code" name="from_registration_code" class="form-control" placeholder="New Registration Number" style="border: 2px solid red;">
                                             </div>
                                         </div>
                                     </div>
+                              
                                     <!-- New BMS Registration Code Auto Gen -->
-
-
                                     <div class="form-group row">
-                                        <label for="bms_registration_have_code" class="col-md-4 col-form-label">HAVE BMS
-                                            Registration ID (AG)</label>
+                                        <label for="bms_registration_have_code" class="col-md-4 col-form-label">HAVE BMS Registration ID (AG)</label>
                                         <div class="col-md-8">
-                                            <input type="text" id="bms_registration_have_code"
-                                                name="bms_registration_have_code" class="form-control"
-                                                placeholder="Auto Generated Registration Number" readonly
-                                                style="border: 2px solid red;">
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group row">
-                                        <label for="bms_registration_code_last" class="col-md-4 col-form-label">LAST BMS
-                                            Registration ID (AG)</label>
-                                        <div class="col-md-8">
-                                            <input type="text" id="bms_registration_code_last"
-                                                name="bms_registration_code_last" class="form-control"
-                                                placeholder="Auto Generated Registration Number" readonly
+                                            <input type="text"
+                                                id="bms_registration_have_code"
+                                                name="bms_registration_have_code"
+                                                class="form-control"
+                                                placeholder="Auto Generated Registration Number"
+                                                readonly
                                                 style="border: 2px solid red;">
                                         </div>
                                     </div>
                                     <div class="form-group row">
-                                        <label for="bms_registration_code" class="col-md-4 col-form-label">NEW BMS
-                                            Registration ID (AG)</label>
+                                        <label for="bms_registration_code_last" class="col-md-4 col-form-label">LAST BMS Registration ID (AG)</label>
                                         <div class="col-md-8">
-                                            <input type="text" id="bms_registration_code" name="bms_registration_code"
-                                                class="form-control" placeholder="Auto Generated Registration Number"
-                                                readonly style="border: 2px solid red;">
+                                            <input type="text"
+                                                id="bms_registration_code_last"
+                                                name="bms_registration_code_last"
+                                                class="form-control"
+                                                placeholder="Auto Generated Registration Number"
+                                                readonly
+                                                style="border: 2px solid red;">
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <label for="bms_registration_code" class="col-md-4 col-form-label">NEW BMS Registration ID (AG)</label>
+                                        <div class="col-md-8">
+                                            <input type="text"
+                                                id="bms_registration_code"
+                                                name="bms_registration_code"
+                                                class="form-control"
+                                                placeholder="Auto Generated Registration Number"
+                                                readonly
+                                                style="border: 2px solid red;">
                                         </div>
                                     </div>
 
@@ -681,8 +650,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             </div>
                             <div class="mt-4 text-right">
-                                <button type="submit" class="btn btn-primary" id="transfer_sbt_btn">Submit Program
-                                    Progression</button>
+                                <button type="submit" class="btn btn-primary" id="transfer_sbt_btn">Submit Swap</button>
                             </div>
                         </div>
                     </div>
@@ -693,9 +661,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="col-md-12">
                     <div class="card">
                         <div class="card-header d-flex align-items-center" style="height: 60px;">
-                            <span
-                                class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center"
-                                style="width: 30px; height: 30px;">
+                            <span class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
                                 <i class="fas fa-plus-circle"></i>
                             </span> &nbsp;&nbsp;&nbsp;&nbsp;
                             <h6 class="mb-0 me-2"></h6>
@@ -703,8 +669,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="card-body">
                             <!-- Students Table -->
                             <div class="table-responsive mb-4">
-                                <table id="studentsTable" class="table table-striped table-bordered"
-                                    style="width: 100%; font-size: 11px;">
+                                <table id="studentsTable" class="table table-striped table-bordered" style="width: 100%; font-size: 11px;">
                                 </table>
                             </div>
                         </div>
@@ -754,6 +719,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
     </script>
 
+
     <script>
         $(document).ready(function() {
             $('.select2').select2();
@@ -765,51 +731,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 type: 'GET',
                 success: function(data) {
                     $('#university').html(data);
-                    $('#programme').html('<option value="">-- Select Programme --</option>');
+                }
+            });
+
+            // -------------------------------------------------------------------------------------------------- 
+            // ------------------------------------------------- 
+            $.ajax({
+                url: 'Batch_transer/fetch_programs_all_programs_without_uni.php',
+                type: 'POST',
+                success: function(data) {
+                    $('#programme').html(data);
                     $('#batch').html('<option value="">-- Select Batch --</option>');
                 }
             });
 
+            // -------------------------------------------------------------------------------------------------- 
 
-            // When university is selected, load programs
-            $('#university').on('change', function() {
-                const universityId = $(this).val();
-                $('#programme').html('<option value="">-- Select Programme --</option>');
-                $('#batch').html('<option value="">-- Select Batch --</option>');
-                $('#compulsory_subjects').html('');
-
-                if (universityId) {
-                    $.ajax({
-                        url: 'Batch_transer/fetch_programs_all_programs.php',
-                        type: 'POST',
-                        data: {
-                            university_id: universityId
-                        },
-                        success: function(data) {
-                            $('#programme').html(data);
-                        }
-                    });
-                }
-            });
 
             $('#programme').on('change', function() {
                 const programId = $(this).val();
-                const universityId = $('#university').val();
                 // Get display text of selected program option
                 const programText = $(this).find("option:selected").text();
 
-                if (programId && universityId) {
+                if (programId) {
                     $.ajax({
-                        url: 'Batch_transer/fetch_batches.php',
+                        url: 'Batch_transer/fetch_batches_without_uni.php',
                         type: 'POST',
                         data: {
-                            program_id: programId,
-                            university_id: universityId
+                            program_id: programId
                         },
                         success: function(data) {
                             $('#batch').html(data);
                             // Show more detailed info in the console
-                            console.log("Selected University ID :", universityId);
                             console.log("Selected Program Name :", programText);
                             console.log("Selected Program ID :", programId);
                         }
@@ -820,7 +773,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
 
             // -------------------------------------------------------------------------------------------------- 
-            //   Use new fetch_registration_ids.php output structure for current/next registration codes (see file lines 1-36)
             $(document).on('change', '#batch', function() {
                 const batchId = $(this).val();
                 const programId = $('#programme').val();
@@ -853,8 +805,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             });
 
                             let lastOldRegId = sortedOld.length > 0 ? sortedOld[sortedOld.length - 1] : '';
-                            // $('#current_registration_last_code').val(lastOldRegId).prop('readonly', true);
-                            $('#current_registration_last_code').val('').prop('readonly', true);
+                            $('#current_registration_last_code').val(lastOldRegId).prop('readonly', true);
 
                             // Calculate the next registration id (old system)
                             let nextRegId = '';
@@ -872,8 +823,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     }
                                 }
                             }
-                            // $('#from_registration_code').val(nextRegId).prop('readonly', false);
-                            $('#from_registration_code').val('').prop('readonly', true);
+                            $('#from_registration_code').val(nextRegId).prop('readonly', false);
 
                             // ------- Handle and ORDER new registration ids (BMS) -------
                             // newRegIds is already only with values!
@@ -891,17 +841,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             // Last id in ordered list:
                             let lastNewRegId = sortedNew.length > 0 ? sortedNew[sortedNew.length - 1] : '';
+                            $('#bms_registration_code_last').val(lastNewRegId).prop('readonly', true);
 
-                            // Populate LAST / NEW BMS Registration ID only when the student
-                            // already HAS a BMS Registration ID. If HAVE is empty/null,
-                            // both LAST and NEW must stay blank (no auto-suggestion).
+                            // Populate .bms_registration_code
                             const bmsHaveCode = $('#bms_registration_have_code').val();
-
+                            let bmsSuggestedCode = '';
                             if (bmsHaveCode === "" || bmsHaveCode === null || typeof bmsHaveCode === "undefined") {
-                                $('#bms_registration_code_last').val('').prop('readonly', true);
-                                $('#bms_registration_code').val('').prop('readonly', true);
+                                if (lastNewRegId !== '') {
+                                    if (!isNaN(lastNewRegId)) {
+                                        bmsSuggestedCode = parseInt(lastNewRegId, 10) + 1;
+                                    } else if (/^\d+$/.test(lastNewRegId)) {
+                                        bmsSuggestedCode = Number(lastNewRegId) + 1;
+                                    } else {
+                                        let matchNew = lastNewRegId.match(/^(.*?)(\d+)$/);
+                                        if (matchNew) {
+                                            bmsSuggestedCode = matchNew[1] + (parseInt(matchNew[2], 10) + 1);
+                                        } else {
+                                            bmsSuggestedCode = '';
+                                        }
+                                    }
+                                } else {
+                                    bmsSuggestedCode = '';
+                                }
+                                $('#bms_registration_code').val(bmsSuggestedCode).prop('readonly', true);
                             } else {
-                                $('#bms_registration_code_last').val(lastNewRegId).prop('readonly', true);
                                 $('#bms_registration_code').val(bmsHaveCode).prop('readonly', true);
                             }
 
@@ -911,7 +874,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             // Above: ordered list (sortedNew) is already logged
 
                             console.log("Last old registration:", lastOldRegId, " Next:", nextRegId);
-                            console.log("Last new reg (ordered):", lastNewRegId, " HAVE code:", bmsHaveCode);
+                            console.log("Last new reg (ordered):", lastNewRegId, " Suggest:", bmsSuggestedCode);
 
                             // Clear fields if empty
                             if (oldRegIds.length === 0) {
@@ -926,6 +889,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     });
                 }
             });
+
             // -------------------------------------------------------------------------------------------------- 
 
             // When a student is selected from the dropdown
@@ -956,11 +920,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 // If have code is present, also put it into #bms_registration_code
                                 if (response.new_student_registration_id !== "" && response.new_student_registration_id !== null && typeof response.new_student_registration_id !== "undefined") {
                                     $('#bms_registration_code').val(response.new_student_registration_id).prop('readonly', true);
-                                } else {
-                                    // No existing BMS Registration ID for this student ->
-                                    // LAST and NEW BMS Registration ID must stay empty/null
-                                    $('#bms_registration_code_last').val('').prop('readonly', true);
-                                    $('#bms_registration_code').val('').prop('readonly', true);
                                 }
 
                                 console.log('Programme ID OLD:', response.programme_code);
@@ -969,13 +928,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 console.log('Batch ID OLD:', response.batch_id);
                                 $('#batch_old_code').val(response.batch_id);
 
-
                                 // Set default red background color
                                 $('#from_registration_code_old').css({
                                     'background-color': 'red',
                                     'color': 'white'
                                 });
 
+                                let totalInstallment = 0;
+
+                                for (const [installment, amount] of Object.entries(response.installments)) {
+                                    const key = installment.toLowerCase().replace(/\s/g, ''); // remove spaces and lowercase
+                                    if (key === 'initialpayment') {
+                                        // Initial Payment goes here
+                                        $('#paid_amount_initial').val(amount).prop('readonly', true);
+                                    } else {
+                                        // Sum all other installments
+                                        totalInstallment += parseFloat(amount);
+                                    }
+                                    console.log(`${installment}: ${amount}`);
+                                }
+
+                                // Set the summed total to the installment input
+                                $('#paid_amount_installment').val(totalInstallment.toFixed(2)).prop('readonly', true);
+
+                                // Set university total
+                                console.log('Total University Paid:', response.total_uni_paid);
+                                $('#paid_amount_uni').val(response.total_uni_paid).prop('readonly', true);
 
                                 // Real-time checking for registration code
                                 $('#from_registration_code_old').on('input', function() {
@@ -1007,17 +985,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             });
 
-
             $('#programme').on('change', function() {
                 const programId = $(this).val();
-                const universityId = $('#university').val();
-                if (programId && universityId) {
+                if (programId) {
                     $.ajax({
-                        url: 'Batch_transer/fetch_subjects.php',
+                        url: 'Batch_transer/fetch_subjects_without_uni.php',
                         type: 'POST',
                         data: {
-                            program_id: programId,
-                            university_id: universityId
+                            program_id: programId
                         },
                         success: function(data) {
                             const subjects = JSON.parse(data);
@@ -1040,6 +1015,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </script>
 
     <script>
+    
         $('#programme').on('change', function() {
             const programId = $(this).val();
             $('#batch').html('<option value="">-- Select Batch --</option>');
@@ -1096,7 +1072,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             }
         });
-        // ----------------------------- 
 
         $('#programme, #batch').change(function() {
             let programmeId = $('#programme').val();

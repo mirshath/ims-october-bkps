@@ -62,42 +62,6 @@ if (isset($_POST['program_code'], $_POST['batch_id'])) {
     }
 
     // ------------------------------
-    // 2b. Check for a missing number in the new_student_registration_id
-    //     sequence (min -> max). Only pure numeric IDs (e.g. 26000001)
-    //     are considered - manually formatted IDs (e.g. IFDS05052601)
-    //     are ignored for this check.
-    // ------------------------------
-    $missing_new_id = null;
-
-    $query2b = "SELECT DISTINCT new_student_registration_id 
-                FROM allocate_programme 
-                WHERE new_student_registration_id IS NOT NULL 
-                  AND new_student_registration_id != ''
-                  AND new_student_registration_id REGEXP '^[0-9]+$'";
-    $result2b = $conn->query($query2b);
-
-    $numeric_ids = [];   // [intValue => true]
-    $id_width = 0;       // preserve leading-zero width, e.g. 8 for '26000001'
-
-    while ($row = $result2b->fetch_assoc()) {
-        $val = $row['new_student_registration_id'];
-        $numeric_ids[intval($val)] = true;
-        $id_width = max($id_width, strlen($val));
-    }
-
-    if (!empty($numeric_ids)) {
-        $minId = min(array_keys($numeric_ids));
-        $maxId = max(array_keys($numeric_ids));
-
-        for ($i = $minId; $i <= $maxId; $i++) {
-            if (!isset($numeric_ids[$i])) {
-                $missing_new_id = str_pad($i, $id_width, '0', STR_PAD_LEFT);
-                break; // smallest missing number in the range
-            }
-        }
-    }
-
-    // ------------------------------
     // 3. Handle empty results
     // ------------------------------
     if (empty($reg_ids)) $reg_ids[] = null;
@@ -113,7 +77,6 @@ if (isset($_POST['program_code'], $_POST['batch_id'])) {
     $response['last_new_entered_id'] = $matched_new_id;          // latest valid continuous ID
     $response['student_reg_ids'] = array_reverse($reg_ids);
     $response['new_student_reg_ids'] = array_reverse($new_reg_ids);
-    $response['missing_new_id'] = $missing_new_id;               // first gap found in min->max range, or null
     $response['success'] = true;
 }
 

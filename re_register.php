@@ -517,13 +517,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
 
-                        <!-- To Transfer -->
+                        <!-- To re register -->
                         <div class="col-md-6">
                             <div class="card">
                                 <div class="card-header bg-dark text-white">
                                     Re Register To
                                 </div>
                                 <div class="card-body">
+
+                                    <div class="form-group">
+                                        <div class="row">
+                                            <div class="col-md-4"> <label for="university">University</label></div>
+                                            <div class="col-md-8">
+                                                <select id="university" name="university_id"
+                                                    class="form-control select2" required></select>
+                                            </div>
+                                        </div>
+                                    </div>
 
                                     <div class="form-group">
                                         <div class="row">
@@ -753,35 +763,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 type: 'GET',
                 success: function(data) {
                     $('#university').html(data);
+                    $('#programme').html('<option value="">-- Select Programme --</option>');
+                    $('#batch').html('<option value="">-- Select Batch --</option>');
                 }
             });
 
-            // Batch_transer\fetch_programs_all_programs_without_uni.php
-            $.ajax({
-                url: 'Batch_transer/fetch_programs_all_programs_without_uni.php',
-                type: 'POST',
-                success: function(data) {
-                    $('#programme').html(data);
-                    $('#batch').html('<option value="">-- Select Batch --</option>');
+            // When university is selected, load programs
+            $('#university').on('change', function() {
+                const universityId = $(this).val();
+                $('#programme').html('<option value="">-- Select Programme --</option>');
+                $('#batch').html('<option value="">-- Select Batch --</option>');
+                $('#compulsory_subjects').html('');
+
+                if (universityId) {
+                    $.ajax({
+                        url: 'Batch_transer/fetch_programs_all_programs.php',
+                        type: 'POST',
+                        data: {
+                            university_id: universityId
+                        },
+                        success: function(data) {
+                            $('#programme').html(data);
+                        }
+                    });
                 }
             });
 
 
             $('#programme').on('change', function() {
                 const programId = $(this).val();
+                const universityId = $('#university').val();
                 // Get display text of selected program option
                 const programText = $(this).find("option:selected").text();
 
-                if (programId) {
+                if (programId && universityId) {
                     $.ajax({
-                        url: 'Batch_transer/fetch_batches_without_uni.php',
+                        url: 'Batch_transer/fetch_batches.php',
                         type: 'POST',
                         data: {
-                            program_id: programId
+                            program_id: programId,
+                            university_id: universityId
                         },
                         success: function(data) {
                             $('#batch').html(data);
                             // Show more detailed info in the console
+                            console.log("Selected University ID :", universityId);
                             console.log("Selected Program Name :", programText);
                             console.log("Selected Program ID :", programId);
                         }
@@ -982,12 +1008,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $('#programme').on('change', function() {
                 const programId = $(this).val();
-                if (programId) {
+                const universityId = $('#university').val();
+                if (programId && universityId) {
                     $.ajax({
-                        url: 'Batch_transer/fetch_subjects_without_uni.php',
+                        url: 'Batch_transer/fetch_subjects.php',
                         type: 'POST',
                         data: {
-                            program_id: programId
+                            program_id: programId,
+                            university_id: universityId
                         },
                         success: function(data) {
                             const subjects = JSON.parse(data);

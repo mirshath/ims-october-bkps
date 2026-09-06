@@ -5,12 +5,6 @@ $university = $_POST['university_id'];
 $program = $_POST['program_id'];
 $batch = $_POST['batch_id'];
 
-// $query = "
-//     SELECT s.first_name, s.last_name, s.bms_email, a.id, a.student_registration_id
-//     FROM allocate_programme a
-//     JOIN students s ON s.student_code = a.student_code
-//     WHERE a.university_id='$university' AND a.programme_code='$program' AND a.batch_id='$batch'
-// ";
 
 $query = "
     SELECT s.first_name,s.student_code , s.last_name, s.bms_email, a.id, a.student_registration_id

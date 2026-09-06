@@ -312,7 +312,7 @@ require 'vendor/autoload.php';
                                         </div>
 
                                         <div class="mb-3 row" id="new_reg_id_row">
-                                            <label for="new_reg_id" id="new_reg_id_label" class="col-sm-3 col-form-label">BMS New Registration ID:</label>
+                                            <label for="new_reg_id" class="col-sm-3 col-form-label">BMS New Registration ID:</label>
                                             <div class="col-sm-9">
                                                 <input type="text" class="form-control" id="new_reg_id" readonly>
                                             </div>
@@ -1294,52 +1294,26 @@ require 'vendor/autoload.php';
 
                                                 const lastEnteredId = resp.last_entered_id;
                                                 const lastNewEnteredId = resp.last_new_entered_id;
-                                                const missingNewId = resp.missing_new_id;
 
                                                 $('#last_student_reg_id').val(lastEnteredId);
                                                 $('#Last_new_std_reg_id').val(lastNewEnteredId);
 
                                                 window.lastEnteredId = lastEnteredId;
                                                 window.lastNewEnteredId = lastNewEnteredId;
-                                                window.missingNewId = missingNewId;
 
-                                                let nextNewRegIdDisplay;
-
-                                                if (missingNewId) {
-                                                    // A gap exists in the min->max range of existing
-                                                    // new_student_registration_id numbers - reuse it
-                                                    // instead of generating max + 1.
-                                                    nextNewRegIdDisplay = missingNewId;
-                                                    console.log('Missing New REG ID found, reusing:', missingNewId);
-
-                                                    $('#new_reg_id_label')
-                                                        .text('Missing BMS New Registration ID:')
-                                                        .css({
-                                                            color: 'red',
-                                                            fontWeight: 'bolder'
-                                                        });
-                                                } else {
-                                                    // No gap - fall back to the existing continuous logic (max + 1)
-                                                    let lastNumeric = 0;
-                                                    if (lastNewEnteredId) {
-                                                        // Extract numeric suffix (last 6 digits)
-                                                        const numericSuffix = lastNewEnteredId.slice(-6);
-                                                        if (!isNaN(parseInt(numericSuffix))) {
-                                                            lastNumeric = parseInt(numericSuffix, 10);
-                                                        }
+                                                // Generate next new reg ID (continuous numeric)
+                                                let lastNumeric = 0;
+                                                if (lastNewEnteredId) {
+                                                    // Extract numeric suffix (last 6 digits)
+                                                    const numericSuffix = lastNewEnteredId.slice(-6);
+                                                    if (!isNaN(parseInt(numericSuffix))) {
+                                                        lastNumeric = parseInt(numericSuffix, 10);
                                                     }
-
-                                                    const nextNumeric = (lastNumeric + 1).toString().padStart(6, '0');
-                                                    const yearPrefix = window.fetchedYearNo.toString(); // e.g., '26'
-                                                    nextNewRegIdDisplay = yearPrefix + nextNumeric;
-
-                                                    $('#new_reg_id_label')
-                                                        .text('BMS New Registration ID:')
-                                                        .css({
-                                                            color: '',
-                                                            fontWeight: ''
-                                                        });
                                                 }
+
+                                                const nextNumeric = (lastNumeric + 1).toString().padStart(6, '0');
+                                                const yearPrefix = window.fetchedYearNo.toString(); // e.g., '26'
+                                                const nextNewRegIdDisplay = yearPrefix + nextNumeric;
 
                                                 $('#new_reg_id').val(nextNewRegIdDisplay);
                                                 $('#new_reg_id_generated').text('New REG ID: ' + nextNewRegIdDisplay);
@@ -1356,6 +1330,8 @@ require 'vendor/autoload.php';
                                                     },
                                                     dataType: 'json',
                                                     success: function(specificResp) {
+                                                        console.log('DEBUG get_specific_student_reg_id response:', specificResp);
+                                                        console.log('DEBUG sent params -> student_code:', student_id, 'program_code:', programme_code, 'batch_id:', batch_id);
                                                         var hasOldReg = specificResp.success && specificResp.student_registration_id;
                                                         var hasNewReg = specificResp.success && specificResp.new_student_registration_id;
 
@@ -2029,10 +2005,6 @@ require 'vendor/autoload.php';
             $('#payment_LKR_row').show();
             $('#already_have_new_id_row').hide();
             $('#already_have_new_id_value').val('');
-            $('#new_reg_id_label').text('BMS New Registration ID:').css({
-                color: '',
-                fontWeight: ''
-            });
         }
 
     });
