@@ -6,6 +6,13 @@ TODO
 ---------------------------------------------------------------------------------------------------------------------------------------------
 
 
+INDICTION 
+
+emailed report wanna corelcty wanan fech NIC ✅✅✅✅
+induction_from_db_email_send wanan Fetch NIC coreclty ✅✅✅✅
+induction_fl_report_db  wanna reduce the data coreclty ✅✅✅✅
+Attended students  wanna inlude the Program and batch also ✅✅✅✅
+not paid wanna check  (marks as a attended button coreclty )✅✅✅✅
 
 
 
@@ -13,10 +20,22 @@ TODO
 
 
 
+Student Nedw ID - OK 
+wana / BMS ID wanan check Missing COreclty
 
 
+bms id new wanna include inside the id edit also wana coreclty 
 
+Payment Dollar seen also wanna check coreclty
 
+Uplaod Student wanna check  HOST VS LOCAL
+
+student  status code wanna check when complet,  HOST VS LOCAL
+
+inacticve or drop student also wanna check coreclty 
+
+payment dont batch tranfer new id have  , bms id erase 
+what will do
 
 
 
