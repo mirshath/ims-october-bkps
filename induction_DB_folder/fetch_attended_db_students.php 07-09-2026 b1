@@ -1,0 +1,147 @@
+<?php
+session_start();
+include '../database/connection.php';
+
+try {
+    $program = isset($_GET['program']) ? trim($_GET['program']) : 'all';
+    $user_id = $_SESSION['user_id'] ?? 0;
+    $role    = $_SESSION['role'] ?? '';
+
+    if ($role === 'super_admin') {
+        if ($program === 'all') {
+            $sql = "SELECT 
+                        ies.id,
+                        ies.student_code,
+                        s.title,
+                        s.first_name,
+                        s.last_name,
+                        s.nic,
+                        s.mobile as contact,
+                        ies.email,
+                        ies.attended,
+                        ies.attended_time,
+                        ies.pack_collected,
+                        ies.fees_paid,
+                        pt.program_name,
+                        bt.batch_name
+                    FROM induction_emails_sent ies
+                    INNER JOIN students s ON ies.student_code = s.student_code
+                    INNER JOIN program_table pt ON ies.program_id = pt.program_code
+                    INNER JOIN batch_table bt ON ies.batch_id = bt.id
+                    LEFT JOIN induction_active_table iat ON ies.program_id = iat.program_id AND ies.batch_id = iat.batch_id
+                    WHERE ies.attended = 'yes' AND (iat.status = 'active' OR iat.status IS NULL)
+                    ORDER BY s.last_name, s.first_name";
+            $stmt = $conn->prepare($sql);
+        } else {
+            $sql = "SELECT 
+                        ies.id,
+                        ies.student_code,
+                        s.title,
+                        s.first_name,
+                        s.last_name,
+                        s.nic,
+                        s.mobile as contact,
+                        ies.email,
+                        ies.attended,
+                        ies.attended_time,
+                        ies.pack_collected,
+                        ies.fees_paid,
+                        pt.program_name,
+                        bt.batch_name
+                    FROM induction_emails_sent ies
+                    INNER JOIN students s ON ies.student_code = s.student_code
+                    INNER JOIN program_table pt ON ies.program_id = pt.program_code
+                    INNER JOIN batch_table bt ON ies.batch_id = bt.id
+                    LEFT JOIN induction_active_table iat ON ies.program_id = iat.program_id AND ies.batch_id = iat.batch_id
+                    WHERE pt.program_name = ? AND ies.attended = 'yes' AND (iat.status = 'active' OR iat.status IS NULL)
+                    ORDER BY s.last_name, s.first_name";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("s", $program);
+        }
+    } else {
+        if ($program === 'all') {
+            $sql = "SELECT 
+                        ies.id,
+                        ies.student_code,
+                        s.title,
+                        s.first_name,
+                        s.last_name,
+                        s.nic,
+                        s.mobile as contact,
+                        ies.email,
+                        ies.attended,
+                        ies.attended_time,
+                        ies.pack_collected,
+                        ies.fees_paid,
+                        pt.program_name,
+                        bt.batch_name
+                    FROM induction_emails_sent ies
+                    INNER JOIN students s ON ies.student_code = s.student_code
+                    INNER JOIN program_table pt ON ies.program_id = pt.program_code
+                    INNER JOIN batch_table bt ON ies.batch_id = bt.id
+                    INNER JOIN program_allocation_user pau ON pt.program_code = pau.program_code
+                    LEFT JOIN induction_active_table iat ON ies.program_id = iat.program_id AND ies.batch_id = iat.batch_id
+                    WHERE ies.attended = 'yes' AND (iat.status = 'active' OR iat.status IS NULL) AND pau.user_id = ?
+                    ORDER BY s.last_name, s.first_name";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("i", $user_id);
+        } else {
+            $sql = "SELECT 
+                        ies.id,
+                        ies.student_code,
+                        s.title,
+                        s.first_name,
+                        s.last_name,
+                        s.nic,
+                        s.mobile as contact,
+                        ies.email,
+                        ies.attended,
+                        ies.attended_time,
+                        ies.pack_collected,
+                        ies.fees_paid,
+                        pt.program_name,
+                        bt.batch_name
+                    FROM induction_emails_sent ies
+                    INNER JOIN students s ON ies.student_code = s.student_code
+                    INNER JOIN program_table pt ON ies.program_id = pt.program_code
+                    INNER JOIN batch_table bt ON ies.batch_id = bt.id
+                    INNER JOIN program_allocation_user pau ON pt.program_code = pau.program_code
+                    LEFT JOIN induction_active_table iat ON ies.program_id = iat.program_id AND ies.batch_id = iat.batch_id
+                    WHERE pt.program_name = ? AND ies.attended = 'yes' AND (iat.status = 'active' OR iat.status IS NULL) AND pau.user_id = ?
+                    ORDER BY s.last_name, s.first_name";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("si", $program, $user_id);
+        }
+    }
+
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $students = [];
+    while ($row = $result->fetch_assoc()) {
+        $students[] = [
+            'id' => $row['id'],
+            'student_code' => $row['student_code'],
+            'name' => trim($row['title'] . ' ' . $row['first_name'] . ' ' . $row['last_name']),
+            'nic' => $row['nic'],
+            'contact' => $row['contact'],
+            'email' => $row['email'],
+            'attended' => $row['attended'],
+            'attended_time' => $row['attended_time'],
+            'pack_collected' => $row['pack_collected'],
+            'fees_paid' => $row['fees_paid'],
+            'program_name' => $row['program_name'],
+            'batch_name' => $row['batch_name']
+        ];
+    }
+
+    echo json_encode([
+        'success' => true,
+        'students' => $students
+    ]);
+} catch (Exception $e) {
+    echo json_encode([
+        'success' => false,
+        'message' => $e->getMessage()
+    ]);
+}

@@ -115,9 +115,8 @@ try {
                                 <p style="font-size:20px;font-weight:bold;color:#052c65;text-align:center;margin:0 0 20px 0;">
                                     Induction Programme Invitation
                                 </p>
-                               
                                 <p>
-                                    Dear <strong>' . htmlspecialchars("$title $firstName $lastName") . ' (' . htmlspecialchars($nic) . '),
+                                    Dear <strong>' . htmlspecialchars("$title $firstName $lastName") . '</strong>,
                                 </p>
                                 ' . ($template && !empty($template['email_body']) ? $template['email_body'] : '<p>We are pleased to invite you to the induction programme.</p>') . '
                                 <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f2f6fb; border-left:5px solid #0a66c2; margin:20px 0; border-radius:6px;">
@@ -227,20 +226,18 @@ try {
     // Log to new audit table (first, before any other operations)
     $logStatus = $emailSent ? 'sent' : 'failed';
     $logStmt = $conn->prepare("INSERT INTO induction_db_email_send_log_table 
-        (allocate_programme_id, student_code, nic, student_name, program_id, batch_id, email_address, status, error_message, sent_by) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        (allocate_programme_id, student_code, student_name, program_id, batch_id, email_address, status, error_message, sent_by) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
     if ($logStmt) {
-        $logStmt->bind_param(
-            "iissiissss",
-            $id,
-            $studentCode,
-            $nic,
-            $studentName,
-            $programmeCode,
-            $batchId,
-            $personalEmail,
-            $logStatus,
-            $errorMessage,
+        $logStmt->bind_param("iisiissss", 
+            $id, 
+            $studentCode, 
+            $studentName, 
+            $programmeCode, 
+            $batchId, 
+            $personalEmail, 
+            $logStatus, 
+            $errorMessage, 
             $sentBy
         );
         $logStmt->execute();
@@ -296,6 +293,7 @@ try {
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to send email: ' . $errorMessage]);
     }
+
 } catch (Exception $e) {
     if (isset($conn) && $conn->connect_errno == 0 && $conn->inTransaction()) {
         $conn->rollback();

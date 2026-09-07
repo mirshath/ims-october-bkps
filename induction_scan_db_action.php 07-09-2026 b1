@@ -4,7 +4,7 @@ include 'database/connection.php';
 
 try {
     $qrData = isset($_POST['nic']) ? trim($_POST['nic']) : '';
-
+    
     if (empty($qrData)) {
         echo json_encode(['success' => false, 'message' => 'Please enter or scan a NIC/Student Code']);
         exit;
@@ -19,7 +19,6 @@ try {
                 s.title,
                 s.first_name,
                 s.last_name,
-                s.nic,
                 ies.attended,
                 ies.attended_time,
                 ies.pack_collected,
@@ -54,7 +53,6 @@ try {
             'message' => 'Program batch is not active!',
             'student' => [
                 'name' => trim($student['title'] . ' ' . $student['first_name'] . ' ' . $student['last_name']),
-                'nic' => $student['nic'],
                 'student_code' => $student['student_code'],
                 'program_name' => $student['program_name'],
                 'batch_name' => $student['batch_name'],
@@ -71,7 +69,6 @@ try {
             'message' => 'Student already checked in!',
             'student' => [
                 'name' => trim($student['title'] . ' ' . $student['first_name'] . ' ' . $student['last_name']),
-                'nic' => $student['nic'],
                 'student_code' => $student['student_code'],
                 'program_name' => $student['program_name'],
                 'batch_name' => $student['batch_name'],
@@ -89,10 +86,7 @@ try {
         echo json_encode([
             'success' => false,
             'message' => 'Make the payment first!',
-            'fees_unpaid' => true,
             'student' => [
-                'id' => $student['id'],
-                'nic' => $student['nic'],
                 'name' => trim($student['title'] . ' ' . $student['first_name'] . ' ' . $student['last_name']),
                 'student_code' => $student['student_code'],
                 'program_name' => $student['program_name'],
@@ -105,7 +99,7 @@ try {
 
     // Update attendance and mark pack as collected (since fees are paid)
     $updateSql = "UPDATE induction_emails_sent SET attended = 'yes', attended_time = NOW(), pack_collected = 1 WHERE id = ?";
-
+    
     $updateStmt = $conn->prepare($updateSql);
     $updateStmt->bind_param("i", $student['id']);
     $updateStmt->execute();
@@ -118,7 +112,6 @@ try {
         'message' => 'Attendance marked successfully!',
         'student' => [
             'name' => trim($student['title'] . ' ' . $student['first_name'] . ' ' . $student['last_name']),
-            'nic' => $student['nic'],
             'student_code' => $student['student_code'],
             'program_name' => $student['program_name'],
             'batch_name' => $student['batch_name'],

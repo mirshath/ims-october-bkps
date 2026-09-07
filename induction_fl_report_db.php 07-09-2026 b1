@@ -9,7 +9,7 @@ if (!isset($_SESSION['username'])) {
 }
 
 // -------- Permission CHECKING TO REDIRECT TO HOME PAGE -------- 
-// require_once 'PermissionChecking.php';
+require_once 'PermissionChecking.php';
 // --------------------------------------------------------------------- 
 
 // Set charset for proper display
@@ -36,12 +36,12 @@ mysqli_set_charset($conn, "utf8mb4");
                 <div class="row mb-4">
                     <div class="col-12">
                         <h2 class="mb-2">
-                            <i class="fas fa-envelope me-2"></i>Induction Emailed Report
+                            <i class="fas fa-users me-2"></i>Induction DB Student Report
                         </h2>
-                        <p class="text-muted mb-0">Complete report of induction emails sent (success and failure)</p>
+                        <p class="text-muted mb-0">Complete list of all students in the induction_emails_sent table
+                            (From Database)</p>
                     </div>
                 </div>
-
 
                 <!-- Filters Section -->
                 <div class="card shadow-sm mb-4">
@@ -61,21 +61,35 @@ mysqli_set_charset($conn, "utf8mb4");
 
                             <div class="col-md-3 mb-3">
                                 <label class="form-label fw-semibold text-secondary">
-                                    <i class="fas fa-check-circle me-1"></i>Email Status
+                                    <i class="fas fa-money-bill-wave me-1"></i>Fees Status
                                 </label>
-                                <select id="statusFilter" class="form-select form-select-sm">
+                                <select id="feesFilter" class="form-select form-select-sm">
                                     <option value="">All</option>
-                                    <option value="sent">Sent</option>
-                                    <option value="failed">Failed</option>
+                                    <option value="paid">Paid</option>
+                                    <option value="unpaid">Unpaid</option>
                                 </select>
                             </div>
 
                             <div class="col-md-3 mb-3">
                                 <label class="form-label fw-semibold text-secondary">
-                                    <i class="fas fa-calendar me-1"></i>Date Range
+                                    <i class="fas fa-check-circle me-1"></i>Attended
                                 </label>
-                                <input type="date" id="dateFrom" class="form-control form-control-sm mb-1">
-                                <input type="date" id="dateTo" class="form-control form-control-sm">
+                                <select id="attendedFilter" class="form-select form-select-sm">
+                                    <option value="">All</option>
+                                    <option value="yes">Yes</option>
+                                    <option value="no">No</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-semibold text-secondary">
+                                    <i class="fas fa-box me-1"></i>Pack Collected
+                                </label>
+                                <select id="packCollectedFilter" class="form-select form-select-sm">
+                                    <option value="">All</option>
+                                    <option value="1">Yes</option>
+                                    <option value="0">No</option>
+                                </select>
                             </div>
 
                             <div class="col-12">
@@ -83,61 +97,6 @@ mysqli_set_charset($conn, "utf8mb4");
                                     <button type="button" id="clearFilters" class="btn btn-outline-secondary btn-sm">
                                         <i class="fas fa-times me-1"></i>Clear All Filters
                                     </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Summary Cards -->
-                <div class="row mb-4">
-                    <div class="col-md-4 mb-3">
-                        <div class="card shadow-sm border-left-primary">
-                            <div class="card-body">
-                                <div class="row no-gutters align-items-center">
-                                    <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                            Total Emails
-                                        </div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalEmails">0</div>
-                                    </div>
-                                    <div class="col-auto">
-                                        <i class="fas fa-envelope fa-2x text-gray-300"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <div class="card shadow-sm border-left-success">
-                            <div class="card-body">
-                                <div class="row no-gutters align-items-center">
-                                    <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                            Successfully Sent
-                                        </div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="sentEmails">0</div>
-                                    </div>
-                                    <div class="col-auto">
-                                        <i class="fas fa-check-circle fa-2x text-gray-300"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <div class="card shadow-sm border-left-danger">
-                            <div class="card-body">
-                                <div class="row no-gutters align-items-center">
-                                    <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
-                                            Failed
-                                        </div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="failedEmails">0</div>
-                                    </div>
-                                    <div class="col-auto">
-                                        <i class="fas fa-times-circle fa-2x text-gray-300"></i>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -152,7 +111,7 @@ mysqli_set_charset($conn, "utf8mb4");
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
                                         <h5 class="mb-0">
-                                            <i class="fas fa-table me-2"></i>Email Log
+                                            <i class="fas fa-table me-2"></i>Induction DB Students Data
                                         </h5>
                                     </div>
                                     <div>
@@ -162,28 +121,42 @@ mysqli_set_charset($conn, "utf8mb4");
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
+                                    <!-- Export buttons will appear here -->
                                     <div id="exportButtons"></div>
                                 </div>
                                 <div class="table-responsive">
-                                    <table id="emailsTable"
+                                    <table id="studentsTable"
                                         class="table table-striped table-bordered table-hover w-100"
                                         style="font-size:13px;">
                                         <thead class="table-light">
                                             <tr>
                                                 <th>#</th>
-                                                <!-- <th>Student Code</th> -->
+                                                <th>Attended</th>
+                                                <th>Attended Time</th>
+                                                <th>Pack Collected</th>
+                                                <th>Ref No</th>
+                                                <th>Full Name</th>
+                                                <th>Programme & Batch</th>
                                                 <th>NIC</th>
-                                                <th>Name</th>
+                                                <th>Contact No</th>
+                                                <th>Landline</th>
+                                                <th>Fees/Paid</th>
+                                                <th>Qualification</th>
+                                                <th>Institute</th>
+                                                <th>Gender</th>
+                                                <th>Date of Birth</th>
+                                                <th>Nationality</th>
                                                 <th>Email</th>
-                                                <th>Programme</th>
-                                                <th>Batch</th>
-                                                <th>Status</th>
-                                                <th>Error Message</th>
-                                                <th>Sent By</th>
-                                                <th>Sent At</th>
+                                                <th>BMS Email</th>
+                                                <th>Address 1</th>
+                                                <th>Address 2</th>
+                                                <th>Email Sent</th>
+                                                <th>Email Sent Time</th>
+                                                <th>Email Sent By</th>
                                             </tr>
                                         </thead>
                                         <tbody>
+                                            <!-- Data will be loaded via DataTables AJAX -->
                                         </tbody>
                                     </table>
                                 </div>
@@ -211,18 +184,18 @@ mysqli_set_charset($conn, "utf8mb4");
 <script src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.print.min.js"></script>
 
 <script>
-    $(document).ready(function() {
-        let table = $('#emailsTable').DataTable({
+    $(document).ready(function () {
+        let table = $('#studentsTable').DataTable({
             processing: true,
             serverSide: false,
             ajax: {
-                url: 'induction_DB_folder/fetch_induction_email_log.php',
+                url: 'induction_DB_folder/fetch_all_induction_db_students.php',
                 type: 'GET',
-                data: function(d) {
+                data: function (d) {
                     d.programme = $('#programmeFilter').val();
-                    d.status = $('#statusFilter').val();
-                    d.dateFrom = $('#dateFrom').val();
-                    d.dateTo = $('#dateTo').val();
+                    d.fees = $('#feesFilter').val();
+                    d.attended = $('#attendedFilter').val();
+                    d.pack_collected = $('#packCollectedFilter').val();
                 }
             },
             pageLength: 150,
@@ -236,25 +209,17 @@ mysqli_set_charset($conn, "utf8mb4");
             responsive: true,
             scrollX: true,
             order: [
-                [9, 'desc']
+                [0, 'asc']
             ],
             columnDefs: [{
-                    targets: 0,
-                    width: "50px",
-                    orderable: true
-                },
-                {
-                    targets: 6,
-                    render: function(data, type, row) {
-                        if (data === 'sent') {
-                            return '<span class="badge bg-success"><i class="fas fa-check-circle"></i> Sent</span>';
-                        } else if (data === 'failed') {
-                            return '<span class="badge bg-danger"><i class="fas fa-times-circle"></i> Failed</span>';
-                        } else {
-                            return '<span class="badge bg-secondary">Unknown</span>';
-                        }
-                    }
-                }
+                targets: 0,
+                width: "50px",
+                orderable: true
+            },
+            {
+                targets: '_all',
+                orderable: true
+            }
             ],
             language: {
                 processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>',
@@ -275,110 +240,98 @@ mysqli_set_charset($conn, "utf8mb4");
                 "<'row'<'col-12'tr>>" +
                 "<'row'<'col-md-5'i><'col-md-7'p>>",
             buttons: [{
-                    extend: 'copyHtml5',
-                    text: '<i class="fas fa-copy"></i> Copy',
-                    className: 'btn btn-secondary btn-sm',
-                    exportOptions: {
-                        columns: ':visible'
-                    }
-                },
-                {
-                    extend: 'csvHtml5',
-                    text: '<i class="fas fa-file-csv"></i> CSV',
-                    className: 'btn btn-success btn-sm',
-                    exportOptions: {
-                        columns: ':visible'
-                    }
-                },
-                {
-                    extend: 'excelHtml5',
-                    text: '<i class="fas fa-file-excel"></i> Excel',
-                    className: 'btn btn-success btn-sm',
-                    exportOptions: {
-                        columns: ':visible'
-                    }
-                },
-                {
-                    extend: 'pdfHtml5',
-                    text: '<i class="fas fa-file-pdf"></i> PDF',
-                    className: 'btn btn-danger btn-sm',
-                    orientation: 'landscape',
-                    pageSize: 'A4',
-                    exportOptions: {
-                        columns: ':visible'
-                    }
-                },
-                {
-                    extend: 'print',
-                    text: '<i class="fas fa-print"></i> Print',
-                    className: 'btn btn-primary btn-sm',
-                    exportOptions: {
-                        columns: ':visible'
-                    }
+                extend: 'copyHtml5',
+                text: '<i class="fas fa-copy"></i> Copy',
+                className: 'btn btn-secondary btn-sm',
+                exportOptions: {
+                    columns: ':visible'
                 }
+            },
+            {
+                extend: 'csvHtml5',
+                text: '<i class="fas fa-file-csv"></i> CSV',
+                className: 'btn btn-success btn-sm',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            {
+                extend: 'excelHtml5',
+                text: '<i class="fas fa-file-excel"></i> Excel',
+                className: 'btn btn-success btn-sm',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            {
+                extend: 'pdfHtml5',
+                text: '<i class="fas fa-file-pdf"></i> PDF',
+                className: 'btn btn-danger btn-sm',
+                orientation: 'landscape',
+                pageSize: 'A4',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            {
+                extend: 'print',
+                text: '<i class="fas fa-print"></i> Print',
+                className: 'btn btn-primary btn-sm',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            }
             ],
-            drawCallback: function(settings) {
+            drawCallback: function (settings) {
+                // Update record count
                 let api = this.api();
                 let pageInfo = api.page.info();
                 $('#recordCount').text(
                     'Showing ' + (pageInfo.start + 1) + ' to ' +
                     (pageInfo.end) + ' of ' + pageInfo.recordsTotal + ' entries'
                 );
-                updateSummary(api);
             },
-            initComplete: function(settings, json) {
+            initComplete: function (settings, json) {
+                // Move export buttons to the custom div
                 if (table.buttons) {
                     table.buttons().container().appendTo('#exportButtons');
                 }
             }
         });
 
-        function updateSummary(api) {
-            let data = api.rows({
-                search: 'applied'
-            }).data().toArray();
-            let total = data.length;
-            let sent = 0;
-            let failed = 0;
-            data.forEach(row => {
-                if (row[6] === 'sent') sent++;
-                else if (row[6] === 'failed') failed++;
-            });
-            $('#totalEmails').text(total);
-            $('#sentEmails').text(sent);
-            $('#failedEmails').text(failed);
-        }
-
+        // Load programmes for filter
         loadProgrammes();
 
         function loadProgrammes() {
             $.ajax({
-                url: 'induction_DB_folder/fetch_induction_email_programmes.php',
+                url: 'induction_DB_folder/fetch_induction_fl_programmes.php',
                 type: 'GET',
                 dataType: 'json',
-                success: function(response) {
+                success: function (response) {
                     let select = $('#programmeFilter');
                     if (response && response.length > 0) {
-                        response.forEach(function(prog) {
+                        response.forEach(function (prog) {
                             select.append(new Option(prog, prog));
                         });
                     }
                 },
-                error: function(xhr, status, error) {
+                error: function (xhr, status, error) {
                     console.error('Error loading programmes:', error);
                 }
             });
         }
 
-        $('#programmeFilter, #statusFilter, #dateFrom, #dateTo').on('change', function() {
+        // Filter change events
+        $('#programmeFilter, #feesFilter, #attendedFilter, #packCollectedFilter').on('change', function () {
             table.ajax.reload();
         });
 
-        $('#clearFilters').on('click', function() {
+        // Clear filters button
+        $('#clearFilters').on('click', function () {
             $('#programmeFilter').val('');
-            $('#statusFilter').val('');
-            $('#dateFrom').val('');
-            $('#dateTo').val('');
+            $('#feesFilter').val('');
+            $('#attendedFilter').val('');
+            $('#packCollectedFilter').val('');
             table.ajax.reload();
         });
     });

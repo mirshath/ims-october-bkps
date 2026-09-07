@@ -49,6 +49,7 @@ try {
             'id' => $row['id'],
             'student_code' => $row['student_code'],
             'student_registration_id' => $row['student_registration_id'],
+            'nic' => $row['nic'],
             'title' => $row['title'],
             'first_name' => $row['first_name'],
             'last_name' => $row['last_name'],

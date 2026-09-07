@@ -557,7 +557,7 @@ if ($result_for_up) {
             data-parent="#accordionSidebar">
             <div class="bg-white py-2 collapse-inner rounded">
 
-                <h6 class="collapse-header">FROM OUT SOURCE</h6>
+                <!-- <h6 class="collapse-header">FROM OUT SOURCE</h6>
 
                 <a class="collapse-item <?= ($current_url == 'induction_scan' && in_array('Induction Scan - induction_scan', $subListValues)) ? 'active' : '' ?>"
                     href="induction_scan" <?= !in_array('Induction Scan - induction_scan', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Induction Scan</a>
@@ -568,7 +568,7 @@ if ($result_for_up) {
 
                 <a class="collapse-item <?= ($current_url == 'total_induction_students' && in_array('Total Induction Student List - total_induction_students', $subListValues)) ? 'active' : '' ?>"
                     href="total_induction_students" <?= !in_array('Total Induction Student List - total_induction_students', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Total Induction Student List</a>
-
+ -->
 
 
                 <h6 class="collapse-header">FROM DB</h6>
@@ -587,7 +587,7 @@ if ($result_for_up) {
 
 
                 <a class="collapse-item <?= ($current_url == 'induction_fl_report_db' && in_array('Induction DB Student List - induction_fl_report_db', $subListValues)) ? 'active' : '' ?>"
-                    href="induction_fl_report_db" <?= !in_array('Induction DB Student List - induction_fl_report_db', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Induction DB Student List</a>
+                    href="induction_fl_report_db" <?= !in_array('Induction DB Student List - induction_fl_report_db', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Induction Student Report</a>
 
                 <a class="collapse-item <?= ($current_url == 'induction_email_report' && in_array('Induction Email Report - induction_email_report', $subListValues)) ? 'active' : '' ?>"
                     href="induction_email_report" <?= !in_array('Induction Email Report - induction_email_report', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Induction Email Report</a>

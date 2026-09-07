@@ -301,10 +301,6 @@ require_once 'PermissionChecking.php';
                                                         <td class="fw-semibold">${student.name}</td>
                                                     </tr>
                                                     <tr>
-                                                        <td class="fw-bold text-muted">NIC:</td>
-                                                        <td class="fw-semibold">${student.nic}</td>
-                                                    </tr>
-                                                    <tr>
                                                         <td class="fw-bold text-muted">Student Code:</td>
                                                         <td class="fw-semibold">${student.student_code}</td>
                                                     </tr>
@@ -369,10 +365,6 @@ require_once 'PermissionChecking.php';
                                                         <td class="fw-semibold">${student.name}</td>
                                                     </tr>
                                                     <tr>
-                                                        <td class="fw-bold text-muted">NIC:</td>
-                                                        <td class="fw-semibold">${student.nic}</td>
-                                                    </tr>
-                                                    <tr>
                                                         <td class="fw-bold text-muted">Student Code:</td>
                                                         <td class="fw-semibold">${student.student_code}</td>
                                                     </tr>
@@ -384,7 +376,7 @@ require_once 'PermissionChecking.php';
                                                         <td class="fw-bold text-muted">Batch:</td>
                                                         <td class="fw-semibold">${student.batch_name}</td>
                                                     </tr>
-                                                    <tr style="font-size:20px;">
+                                                    <tr>
                                                         <td class="fw-bold text-muted">Fees Status:</td>
                                                         <td>${feesBadge}</td>
                                                     </tr>
@@ -403,13 +395,6 @@ require_once 'PermissionChecking.php';
                                                     </tr>
                                                     ` : ''}
                                                 </table>
-                                                ${response.fees_unpaid ? `
-                                                <div class="text-center mt-3">
-                                                    <button type="button" class="btn btn-warning btn-sm attend-manually-btn" data-id="${student.id}">
-                                                        <i class="fas fa-user-check me-1"></i>Attend Manually
-                                                    </button>
-                                                </div>
-                                                ` : ''}
                                             </div>
                                         </div>
                                     </div>
@@ -509,83 +494,6 @@ require_once 'PermissionChecking.php';
             });
 
 
-
-            // Attend Manually button (shown when fees are unpaid)
-            $(document).on('click', '.attend-manually-btn', function() {
-                const btn = $(this);
-                const studentId = btn.data('id');
-
-                if (!studentId) return;
-
-                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Please wait...');
-
-                $.ajax({
-                    url: 'induction_manual_attend_db.php',
-                    type: 'POST',
-                    data: {
-                        id: studentId
-                    },
-                    dataType: 'json',
-                    success: function(response) {
-                        if (response.success) {
-                            let student = response.student;
-                            $('#modalBody').html(`
-                                <div class="text-center py-3">
-                                    <div class="mb-3">
-                                        <i class="fas fa-check-circle text-success" style="font-size: 3.5rem;"></i>
-                                    </div>
-                                    <h5 class="text-success fw-bold mb-2">${response.message}</h5>
-                                    <div class="card bg-light border-0 mt-3">
-                                        <div class="card-body text-start">
-                                            <table class="table table-sm table-borderless mb-0">
-                                                <tr>
-                                                    <td class="fw-bold text-muted">Name:</td>
-                                                    <td class="fw-semibold">${student.name}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="fw-bold text-muted">NIC:</td>
-                                                    <td class="fw-semibold">${student.nic}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="fw-bold text-muted">Student Code:</td>
-                                                    <td class="fw-semibold">${student.student_code}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="fw-bold text-muted">Programme:</td>
-                                                    <td class="fw-semibold">${student.program_name}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="fw-bold text-muted">Batch:</td>
-                                                    <td class="fw-semibold">${student.batch_name}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="fw-bold text-muted">Attended:</td>
-                                                    <td><span class="badge bg-success">${student.attended}</span></td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="fw-bold text-muted">Attended Time:</td>
-                                                    <td class="fw-semibold">${student.attended_time}</td>
-                                                </tr>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            `);
-
-                            const selectedProgram = $('#programFilter').val();
-                            loadStatistics(selectedProgram);
-                            $('#studentsTable').DataTable().ajax.reload(null, false);
-                        } else {
-                            btn.prop('disabled', false).html('<i class="fas fa-user-check me-1"></i>Attend Manually');
-                            $('#modalBody').prepend(`<div class="alert alert-danger py-2 mb-2">${response.message}</div>`);
-                        }
-                    },
-                    error: function() {
-                        btn.prop('disabled', false).html('<i class="fas fa-user-check me-1"></i>Attend Manually');
-                        $('#modalBody').prepend('<div class="alert alert-danger py-2 mb-2">Error marking attendance. Please try again.</div>');
-                    }
-                });
-            });
 
             // Refocus input on modal close
             $('#resultModal').on('hidden.bs.modal', function() {

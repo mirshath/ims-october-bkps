@@ -262,32 +262,37 @@ try {
         }
     }
 
-    $checkStmt = $conn->prepare("SELECT id FROM induction_emails_sent WHERE allocate_programme_id = ?");
-    $checkStmt->bind_param("i", $id);
-    $checkStmt->execute();
-    $checkResult = $checkStmt->get_result();
-    $checkStmt->close();
+    // Only record the student as "emailed" if the email actually sent successfully.
+    // If it failed, we've already logged the failure above in the audit table,
+    // and we skip touching induction_emails_sent entirely.
+    if ($emailSent) {
+        $checkStmt = $conn->prepare("SELECT id FROM induction_emails_sent WHERE allocate_programme_id = ?");
+        $checkStmt->bind_param("i", $id);
+        $checkStmt->execute();
+        $checkResult = $checkStmt->get_result();
+        $checkStmt->close();
 
-    if ($checkResult->num_rows > 0) {
-        $updateStmt = $conn->prepare("UPDATE induction_emails_sent SET email = ?, sent_at = NOW(), sent_by = ?, program_id = ?, batch_id = ?, nic = ? WHERE allocate_programme_id = ?");
-        if (!$updateStmt) {
-            throw new Exception("Prepare update failed: " . $conn->error);
+        if ($checkResult->num_rows > 0) {
+            $updateStmt = $conn->prepare("UPDATE induction_emails_sent SET email = ?, sent_at = NOW(), sent_by = ?, program_id = ?, batch_id = ?, nic = ? WHERE allocate_programme_id = ?");
+            if (!$updateStmt) {
+                throw new Exception("Prepare update failed: " . $conn->error);
+            }
+            $updateStmt->bind_param("ssiisi", $personalEmail, $sentBy, $programmeCode, $batchId, $nic, $id);
+            if (!$updateStmt->execute()) {
+                throw new Exception("Update failed: " . $updateStmt->error);
+            }
+            $updateStmt->close();
+        } else {
+            $insertStmt = $conn->prepare("INSERT INTO induction_emails_sent (allocate_programme_id, student_code, nic, program_id, batch_id, email, sent_at, sent_by) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)");
+            if (!$insertStmt) {
+                throw new Exception("Prepare insert failed: " . $conn->error);
+            }
+            $insertStmt->bind_param("iisisss", $id, $studentCode, $nic, $programmeCode, $batchId, $personalEmail, $sentBy);
+            if (!$insertStmt->execute()) {
+                throw new Exception("Insert failed: " . $insertStmt->error);
+            }
+            $insertStmt->close();
         }
-        $updateStmt->bind_param("ssiisi", $personalEmail, $sentBy, $programmeCode, $batchId, $nic, $id);
-        if (!$updateStmt->execute()) {
-            throw new Exception("Update failed: " . $updateStmt->error);
-        }
-        $updateStmt->close();
-    } else {
-        $insertStmt = $conn->prepare("INSERT INTO induction_emails_sent (allocate_programme_id, student_code, nic, program_id, batch_id, email, sent_at, sent_by) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)");
-        if (!$insertStmt) {
-            throw new Exception("Prepare insert failed: " . $conn->error);
-        }
-        $insertStmt->bind_param("iisisss", $id, $studentCode, $nic, $programmeCode, $batchId, $personalEmail, $sentBy);
-        if (!$insertStmt->execute()) {
-            throw new Exception("Insert failed: " . $insertStmt->error);
-        }
-        $insertStmt->close();
     }
 
     $conn->commit();

@@ -1,5 +1,13 @@
 <?php
 session_start();
+
+// Make sure PHP errors/warnings never get printed into the JSON output.
+// They will still be logged (per php.ini / log_errors) but not echoed to the browser.
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
+
+header('Content-Type: application/json');
+
 include '../database/connection.php';
 
 // Set charset
@@ -46,8 +54,8 @@ if ($packCollectedFilter !== '') {
 
 $whereClause = !empty($whereConditions) ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
 
-// Get all data
-$query = "SELECT 
+// Build the final SELECT list (shared by both branches below)
+$selectColumns = "
             ies.id,
             ies.attended,
             ies.attended_time,
@@ -72,44 +80,10 @@ $query = "SELECT
             s.current_address,
             ies.sent_at AS email_sent_time,
             ies.sent_by AS email_sent_by
-          FROM induction_emails_sent ies
-          INNER JOIN allocate_programme ap ON ies.allocate_programme_id = ap.id
-          INNER JOIN students s ON ap.student_code = s.student_code
-          INNER JOIN program_table pt ON ies.program_id = pt.program_code
-          INNER JOIN batch_table bt ON ies.batch_id = bt.id
-          " . ($role !== 'super_admin' ? "INNER JOIN program_allocation_user pau ON pt.program_code = pau.program_code" : "") . "
-          " . ($role !== 'super_admin' ? "" : "LEFT JOIN induction_active_table iat ON ies.program_id = iat.program_id AND ies.batch_id = iat.batch_id") . "
-          " . ($role === 'super_admin' ? "LEFT JOIN induction_active_table iat ON ies.program_id = iat.program_id AND ies.batch_id = iat.batch_id" : "") . "
-          " . ($whereClause . " " . ($role === 'super_admin' ? "AND (iat.status = 'active' OR iat.status IS NULL)" : "LEFT JOIN induction_active_table iat ON ies.program_id = iat.program_id AND ies.batch_id = iat.batch_id WHERE (iat.status = 'active' OR iat.status IS NULL) AND " . substr($whereClause, 6))) . "
-          ORDER BY ies.id DESC";
+";
 
-// Wait, let's fix that query properly:
 if ($role === 'super_admin') {
-    $query = "SELECT 
-                ies.id,
-                ies.attended,
-                ies.attended_time,
-                ies.pack_collected,
-                ap.student_registration_id,
-                ies.student_code,
-                CONCAT(s.title, ' ', s.first_name, ' ', s.last_name) AS full_name,
-                pt.program_name AS programme,
-                bt.batch_name AS batch,
-                ies.nic,
-                s.mobile AS contact_no,
-                s.telephone AS landline_no,
-                ies.fees_paid,
-                s.qualifications,
-                s.organization,
-                s.title AS gender_title,
-                s.date_of_birth,
-                s.nationality,
-                ies.email,
-                s.bms_email,
-                s.permanent_address,
-                s.current_address,
-                ies.sent_at AS email_sent_time,
-                ies.sent_by AS email_sent_by
+    $query = "SELECT $selectColumns
               FROM induction_emails_sent ies
               INNER JOIN allocate_programme ap ON ies.allocate_programme_id = ap.id
               INNER JOIN students s ON ap.student_code = s.student_code
@@ -119,31 +93,7 @@ if ($role === 'super_admin') {
               " . (!empty($whereClause) ? $whereClause . " AND (iat.status = 'active' OR iat.status IS NULL)" : "WHERE (iat.status = 'active' OR iat.status IS NULL)") . "
               ORDER BY ies.id DESC";
 } else {
-    $query = "SELECT 
-                ies.id,
-                ies.attended,
-                ies.attended_time,
-                ies.pack_collected,
-                ap.student_registration_id,
-                ies.student_code,
-                CONCAT(s.title, ' ', s.first_name, ' ', s.last_name) AS full_name,
-                pt.program_name AS programme,
-                bt.batch_name AS batch,
-                ies.nic,
-                s.mobile AS contact_no,
-                s.telephone AS landline_no,
-                ies.fees_paid,
-                s.qualifications,
-                s.organization,
-                s.title AS gender_title,
-                s.date_of_birth,
-                s.nationality,
-                ies.email,
-                s.bms_email,
-                s.permanent_address,
-                s.current_address,
-                ies.sent_at AS email_sent_time,
-                ies.sent_by AS email_sent_by
+    $query = "SELECT $selectColumns
               FROM induction_emails_sent ies
               INNER JOIN allocate_programme ap ON ies.allocate_programme_id = ap.id
               INNER JOIN students s ON ap.student_code = s.student_code
@@ -157,60 +107,66 @@ if ($role === 'super_admin') {
 
 $result = $conn->query($query);
 
+// If the query itself failed, report it clearly as JSON instead of
+// silently returning an empty table or letting a warning leak into the output.
+if ($result === false) {
+    http_response_code(500);
+    echo json_encode([
+        "data" => [],
+        "error" => "Database query failed: " . $conn->error
+    ], JSON_UNESCAPED_UNICODE);
+    $conn->close();
+    exit;
+}
+
 $data = [];
 
-if ($result) {
-    $i = 1;
-    while ($row = $result->fetch_assoc()) {
-        $feesValue = !empty($row['fees_paid']) ? ucfirst($row['fees_paid']) : 'Unpaid';
-        $isPaid = (strtolower($row['fees_paid']) === 'paid');
+$i = 1;
+while ($row = $result->fetch_assoc()) {
+    $feesValue = !empty($row['fees_paid']) ? ucfirst($row['fees_paid']) : 'Unpaid';
+    $isPaid = (strtolower($row['fees_paid'] ?? '') === 'paid');
 
-        // Address mapping
-        $address1 = $row['permanent_address'] ?? '';
-        $address2 = $row['current_address'] ?? '';
+    // Address mapping
+    $address1 = $row['permanent_address'] ?? '';
+    $address2 = $row['current_address'] ?? '';
 
-        $data[] = [
-            $i++,
-            // Attended
-            (strtolower(trim($row['attended'] ?? '')) === 'yes'
-                ? '<span class="badge bg-success">Yes</span>'
-                : '<span class="badge bg-danger">No</span>'
-            ),
-            htmlspecialchars($row['attended_time'] ?? ''),
-            // Pack Collected
-            (($row['pack_collected'] ?? 0) == 1
-                ? '<span class="badge bg-success"><i class="fas fa-check-circle"></i> Yes</span>'
-                : '<span class="badge bg-warning"><i class="fas fa-times-circle"></i> No</span>'
-            ),
-            htmlspecialchars($row['student_registration_id'] ?? $row['student_code'] ?? ''),
-            htmlspecialchars($row['full_name'] ?? ''),
-            htmlspecialchars($row['programme'] . ' - ' . $row['batch']),
-            htmlspecialchars($row['nic'] ?? ''),
-            htmlspecialchars($row['contact_no'] ?? ''),
-            htmlspecialchars($row['landline_no'] ?? ''),
-            // Fees
-            $isPaid
-                ? '<span class="badge bg-success">' . htmlspecialchars($feesValue) . '</span>'
-                : '<span class="badge bg-danger">' . htmlspecialchars($feesValue) . '</span>',
-            htmlspecialchars($row['qualifications'] ?? ''),
-            htmlspecialchars($row['organization'] ?? ''),
-            htmlspecialchars($row['gender_title'] ?? ''),
-            htmlspecialchars($row['date_of_birth'] ?? ''),
-            htmlspecialchars($row['nationality'] ?? ''),
-            htmlspecialchars($row['email'] ?? ''),
-            htmlspecialchars($row['bms_email'] ?? ''),
-            htmlspecialchars($address1),
-            htmlspecialchars($address2),
-            // Email sent column (always sent as these are from induction_emails_sent)
-            '<span class="badge bg-info">Sent</span>',
-            htmlspecialchars($row['email_sent_time'] ?? ''),
-            htmlspecialchars($row['email_sent_by'] ?? '')
-        ];
-    }
+    $data[] = [
+        $i++,
+        // Attended
+        (strtolower(trim($row['attended'] ?? '')) === 'yes'
+            ? '<span class="badge bg-success">Yes</span>'
+            : '<span class="badge bg-danger">No</span>'
+        ),
+        htmlspecialchars($row['attended_time'] ?? ''),
+        // Pack Collected
+        (($row['pack_collected'] ?? 0) == 1
+            ? '<span class="badge bg-success"><i class="fas fa-check-circle"></i> Yes</span>'
+            : '<span class="badge bg-warning"><i class="fas fa-times-circle"></i> No</span>'
+        ),
+        htmlspecialchars($row['student_registration_id'] ?? $row['student_code'] ?? '-'),
+        htmlspecialchars($row['full_name'] ?? ''),
+        htmlspecialchars(($row['programme'] ?? '') . ' - ' . ($row['batch'] ?? '')),
+        htmlspecialchars($row['nic'] ?? ''),
+        htmlspecialchars($row['contact_no'] ?? ''),
+        htmlspecialchars($row['landline_no'] ?? ''),
+        // Fees
+        $isPaid
+            ? '<span class="badge bg-success">' . htmlspecialchars($feesValue) . '</span>'
+            : '<span class="badge bg-danger">' . htmlspecialchars($feesValue) . '</span>',
+
+        htmlspecialchars($row['date_of_birth'] ?? ''),
+
+        htmlspecialchars($row['email'] ?? ''),
+        htmlspecialchars($row['bms_email'] ?? ''),
+
+        // Email sent column (always sent as these are from induction_emails_sent)
+        '<span class="badge bg-info">Sent</span>',
+        htmlspecialchars($row['email_sent_time'] ?? ''),
+        htmlspecialchars($row['email_sent_by'] ?? '')
+    ];
 }
 
 echo json_encode([
     "data" => $data
 ], JSON_UNESCAPED_UNICODE);
 $conn->close();
-?>

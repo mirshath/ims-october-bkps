@@ -9,7 +9,7 @@ try {
     $totalStudents = 0;
     $attendedStudents = 0;
     $packCollected = 0;
-
+    
     if ($programBatch === 'all') {
         if ($role === 'super_admin') {
             // Get total students (all active - including those without iat records)
@@ -18,7 +18,7 @@ try {
                         LEFT JOIN induction_active_table iat ON ies.program_id = iat.program_id AND ies.batch_id = iat.batch_id
                         WHERE (iat.status = 'active' OR iat.status IS NULL)";
             $stmtTotal = $conn->prepare($sqlTotal);
-
+            
             // Get attended and pack collected (active only)
             $sqlAttended = "SELECT 
                                 COUNT(*) AS attended,
@@ -37,7 +37,7 @@ try {
                         WHERE (iat.status = 'active' OR iat.status IS NULL) AND pau.user_id = ?";
             $stmtTotal = $conn->prepare($sqlTotal);
             $stmtTotal->bind_param("i", $user_id);
-
+            
             // Get attended and pack collected (active only AND program_allocation_user)
             $sqlAttended = "SELECT 
                                 COUNT(*) AS attended,
@@ -50,11 +50,11 @@ try {
             $stmtAttended = $conn->prepare($sqlAttended);
             $stmtAttended->bind_param("i", $user_id);
         }
-
+        
         $stmtTotal->execute();
         $totalStudents = $stmtTotal->get_result()->fetch_assoc()['total'];
         $stmtTotal->close();
-
+        
         $stmtAttended->execute();
         $statsAttended = $stmtAttended->get_result()->fetch_assoc();
         $attendedStudents = $statsAttended['attended'];
@@ -66,7 +66,7 @@ try {
         if (count($parts) === 2) {
             $programName = $parts[0];
             $batchName = $parts[1];
-
+            
             if ($role === 'super_admin') {
                 // Get total students (filtered by programme-batch, active only)
                 $sqlTotal = "SELECT COUNT(*) AS total 
@@ -77,7 +77,7 @@ try {
                             WHERE (iat.status = 'active' OR iat.status IS NULL) AND pt.program_name = ? AND bt.batch_name = ?";
                 $stmtTotal = $conn->prepare($sqlTotal);
                 $stmtTotal->bind_param("ss", $programName, $batchName);
-
+                
                 // Get attended and pack collected (filtered)
                 $sqlAttended = "SELECT 
                                     COUNT(*) AS attended,
@@ -100,7 +100,7 @@ try {
                             WHERE (iat.status = 'active' OR iat.status IS NULL) AND pt.program_name = ? AND bt.batch_name = ? AND pau.user_id = ?";
                 $stmtTotal = $conn->prepare($sqlTotal);
                 $stmtTotal->bind_param("ssi", $programName, $batchName, $user_id);
-
+                
                 // Get attended and pack collected (filtered AND program_allocation_user)
                 $sqlAttended = "SELECT 
                                     COUNT(*) AS attended,
@@ -114,11 +114,11 @@ try {
                 $stmtAttended = $conn->prepare($sqlAttended);
                 $stmtAttended->bind_param("ssi", $programName, $batchName, $user_id);
             }
-
+            
             $stmtTotal->execute();
             $totalStudents = $stmtTotal->get_result()->fetch_assoc()['total'];
             $stmtTotal->close();
-
+            
             $stmtAttended->execute();
             $statsAttended = $stmtAttended->get_result()->fetch_assoc();
             $attendedStudents = $statsAttended['attended'];
@@ -134,7 +134,7 @@ try {
                             WHERE (iat.status = 'active' OR iat.status IS NULL) AND pt.program_name = ?";
                 $stmtTotal = $conn->prepare($sqlTotal);
                 $stmtTotal->bind_param("s", $programBatch);
-
+                
                 $sqlAttended = "SELECT 
                                     COUNT(*) AS attended,
                                     SUM(CASE WHEN ies.pack_collected = 1 THEN 1 ELSE 0 END) AS pack_collected
@@ -153,7 +153,7 @@ try {
                             WHERE (iat.status = 'active' OR iat.status IS NULL) AND pt.program_name = ? AND pau.user_id = ?";
                 $stmtTotal = $conn->prepare($sqlTotal);
                 $stmtTotal->bind_param("si", $programBatch, $user_id);
-
+                
                 $sqlAttended = "SELECT 
                                     COUNT(*) AS attended,
                                     SUM(CASE WHEN ies.pack_collected = 1 THEN 1 ELSE 0 END) AS pack_collected
@@ -165,11 +165,11 @@ try {
                 $stmtAttended = $conn->prepare($sqlAttended);
                 $stmtAttended->bind_param("si", $programBatch, $user_id);
             }
-
+            
             $stmtTotal->execute();
             $totalStudents = $stmtTotal->get_result()->fetch_assoc()['total'];
             $stmtTotal->close();
-
+            
             $stmtAttended->execute();
             $statsAttended = $stmtAttended->get_result()->fetch_assoc();
             $attendedStudents = $statsAttended['attended'];
@@ -177,7 +177,7 @@ try {
             $stmtAttended->close();
         }
     }
-
+    
     echo json_encode([
         'totalStudents' => $totalStudents,
         'attendedStudents' => $attendedStudents,
@@ -190,3 +190,4 @@ try {
         'packCollected' => 0
     ]);
 }
+?>

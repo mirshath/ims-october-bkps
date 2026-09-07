@@ -48,6 +48,7 @@ if ($role === 'super_admin') {
     $sql = "SELECT 
                 log.id,
                 log.student_code,
+                log.nic,
                 log.student_name,
                 log.email_address,
                 pt.program_name,
@@ -67,6 +68,7 @@ if ($role === 'super_admin') {
     $sql = "SELECT 
                 log.id,
                 log.student_code,
+                log.nic,
                 log.student_name,
                 log.email_address,
                 pt.program_name,
@@ -92,7 +94,8 @@ if ($result) {
     while ($row = $result->fetch_assoc()) {
         $data[] = [
             $index,
-            $row['student_code'],
+            // $row['student_code'],
+            $row['nic'],
             $row['student_name'],
             $row['email_address'],
             $row['program_name'],
@@ -109,4 +112,3 @@ if ($result) {
 echo json_encode(['data' => $data], JSON_UNESCAPED_UNICODE);
 
 $conn->close();
-?>

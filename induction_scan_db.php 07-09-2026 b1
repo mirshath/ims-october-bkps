@@ -35,7 +35,7 @@ require_once 'PermissionChecking.php';
                                         <option value="all">All Programmes</option>
                                     </select>
                                     <script>
-                                        $(document).ready(function() {
+                                        $(document).ready(function () {
                                             $('#programFilter').select2({
                                                 placeholder: "Select a programme",
                                                 allowClear: true,
@@ -53,7 +53,7 @@ require_once 'PermissionChecking.php';
                 <div class="row mb-4" id="statsContainer">
                     <div class="col-md-3 col-sm-6 mb-3">
                         <div class="card border-0 shadow-sm h-100 rounded-4"
-                            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                             style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                             <div class="card-body text-white text-center">
                                 <div class="d-flex align-items-center justify-content-center mb-2">
                                     <i class="fas fa-users fa-2x me-2"></i>
@@ -65,7 +65,7 @@ require_once 'PermissionChecking.php';
                     </div>
                     <div class="col-md-3 col-sm-6 mb-3">
                         <div class="card border-0 shadow-sm h-100 rounded-4"
-                            style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                             style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
                             <div class="card-body text-white text-center">
                                 <div class="d-flex align-items-center justify-content-center mb-2">
                                     <i class="fas fa-check-circle fa-2x me-2"></i>
@@ -77,7 +77,7 @@ require_once 'PermissionChecking.php';
                     </div>
                     <div class="col-md-3 col-sm-6 mb-3">
                         <div class="card border-0 shadow-sm h-100 rounded-4"
-                            style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                             style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
                             <div class="card-body text-white text-center">
                                 <div class="d-flex align-items-center justify-content-center mb-2">
                                     <i class="fas fa-box-open fa-2x me-2"></i>
@@ -89,7 +89,7 @@ require_once 'PermissionChecking.php';
                     </div>
                     <div class="col-md-3 col-sm-6 mb-3">
                         <div class="card border-0 shadow-sm h-100 rounded-4"
-                            style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                             style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
                             <div class="card-body text-white text-center">
                                 <div class="d-flex align-items-center justify-content-center mb-2">
                                     <i class="fas fa-box fa-2x me-2"></i>
@@ -106,7 +106,7 @@ require_once 'PermissionChecking.php';
                     <div class="col-lg-6 col-md-8">
                         <div class="card shadow-lg border-0 rounded-4">
                             <div class="card-header text-white d-flex align-items-center rounded-top-4"
-                                style="gap:14px; background: rgb(4 45 92) !important;">
+                                 style="gap:14px; background: rgb(4 45 92) !important;">
                                 <span class="material-icons fs-2 me-2">qr_code_scanner</span>
                                 <span class="h5 fw-bold mb-0">Induction Attendance (From DB)</span>
                             </div>
@@ -117,8 +117,8 @@ require_once 'PermissionChecking.php';
                                 <form autocomplete="off" onsubmit="return false;">
                                     <div class="mb-3 mx-auto" style="max-width:340px;">
                                         <input type="text" id="scanInput"
-                                            class="form-control form-control-lg text-center rounded-3"
-                                            placeholder="Scan or Enter NIC" autofocus>
+                                               class="form-control form-control-lg text-center rounded-3"
+                                               placeholder="Scan or Enter NIC" autofocus>
                                     </div>
                                     <div class="text-muted mb-2">
                                         Scan QR or type NIC and press <kbd>Enter</kbd>
@@ -131,13 +131,13 @@ require_once 'PermissionChecking.php';
 
                 <!-- Modal Attendance Status -->
                 <div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel"
-                    aria-hidden="true">
+                     aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content" style="font-family:'Roboto', Arial, sans-serif;">
                             <div class="modal-header border-bottom">
                                 <h5 class="modal-title text-primary" id="resultModalLabel">Attendance Status</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                    aria-label="Close"></button>
+                                        aria-label="Close"></button>
                             </div>
                             <div class="modal-body" id="modalBody">
                                 <!-- AJAX result will be injected here -->
@@ -151,7 +151,7 @@ require_once 'PermissionChecking.php';
                     <div class="col-12">
                         <div class="card border-0 shadow-sm rounded-4">
                             <div class="card-header bg-white d-flex align-items-center justify-content-between"
-                                style="height: 60px;">
+                                 style="height: 60px;">
                                 <div class="d-flex align-items-center">
                                     <span
                                         class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center me-3"
@@ -164,14 +164,14 @@ require_once 'PermissionChecking.php';
                             <div class="card-body">
                                 <div class="table-responsive mb-4">
                                     <table id="studentsTable"
-                                        class="table table-striped table-bordered align-middle mb-0"
-                                        style="width:100%;font-size:13px;">
+                                           class="table table-striped table-bordered align-middle mb-0"
+                                           style="width:100%;font-size:13px;">
                                         <thead class="table-light">
                                             <tr>
                                                 <th>#</th>
                                                 <th>Name</th>
                                                 <th>NIC</th>
-                                                <th>Programme - Batch</th>
+                                                <th>Programme</th>
                                                 <th>Email</th>
                                                 <th>Contact</th>
                                                 <th>Paid / Unpaid</th>
@@ -199,21 +199,21 @@ require_once 'PermissionChecking.php';
     <link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
 
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
             // Load programs into dropdown
             function loadPrograms() {
                 $.ajax({
                     url: 'induction_DB_folder/fetch_induction_db_programs.php',
                     type: 'GET',
                     dataType: 'json',
-                    success: function(programs) {
+                    success: function (programs) {
                         let programFilter = $('#programFilter');
                         programFilter.find('option:not(:first)').remove();
-                        programs.forEach(function(program) {
+                        programs.forEach(function (program) {
                             programFilter.append('<option value="' + program + '">' + program + '</option>');
                         });
                     },
-                    error: function() {
+                    error: function () {
                         console.error('Failed to load programs');
                     }
                 });
@@ -230,13 +230,13 @@ require_once 'PermissionChecking.php';
                     url: url,
                     type: 'GET',
                     dataType: 'json',
-                    success: function(stats) {
+                    success: function (stats) {
                         $('#totalStudents').text(stats.totalStudents || 0);
                         $('#attendedStudents').text(stats.attendedStudents || 0);
                         $('#packIssuedCount').text(stats.packCollected || 0);
                         $('#packNotIssuedCount').text((stats.attendedStudents || 0) - (stats.packCollected || 0));
                     },
-                    error: function() {
+                    error: function () {
                         console.error('Failed to load statistics');
                     }
                 });
@@ -256,13 +256,13 @@ require_once 'PermissionChecking.php';
             loadStatistics();
 
             // Program filter change event
-            $('#programFilter').on('change', function() {
+            $('#programFilter').on('change', function () {
                 const selectedProgram = $(this).val();
                 loadStatistics(selectedProgram);
                 $('#studentsTable').DataTable().ajax.url(getTableUrl(selectedProgram)).load();
             });
 
-            $('#scanInput').on('keypress', function(e) {
+            $('#scanInput').on('keypress', function (e) {
                 if (e.which === 13) { // Enter key
                     let nic = $(this).val().trim();
                     if (nic === '') return;
@@ -270,11 +270,9 @@ require_once 'PermissionChecking.php';
                     $.ajax({
                         url: 'induction_scan_db_action.php',
                         type: 'POST',
-                        data: {
-                            nic: nic
-                        },
+                        data: { nic: nic },
                         dataType: 'json',
-                        success: function(response) {
+                        success: function (response) {
                             if (response.success) {
                                 // Attendance marked successfully
                                 let student = response.student;
@@ -299,10 +297,6 @@ require_once 'PermissionChecking.php';
                                                     <tr>
                                                         <td class="fw-bold text-muted">Name:</td>
                                                         <td class="fw-semibold">${student.name}</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="fw-bold text-muted">NIC:</td>
-                                                        <td class="fw-semibold">${student.nic}</td>
                                                     </tr>
                                                     <tr>
                                                         <td class="fw-bold text-muted">Student Code:</td>
@@ -351,10 +345,10 @@ require_once 'PermissionChecking.php';
                                     feesBadge = '<span class="badge bg-secondary">-</span>';
                                 }
                                 // Determine pack collected badge
-                                let packBadge = student.pack_collected == 1 ?
-                                    '<span class="badge bg-success">Yes</span>' :
-                                    '<span class="badge bg-secondary">No</span>';
-
+                                let packBadge = student.pack_collected == 1 
+                                    ? '<span class="badge bg-success">Yes</span>' 
+                                    : '<span class="badge bg-secondary">No</span>';
+                                    
                                 $('#modalBody').html(`
                                     <div class="text-center py-3">
                                         <div class="mb-3">
@@ -369,10 +363,6 @@ require_once 'PermissionChecking.php';
                                                         <td class="fw-semibold">${student.name}</td>
                                                     </tr>
                                                     <tr>
-                                                        <td class="fw-bold text-muted">NIC:</td>
-                                                        <td class="fw-semibold">${student.nic}</td>
-                                                    </tr>
-                                                    <tr>
                                                         <td class="fw-bold text-muted">Student Code:</td>
                                                         <td class="fw-semibold">${student.student_code}</td>
                                                     </tr>
@@ -384,7 +374,7 @@ require_once 'PermissionChecking.php';
                                                         <td class="fw-bold text-muted">Batch:</td>
                                                         <td class="fw-semibold">${student.batch_name}</td>
                                                     </tr>
-                                                    <tr style="font-size:20px;">
+                                                    <tr>
                                                         <td class="fw-bold text-muted">Fees Status:</td>
                                                         <td>${feesBadge}</td>
                                                     </tr>
@@ -403,13 +393,6 @@ require_once 'PermissionChecking.php';
                                                     </tr>
                                                     ` : ''}
                                                 </table>
-                                                ${response.fees_unpaid ? `
-                                                <div class="text-center mt-3">
-                                                    <button type="button" class="btn btn-warning btn-sm attend-manually-btn" data-id="${student.id}">
-                                                        <i class="fas fa-user-check me-1"></i>Attend Manually
-                                                    </button>
-                                                </div>
-                                                ` : ''}
                                             </div>
                                         </div>
                                     </div>
@@ -436,7 +419,7 @@ require_once 'PermissionChecking.php';
                             loadStatistics(selectedProgram);
                             $('#studentsTable').DataTable().ajax.reload(null, false);
                         },
-                        error: function(xhr) {
+                        error: function (xhr) {
                             console.error(xhr.responseText);
                             $('#modalBody').html('<div class="text-danger text-center fw-semibold py-3">Error processing scan. Please try again.</div>');
                             let modalEl = document.getElementById('resultModal');
@@ -461,33 +444,21 @@ require_once 'PermissionChecking.php';
                 ordering: true,
                 searching: true,
                 responsive: true,
-                columns: [{
+                columns: [
+                    {
                         data: null,
-                        render: function(data, type, row, meta) {
+                        render: function (data, type, row, meta) {
                             return meta.row + 1;
                         }
                     },
-                    {
-                        data: 'name'
-                    },
-                    {
-                        data: 'nic',
-                        defaultContent: '-'
-                    },
-                    {
-                        data: 'program_batch',
-                        defaultContent: '-'
-                    },
-                    {
-                        data: 'email'
-                    },
-                    {
-                        data: 'contact',
-                        defaultContent: '-'
-                    },
+                    { data: 'name' },
+                    { data: 'nic', defaultContent: '-' },
+                    { data: 'program_name' },
+                    { data: 'email' },
+                    { data: 'contact', defaultContent: '-' },
                     {
                         data: 'fees_paid',
-                        render: function(data) {
+                        render: function (data) {
                             if (data === 'paid') return '<span class="badge bg-success">Paid</span>';
                             if (data === 'unpaid') return '<span class="badge bg-danger">Unpaid</span>';
                             return '-';
@@ -495,100 +466,20 @@ require_once 'PermissionChecking.php';
                     },
                     {
                         data: 'pack_collected',
-                        render: function(data) {
-                            return data == 1 ?
-                                '<span class="badge bg-success">Yes</span>' :
-                                '<span class="badge bg-secondary">No</span>';
+                        render: function (data) {
+                            return data == 1 
+                                ? '<span class="badge bg-success">Yes</span>' 
+                                : '<span class="badge bg-secondary">No</span>';
                         }
                     },
-                    {
-                        data: 'attended_time',
-                        defaultContent: '-'
-                    }
+                    { data: 'attended_time', defaultContent: '-' }
                 ]
             });
 
 
 
-            // Attend Manually button (shown when fees are unpaid)
-            $(document).on('click', '.attend-manually-btn', function() {
-                const btn = $(this);
-                const studentId = btn.data('id');
-
-                if (!studentId) return;
-
-                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Please wait...');
-
-                $.ajax({
-                    url: 'induction_manual_attend_db.php',
-                    type: 'POST',
-                    data: {
-                        id: studentId
-                    },
-                    dataType: 'json',
-                    success: function(response) {
-                        if (response.success) {
-                            let student = response.student;
-                            $('#modalBody').html(`
-                                <div class="text-center py-3">
-                                    <div class="mb-3">
-                                        <i class="fas fa-check-circle text-success" style="font-size: 3.5rem;"></i>
-                                    </div>
-                                    <h5 class="text-success fw-bold mb-2">${response.message}</h5>
-                                    <div class="card bg-light border-0 mt-3">
-                                        <div class="card-body text-start">
-                                            <table class="table table-sm table-borderless mb-0">
-                                                <tr>
-                                                    <td class="fw-bold text-muted">Name:</td>
-                                                    <td class="fw-semibold">${student.name}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="fw-bold text-muted">NIC:</td>
-                                                    <td class="fw-semibold">${student.nic}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="fw-bold text-muted">Student Code:</td>
-                                                    <td class="fw-semibold">${student.student_code}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="fw-bold text-muted">Programme:</td>
-                                                    <td class="fw-semibold">${student.program_name}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="fw-bold text-muted">Batch:</td>
-                                                    <td class="fw-semibold">${student.batch_name}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="fw-bold text-muted">Attended:</td>
-                                                    <td><span class="badge bg-success">${student.attended}</span></td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="fw-bold text-muted">Attended Time:</td>
-                                                    <td class="fw-semibold">${student.attended_time}</td>
-                                                </tr>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            `);
-
-                            const selectedProgram = $('#programFilter').val();
-                            loadStatistics(selectedProgram);
-                            $('#studentsTable').DataTable().ajax.reload(null, false);
-                        } else {
-                            btn.prop('disabled', false).html('<i class="fas fa-user-check me-1"></i>Attend Manually');
-                            $('#modalBody').prepend(`<div class="alert alert-danger py-2 mb-2">${response.message}</div>`);
-                        }
-                    },
-                    error: function() {
-                        btn.prop('disabled', false).html('<i class="fas fa-user-check me-1"></i>Attend Manually');
-                        $('#modalBody').prepend('<div class="alert alert-danger py-2 mb-2">Error marking attendance. Please try again.</div>');
-                    }
-                });
-            });
-
             // Refocus input on modal close
-            $('#resultModal').on('hidden.bs.modal', function() {
+            $('#resultModal').on('hidden.bs.modal', function () {
                 $('#scanInput').focus();
                 const selectedProgram = $('#programFilter').val();
                 loadStatistics(selectedProgram);
@@ -601,5 +492,4 @@ require_once 'PermissionChecking.php';
     </script>
 </div>
 </body>
-
 </html>

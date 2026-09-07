@@ -36,12 +36,11 @@ mysqli_set_charset($conn, "utf8mb4");
                 <div class="row mb-4">
                     <div class="col-12">
                         <h2 class="mb-2">
-                            <i class="fas fa-envelope me-2"></i>Induction Emailed Report
+                            <i class="fas fa-envelope me-2"></i>Induction Email Report
                         </h2>
                         <p class="text-muted mb-0">Complete report of induction emails sent (success and failure)</p>
                     </div>
                 </div>
-
 
                 <!-- Filters Section -->
                 <div class="card shadow-sm mb-4">
@@ -171,8 +170,7 @@ mysqli_set_charset($conn, "utf8mb4");
                                         <thead class="table-light">
                                             <tr>
                                                 <th>#</th>
-                                                <!-- <th>Student Code</th> -->
-                                                <th>NIC</th>
+                                                <th>Student Code</th>
                                                 <th>Name</th>
                                                 <th>Email</th>
                                                 <th>Programme</th>
@@ -211,14 +209,14 @@ mysqli_set_charset($conn, "utf8mb4");
 <script src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.print.min.js"></script>
 
 <script>
-    $(document).ready(function() {
+    $(document).ready(function () {
         let table = $('#emailsTable').DataTable({
             processing: true,
             serverSide: false,
             ajax: {
                 url: 'induction_DB_folder/fetch_induction_email_log.php',
                 type: 'GET',
-                data: function(d) {
+                data: function (d) {
                     d.programme = $('#programmeFilter').val();
                     d.status = $('#statusFilter').val();
                     d.dateFrom = $('#dateFrom').val();
@@ -238,14 +236,15 @@ mysqli_set_charset($conn, "utf8mb4");
             order: [
                 [9, 'desc']
             ],
-            columnDefs: [{
+            columnDefs: [
+                {
                     targets: 0,
                     width: "50px",
                     orderable: true
                 },
                 {
                     targets: 6,
-                    render: function(data, type, row) {
+                    render: function (data, type, row) {
                         if (data === 'sent') {
                             return '<span class="badge bg-success"><i class="fas fa-check-circle"></i> Sent</span>';
                         } else if (data === 'failed') {
@@ -274,29 +273,24 @@ mysqli_set_charset($conn, "utf8mb4");
                 "<'row'<'col-12'B>>" +
                 "<'row'<'col-12'tr>>" +
                 "<'row'<'col-md-5'i><'col-md-7'p>>",
-            buttons: [{
+            buttons: [
+                {
                     extend: 'copyHtml5',
                     text: '<i class="fas fa-copy"></i> Copy',
                     className: 'btn btn-secondary btn-sm',
-                    exportOptions: {
-                        columns: ':visible'
-                    }
+                    exportOptions: { columns: ':visible' }
                 },
                 {
                     extend: 'csvHtml5',
                     text: '<i class="fas fa-file-csv"></i> CSV',
                     className: 'btn btn-success btn-sm',
-                    exportOptions: {
-                        columns: ':visible'
-                    }
+                    exportOptions: { columns: ':visible' }
                 },
                 {
                     extend: 'excelHtml5',
                     text: '<i class="fas fa-file-excel"></i> Excel',
                     className: 'btn btn-success btn-sm',
-                    exportOptions: {
-                        columns: ':visible'
-                    }
+                    exportOptions: { columns: ':visible' }
                 },
                 {
                     extend: 'pdfHtml5',
@@ -304,20 +298,16 @@ mysqli_set_charset($conn, "utf8mb4");
                     className: 'btn btn-danger btn-sm',
                     orientation: 'landscape',
                     pageSize: 'A4',
-                    exportOptions: {
-                        columns: ':visible'
-                    }
+                    exportOptions: { columns: ':visible' }
                 },
                 {
                     extend: 'print',
                     text: '<i class="fas fa-print"></i> Print',
                     className: 'btn btn-primary btn-sm',
-                    exportOptions: {
-                        columns: ':visible'
-                    }
+                    exportOptions: { columns: ':visible' }
                 }
             ],
-            drawCallback: function(settings) {
+            drawCallback: function (settings) {
                 let api = this.api();
                 let pageInfo = api.page.info();
                 $('#recordCount').text(
@@ -326,7 +316,7 @@ mysqli_set_charset($conn, "utf8mb4");
                 );
                 updateSummary(api);
             },
-            initComplete: function(settings, json) {
+            initComplete: function (settings, json) {
                 if (table.buttons) {
                     table.buttons().container().appendTo('#exportButtons');
                 }
@@ -334,9 +324,7 @@ mysqli_set_charset($conn, "utf8mb4");
         });
 
         function updateSummary(api) {
-            let data = api.rows({
-                search: 'applied'
-            }).data().toArray();
+            let data = api.rows({ search: 'applied' }).data().toArray();
             let total = data.length;
             let sent = 0;
             let failed = 0;
@@ -356,25 +344,25 @@ mysqli_set_charset($conn, "utf8mb4");
                 url: 'induction_DB_folder/fetch_induction_email_programmes.php',
                 type: 'GET',
                 dataType: 'json',
-                success: function(response) {
+                success: function (response) {
                     let select = $('#programmeFilter');
                     if (response && response.length > 0) {
-                        response.forEach(function(prog) {
+                        response.forEach(function (prog) {
                             select.append(new Option(prog, prog));
                         });
                     }
                 },
-                error: function(xhr, status, error) {
+                error: function (xhr, status, error) {
                     console.error('Error loading programmes:', error);
                 }
             });
         }
 
-        $('#programmeFilter, #statusFilter, #dateFrom, #dateTo').on('change', function() {
+        $('#programmeFilter, #statusFilter, #dateFrom, #dateTo').on('change', function () {
             table.ajax.reload();
         });
 
-        $('#clearFilters').on('click', function() {
+        $('#clearFilters').on('click', function () {
             $('#programmeFilter').val('');
             $('#statusFilter').val('');
             $('#dateFrom').val('');

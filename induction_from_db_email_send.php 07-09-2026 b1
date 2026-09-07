@@ -97,7 +97,6 @@ require_once 'PermissionChecking.php';
                                             <th><input type="checkbox" id="selectAll"></th>
                                             <th>Student Code</th>
                                             <th>Registration ID</th>
-                                            <th>NIC</th>
                                             <th>Name</th>
                                             <th>Email</th>
                                             <th>Status</th>
@@ -252,7 +251,6 @@ require_once 'PermissionChecking.php';
                                     </td>
                                     <td>${student.student_code}</td>
                                     <td>${student.student_registration_id || '-'}</td>
-                                    <td>${student.nic || '-'}</td>
                                     <td>${student.title} ${student.first_name} ${student.last_name}</td>
                                     <td>${student.personal_email}</td>
                                     <td>${student.email_sent ? '<span class="badge bg-success">Sent</span>' : '<span class="badge bg-secondary">Not Sent</span>'}</td>
@@ -312,8 +310,8 @@ require_once 'PermissionChecking.php';
                 const programmeCode = $(this).data('programme-code');
                 const batchId = $(this).data('batch-id');
                 const nic = $(this).data('nic');
-                const personalEmail = row.find('td:eq(5)').text();
-                const nameParts = row.find('td:eq(4)').text().split(' ');
+                const personalEmail = row.find('td:eq(4)').text();
+                const nameParts = row.find('td:eq(3)').text().split(' ');
                 const title = nameParts[0];
                 const firstName = nameParts[1];
                 const lastName = nameParts.slice(2).join(' ');
@@ -345,8 +343,8 @@ require_once 'PermissionChecking.php';
                         const programmeCode = checkbox.data('programme-code');
                         const batchId = checkbox.data('batch-id');
                         const nic = checkbox.data('nic');
-                        const personalEmail = $(this).find('td:eq(5)').text();
-                        const nameParts = $(this).find('td:eq(4)').text().split(' ');
+                        const personalEmail = $(this).find('td:eq(4)').text();
+                        const nameParts = $(this).find('td:eq(3)').text().split(' ');
                         const title = nameParts[0];
                         const firstName = nameParts[1];
                         const lastName = nameParts.slice(2).join(' ');

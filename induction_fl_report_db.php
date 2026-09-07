@@ -141,15 +141,15 @@ mysqli_set_charset($conn, "utf8mb4");
                                                 <th>Contact No</th>
                                                 <th>Landline</th>
                                                 <th>Fees/Paid</th>
-                                                <th>Qualification</th>
-                                                <th>Institute</th>
-                                                <th>Gender</th>
+                                                <!-- <th>Qualification</th> -->
+                                                <!-- <th>Institute</th> -->
+                                                <!-- <th>Gender</th> -->
                                                 <th>Date of Birth</th>
-                                                <th>Nationality</th>
+                                                <!-- <th>Nationality</th> -->
                                                 <th>Email</th>
                                                 <th>BMS Email</th>
-                                                <th>Address 1</th>
-                                                <th>Address 2</th>
+                                                <!-- <th>Address 1</th> -->
+                                                <!-- <th>Address 2</th> -->
                                                 <th>Email Sent</th>
                                                 <th>Email Sent Time</th>
                                                 <th>Email Sent By</th>
