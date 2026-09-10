@@ -157,18 +157,18 @@ if (isset($_GET['edit'])) {
 }
 
 // Delete a batch
-if (isset($_GET['delete'])) {
-    $id = (int) $_GET['delete'];
-    $stmt = $conn->prepare("DELETE FROM batch_table WHERE id=?");
-    $stmt->bind_param("i", $id);
-    if ($stmt->execute()) {
-        $_SESSION['message'] = "Batch deleted successfully!";
-        echo '<script>window.location.href = "' . $_SERVER['HTTP_REFERER'] . '";</script>';
-        exit();
-    } else {
-        echo "Error: " . $stmt->error;
-    }
-}
+// if (isset($_GET['delete'])) {
+//     $id = (int) $_GET['delete'];
+//     $stmt = $conn->prepare("DELETE FROM batch_table WHERE id=?");
+//     $stmt->bind_param("i", $id);
+//     if ($stmt->execute()) {
+//         $_SESSION['message'] = "Batch deleted successfully!";
+//         echo '<script>window.location.href = "' . $_SERVER['HTTP_REFERER'] . '";</script>';
+//         exit();
+//     } else {
+//         echo "Error: " . $stmt->error;
+//     }
+// }
 ?>
 
 <!-- Page Wrapper -->

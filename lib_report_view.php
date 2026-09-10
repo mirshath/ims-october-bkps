@@ -1,6 +1,6 @@
 <?php
 // lib_report_view.php
-//session_start();
+session_start();
 ob_start();
 date_default_timezone_set('Asia/Colombo');
 

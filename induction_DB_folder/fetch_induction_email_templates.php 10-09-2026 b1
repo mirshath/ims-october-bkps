@@ -17,8 +17,6 @@ try {
             FROM induction_email_body_db_table t
             INNER JOIN program_table pt ON t.program_id = pt.program_code
             INNER JOIN batch_table bt ON t.batch_id = bt.id
-            LEFT JOIN induction_active_table iat ON t.program_id = iat.program_id AND t.batch_id = iat.batch_id
-            WHERE (iat.status = 'active' OR iat.status IS NULL)
             ORDER BY t.created_at DESC
         ";
         $stmt = $conn->prepare($query);
@@ -32,26 +30,26 @@ try {
             INNER JOIN program_table pt ON t.program_id = pt.program_code
             INNER JOIN batch_table bt ON t.batch_id = bt.id
             INNER JOIN program_allocation_user pau ON pt.program_code = pau.program_code
-            LEFT JOIN induction_active_table iat ON t.program_id = iat.program_id AND t.batch_id = iat.batch_id
-            WHERE pau.user_id = ? AND (iat.status = 'active' OR iat.status IS NULL)
+            WHERE pau.user_id = ?
             ORDER BY t.created_at DESC
         ";
         $stmt = $conn->prepare($query);
         $stmt->bind_param("i", $user_id);
     }
-
+    
     $stmt->execute();
     $result = $stmt->get_result();
-
+    
     $templates = [];
     while ($row = $result->fetch_assoc()) {
         $templates[] = $row;
     }
-
+    
     echo json_encode([
         'success' => true,
         'templates' => $templates
     ]);
+    
 } catch (Exception $e) {
     echo json_encode([
         'success' => false,
@@ -60,3 +58,4 @@ try {
     ]);
 }
 $conn->close();
+?>

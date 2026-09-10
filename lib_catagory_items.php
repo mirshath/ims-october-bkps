@@ -1,4 +1,5 @@
 <?php
+session_start();
 // lib_catagory_items.php
 ob_start();
 date_default_timezone_set('Asia/Colombo');

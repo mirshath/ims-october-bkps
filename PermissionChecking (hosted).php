@@ -1,7 +1,7 @@
 <?php 
 // data link code use to other pages to link iths page. 
-
 include_once 'tracking/track_engine.php'; ?>
+
 <?php
 
 // Get current file name without extension
@@ -23,7 +23,6 @@ if ($result_for_up) {
         if (isset($parts[1])) {
             $subListValues[] = trim($parts[1]); // Only add "addLeads" part
         }
-        
     }
 } else {
     echo "Error fetching permissions: " . mysqli_error($conn);

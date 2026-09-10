@@ -292,16 +292,9 @@ require 'vendor/autoload.php';
                                             </div>
                                         </div>
 
-                                        <div class="mb-3 row" id="reg_id_range_row" style="display:none;">
-                                            <label class="col-sm-3 col-form-label">Program Registration ID Range:</label>
-                                            <div class="col-sm-9">
-                                                <input type="text" class="form-control" id="reg_id_range_value" readonly>
-                                            </div>
-                                        </div>
-
                                         <!-- <p style="color: red; font-weight: bolder;" id="bms_automatic_ID">here wanna allocate the BMS Registration ID </p> -->
                                         <div class="mb-3 row align-items-center" id="currect_reg_id_row">
-                                            <label for="specific_student_reg_id" id="specific_student_reg_id_label" class="col-sm-3 col-form-label">Program Registration ID:</label>
+                                            <label for="specific_student_reg_id" class="col-sm-3 col-form-label">Program Registration ID:</label>
                                             <div class="col-sm-9">
                                                 <input type="text" class="form-control" id="specific_student_reg_id">
                                             </div>
@@ -1285,16 +1278,7 @@ require 'vendor/autoload.php';
                                             method: 'POST',
                                             data: {
                                                 program_code: programme_code,
-                                                batch_id: batch_id,
-                                                // These build this program's exact ID prefix on the server
-                                                // (Program Code + Batch NO + Intake NO + Year) so the
-                                                // missing-ID / range check only looks at IDs that truly
-                                                // belong to this program - not ones a batch-transferred
-                                                // student brought in from a different batch/intake/year.
-                                                prog_code: window.prog_code,
-                                                batch_no: window.fetchedBatchNo,
-                                                intake_no: window.fetchedIntakeNo,
-                                                year_no: window.fetchedYearNo
+                                                batch_id: batch_id
                                             },
                                             dataType: 'json',
                                             success: function(resp) {
@@ -1303,7 +1287,6 @@ require 'vendor/autoload.php';
                                                     $('#last_student_reg_id').val('');
                                                     $('#Last_new_std_reg_id').val('');
                                                     $('#Last_new_std_reg_id_row').hide();
-                                                    $('#reg_id_range_row').hide();
                                                     return;
                                                 }
 
@@ -1312,25 +1295,6 @@ require 'vendor/autoload.php';
                                                 const lastEnteredId = resp.last_entered_id;
                                                 const lastNewEnteredId = resp.last_new_entered_id;
                                                 const missingNewId = resp.missing_new_id;
-                                                const missingRegId = resp.missing_reg_id;
-
-                                                // Show this program's own Registration ID range
-                                                // (only IDs matching Program Code + Batch NO + Intake NO + Year)
-                                                if (resp.reg_id_range_min && resp.reg_id_range_max) {
-                                                    $('#reg_id_range_value').val(
-                                                        resp.reg_id_range_min === resp.reg_id_range_max ?
-                                                        resp.reg_id_range_min :
-                                                        resp.reg_id_range_min + ' - ' + resp.reg_id_range_max
-                                                    );
-                                                    $('#reg_id_range_row').show();
-                                                } else {
-                                                    $('#reg_id_range_value').val('');
-                                                    $('#reg_id_range_row').hide();
-                                                }
-
-                                                // Show any IDs that don't match this program's prefix -
-                                                // these belong to students transferred in from another
-                                                // batch/intake/year and were excluded from the range/gap check above.
 
                                                 $('#last_student_reg_id').val(lastEnteredId);
                                                 $('#Last_new_std_reg_id').val(lastNewEnteredId);
@@ -1338,7 +1302,6 @@ require 'vendor/autoload.php';
                                                 window.lastEnteredId = lastEnteredId;
                                                 window.lastNewEnteredId = lastNewEnteredId;
                                                 window.missingNewId = missingNewId;
-                                                window.missingRegId = missingRegId;
 
                                                 let nextNewRegIdDisplay;
 
@@ -1409,38 +1372,12 @@ require 'vendor/autoload.php';
                                                                 .show()
                                                                 .prop('readonly', true);
 
-                                                            let autoGeneratedID;
+                                                            const lastEnteredIdStr = window.lastEnteredId ? window.lastEnteredId.toString() : '00';
+                                                            const lastTwoDigits = lastEnteredIdStr.slice(-2);
+                                                            const incrementedNum = parseInt(lastTwoDigits, 10) + 1;
+                                                            const incrementedStr = incrementedNum.toString().padStart(2, '0');
 
-                                                            if (window.missingRegId) {
-                                                                // A gap exists in this program/batch's Program
-                                                                // Registration ID sequence - reuse it instead of
-                                                                // generating last + 1.
-                                                                autoGeneratedID = window.missingRegId;
-                                                                console.log('Missing Program Registration ID found, reusing:', autoGeneratedID);
-
-                                                                $('#specific_student_reg_id_label')
-                                                                    .text('Missing Program Registration ID:')
-                                                                    .css({
-                                                                        color: 'red',
-                                                                        fontWeight: 'bolder'
-                                                                    });
-                                                            } else {
-                                                                // No gap - fall back to the existing continuous logic (last + 1)
-                                                                const lastEnteredIdStr = window.lastEnteredId ? window.lastEnteredId.toString() : '00';
-                                                                const lastTwoDigits = lastEnteredIdStr.slice(-2);
-                                                                const incrementedNum = parseInt(lastTwoDigits, 10) + 1;
-                                                                const incrementedStr = incrementedNum.toString().padStart(2, '0');
-
-                                                                autoGeneratedID = window.prog_code + window.fetchedBatchNo + window.fetchedIntakeNo + window.fetchedYearNo + incrementedStr;
-
-                                                                $('#specific_student_reg_id_label')
-                                                                    .text('Program Registration ID:')
-                                                                    .css({
-                                                                        color: '',
-                                                                        fontWeight: ''
-                                                                    });
-                                                            }
-
+                                                            const autoGeneratedID = window.prog_code + window.fetchedBatchNo + window.fetchedIntakeNo + window.fetchedYearNo + incrementedStr;
                                                             $('#specific_student_reg_id').val(autoGeneratedID).prop('readonly', true);
                                                         }
 
@@ -2096,12 +2033,6 @@ require 'vendor/autoload.php';
                 color: '',
                 fontWeight: ''
             });
-            $('#specific_student_reg_id_label').text('Program Registration ID:').css({
-                color: '',
-                fontWeight: ''
-            });
-            $('#reg_id_range_row').hide();
-            $('#reg_id_range_value').val('');
         }
 
     });

@@ -1,4 +1,5 @@
 <?php
+session_start();
 // lib_dashboard.php
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
@@ -1562,7 +1563,7 @@ function loadReportData(period, from, to) {
 // Update the updateSummaryCards function
 // Update the updateSummaryCards function
 function updateSummaryCards(period, summary, todaySales) {
-    // Update Today's Sales (top section) – always uses todaySales
+    // Update Today's Sales (top section) ï¿½ always uses todaySales
     if (period === 'today' && todaySales) {
         $('#todayTotalSale').text((todaySales.today_sales || 0).toFixed(2));
         $('#todayTotalJobs').text(todaySales.total_jobs || 0);
@@ -1596,11 +1597,11 @@ function updateSummaryCards(period, summary, todaySales) {
     // Display Double Pages
     $('#todayDoublePages').text(doublePages);
     
-    // Calculate Total Print Pages = Single + (Double × 2) + Error
+    // Calculate Total Print Pages = Single + (Double ï¿½ 2) + Error
     var totalPrintPages = singlePages + (doublePages * 2) + errorPages;
     
     // Debug: Log the calculation
-    console.log('Calculation:', singlePages + ' + (' + doublePages + ' × 2) + ' + errorPages + ' = ' + totalPrintPages);
+    console.log('Calculation:', singlePages + ' + (' + doublePages + ' ï¿½ 2) + ' + errorPages + ' = ' + totalPrintPages);
     
     // Display Total Print Pages
     $('#todayTotalPages').text(totalPrintPages);
