@@ -14,7 +14,7 @@ require_once $basePath . '/database/connection.php';
 
 function jsonResponse($data)
 {
-    
+
     echo json_encode($data, JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -101,8 +101,6 @@ try {
 
     $stmt->close();
     jsonResponse($students);
-
 } catch (Exception $e) {
     jsonResponse(['error' => $e->getMessage()]);
 }
-?>
