@@ -1,4 +1,5 @@
 <?php
+session_start();
 // libPOS/search_staff.php
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
