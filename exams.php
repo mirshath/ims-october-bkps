@@ -326,7 +326,7 @@ if ($isEdit) {
                         LEFT JOIN modules m ON a.module_id = m.id
                         LEFT JOIN assignment_components mc ON a.main_component_id = mc.id
                         LEFT JOIN sub_assign_components sc ON a.sub_component_id = sc.id
-                        ORDER BY a.assessment_date DESC
+                        ORDER BY a.created_at DESC
                     ";
 
                     $result = $conn->query($query);
@@ -343,7 +343,7 @@ if ($isEdit) {
                         LEFT JOIN sub_assign_components sc ON a.sub_component_id = sc.id
                         INNER JOIN program_allocation_user pau ON a.programme_id = pau.program_code
                         WHERE pau.user_id = ?
-                        ORDER BY a.assessment_date DESC
+                        ORDER BY a.created_at DESC
                     ";
 
                     // Secure with prepared statement
@@ -376,6 +376,7 @@ if ($isEdit) {
                                             <th width="100px">View</th>
                                         <?php endif; ?>
                                         <th>By</th>
+                                        <th>Created At</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -418,6 +419,7 @@ if ($isEdit) {
                                             <?php endif; ?>
 
                                             <td><?php echo htmlspecialchars($row['entered_by']); ?></td>
+                                            <td><?php echo htmlspecialchars($row['created_at']); ?></td>
                                         </tr>
                                     <?php endwhile; ?>
                                 </tbody>

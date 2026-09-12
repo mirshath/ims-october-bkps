@@ -1,12 +1,11 @@
 <?php
-session_start();
 // Include your database connection
 include("../database/connection.php");
 
 // Start session if not already started
-// if (session_status() == PHP_SESSION_NONE) {
-//     session_start();
-// }
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Check if user is logged in
 if (!isset($_SESSION['username'])) {
@@ -118,7 +117,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         $stmt = $conn->prepare($query);
         $stmt->bind_param(
-            "iiissiisssssssi",
+            "iiisssisssssssi",
             $programme_id,
             $batch_id,
             $module_id,
@@ -157,7 +156,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         $stmt = $conn->prepare($query);
         $stmt->bind_param(
-            "iiissiisssssss",
+            "iiississssssss",
             $programme_id,
             $batch_id,
             $module_id,

@@ -1,4 +1,11 @@
 <?php
+
+ob_start();
+
+// TEMP DEBUG: shows the real error instead of a blank page.
+// Remove/comment these two lines once the issue is found and fixed.
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 // Include your database connection
 include("../database/connection.php");
 

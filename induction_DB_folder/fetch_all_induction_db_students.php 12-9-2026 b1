@@ -44,22 +44,8 @@ if ($feesFilter !== '') {
     $whereConditions[] = "ies.fees_paid = '" . mysqli_real_escape_string($conn, strtolower($feesFilter)) . "'";
 }
 
-// if ($attendedFilter !== '') {
-//     $whereConditions[] = "ies.attended = '" . mysqli_real_escape_string($conn, strtolower($attendedFilter)) . "'";
-// }
-
-
-
 if ($attendedFilter !== '') {
-    // NOTE: The displayed "Attended" badge treats anything that is NOT
-    // exactly 'yes' (including NULL / empty string) as "No". To keep the
-    // filter consistent with what the user sees on screen, "No" must match
-    // NULL/blank/anything-other-than-'yes', not just the literal string 'no'.
-    if (strtolower($attendedFilter) === 'no') {
-        $whereConditions[] = "(ies.attended IS NULL OR LOWER(TRIM(ies.attended)) != 'yes')";
-    } else {
-        $whereConditions[] = "LOWER(TRIM(ies.attended)) = '" . mysqli_real_escape_string($conn, strtolower($attendedFilter)) . "'";
-    }
+    $whereConditions[] = "ies.attended = '" . mysqli_real_escape_string($conn, strtolower($attendedFilter)) . "'";
 }
 
 if ($packCollectedFilter !== '') {

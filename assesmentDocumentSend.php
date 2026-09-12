@@ -302,20 +302,7 @@ if ($isEdit) {
                 </div>
 
                 <!-- -------------------- newly fetching 21.03.2025 -------------------------  -->
-
                 <?php
-                // Fetch assessments data
-                //     $query = "SELECT a.*, p.program_name, b.batch_name, m.module_name, mc.as_main_component_name, sc.sub_component_name
-                //   FROM save_assessment_document_send a
-                //   LEFT JOIN program_table p ON a.programme_id = p.program_code 
-                //   LEFT JOIN batch_table b ON a.batch_id = b.id
-                //   LEFT JOIN modules m ON a.module_id = m.id
-                //   LEFT JOIN assignment_components mc ON a.main_component_id = mc.id
-                //   LEFT JOIN sub_assign_components sc ON a.sub_component_id = sc.id
-                //   ORDER BY a.assessment_date DESC";
-
-                //     $result = $conn->query($query);
-
 
                 if ($role === 'super_admin') {
                     // Super admin: see all assessments
@@ -332,7 +319,7 @@ if ($isEdit) {
                     LEFT JOIN modules m ON a.module_id = m.id
                     LEFT JOIN assignment_components mc ON a.main_component_id = mc.id
                     LEFT JOIN sub_assign_components sc ON a.sub_component_id = sc.id
-                    ORDER BY a.assessment_date DESC
+                    ORDER BY a.created_at DESC
                 ";
                 } else {
                     // Other users: only assessments for allocated programs
@@ -352,7 +339,7 @@ if ($isEdit) {
                     INNER JOIN program_allocation_user pau 
                            ON a.programme_id = pau.program_code
                     WHERE pau.user_id = $user_id
-                    ORDER BY a.assessment_date DESC
+                    ORDER BY a.created_at DESC
                 ";
                 }
 
@@ -387,6 +374,7 @@ if ($isEdit) {
                                             <th width="100px">View</th>
                                         <?php endif; ?>
                                         <th>By</th>
+                                        <th>Created At</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -434,6 +422,7 @@ if ($isEdit) {
                                             <?php endif; ?>
 
                                             <td><?php echo htmlspecialchars($row['entered_by']); ?></td>
+                                            <td><?php echo htmlspecialchars($row['created_at']); ?></td>
                                         </tr>
                                     <?php endwhile; ?>
                                 </tbody>
@@ -442,283 +431,280 @@ if ($isEdit) {
                     </div>
                 </div>
 
-                <!-- -------------------------------  -->
-
-
                 <!-- ---------------------------------------------  -->
 
                 <!-- Bootstrap CDN -->
                 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-                                                            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+                <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 
 
-                                                            <script src="vendor/datatables/jquery.dataTables.min.js"></script>
-                                                            <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-                                                            <link rel="stylesheet" href="./vendor/datatables/dataTables.bootstrap4.min.css">
+                <script src="vendor/datatables/jquery.dataTables.min.js"></script>
+                <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+                <link rel="stylesheet" href="./vendor/datatables/dataTables.bootstrap4.min.css">
 
-                                                            <script>
-                                                                $(document).ready(function() {
-                                                                    $('#assessmentTable').DataTable({
-                                                                        "paging": true, // Enable pagination
-                                                                        "searching": true, // Enable searching
-                                                                        "ordering": true, // Enable sorting
-                                                                        "order": [
-                                                                            [0, "asc"]
-                                                                        ], // Default order by first column (Type)
-                                                                        "pageLength": 100, // Show 10 entries per page
-                                                                        "language": {
-                                                                            "lengthMenu": "Show _MENU_ entries per page",
-                                                                            "zeroRecords": "No assessments Document found",
-                                                                            "info": "Showing page _PAGE_ of _PAGES_",
-                                                                            "infoEmpty": "No assessments available",
-                                                                            "infoFiltered": "(filtered from _MAX_ total records)"
-                                                                        }
-                                                                    });
+                <script>
+                    $(document).ready(function() {
+                        $('#assessmentTable').DataTable({
+                            "paging": true, // Enable pagination
+                            "searching": true, // Enable searching
+                            "ordering": true, // Enable sorting
+                            "order": [
+                                [0, "asc"]
+                            ], // Default order by first column (Type)
+                            "pageLength": 100, // Show 10 entries per page
+                            "language": {
+                                "lengthMenu": "Show _MENU_ entries per page",
+                                "zeroRecords": "No assessments Document found",
+                                "info": "Showing page _PAGE_ of _PAGES_",
+                                "infoEmpty": "No assessments available",
+                                "infoFiltered": "(filtered from _MAX_ total records)"
+                            }
+                        });
 
-                                                                    // Attachment removal functionality
-                                                                    $('.remove-attachment').on('click', function() {
-                                                                        const attachmentId = $(this).data('attachment-id');
-                                                                        const confirmRemove = confirm('Are you sure you want to remove this attachment?');
+                        // Attachment removal functionality
+                        $('.remove-attachment').on('click', function() {
+                            const attachmentId = $(this).data('attachment-id');
+                            const confirmRemove = confirm('Are you sure you want to remove this attachment?');
 
-                                                                        if (confirmRemove) {
-                                                                            // Set the hidden input value to 1 to indicate removal
-                                                                            $(`#remove_attachment_${attachmentId}`).val('1');
+                            if (confirmRemove) {
+                                // Set the hidden input value to 1 to indicate removal
+                                $(`#remove_attachment_${attachmentId}`).val('1');
 
-                                                                            // Hide the current file info and show a message
-                                                                            $(this).closest('div').html('<span class="text-danger">File will be removed upon update</span>');
+                                // Hide the current file info and show a message
+                                $(this).closest('div').html('<span class="text-danger">File will be removed upon update</span>');
 
-                                                                            // Clear the file input
-                                                                            $(`#attachment${attachmentId}`).val('');
-                                                                        }
-                                                                    });
-                                                                });
-                                                            </script>
+                                // Clear the file input
+                                $(`#attachment${attachmentId}`).val('');
+                            }
+                        });
+                    });
+                </script>
 
 
-                                                            <script>
-                                                                function sendRowId(button, rowId) {
-                                                                    // Change the button text to "Sending..." and disable the button
-                                                                    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp;Sending...';
-                                                                    button.classList.add('disabled'); // Add a disabled class for styling (optional)
-                                                                    button.style.pointerEvents = "none"; // Disable clicking
+                <script>
+                    function sendRowId(button, rowId) {
+                        // Change the button text to "Sending..." and disable the button
+                        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp;Sending...';
+                        button.classList.add('disabled'); // Add a disabled class for styling (optional)
+                        button.style.pointerEvents = "none"; // Disable clicking
 
-                                                                    // AJAX call to send the row ID
-                                                                    $.ajax({
-                                                                        url: 'transection_exams/check_allocate.php', // The PHP file to handle the request
-                                                                        type: 'POST',
-                                                                        dataType: 'json', // Expect a JSON response
-                                                                        data: {
-                                                                            id: rowId
-                                                                        },
-                                                                        success: function(response) {
-                                                                            console.log('Response from server: ', response);
+                        // AJAX call to send the row ID
+                        $.ajax({
+                            url: 'transection_exams/check_allocate.php', // The PHP file to handle the request
+                            type: 'POST',
+                            dataType: 'json', // Expect a JSON response
+                            data: {
+                                id: rowId
+                            },
+                            success: function(response) {
+                                console.log('Response from server: ', response);
 
-                                                                            if (response.success) {
-                                                                                alert(response.message);
-                                                                                // Change the button text and class after success
-                                                                                button.innerHTML = '<i class="fas fa-check"></i>&nbsp;' + response.buttonText; // Update button text
-                                                                                button.classList.remove('btn-success'); // Remove old class
-                                                                                button.classList.add(response.buttonClass); // Add new class
-                                                                                button.style.pointerEvents = "auto"; // Re-enable clicking
-                                                                                // Optionally refresh or navigate
-                                                                                window.location.reload();
-                                                                            } else {
-                                                                                alert(response.message);
-                                                                                // Revert the button on failure
-                                                                                button.innerHTML = '<i class="fas fa-envelope"></i>&nbsp;Send';
-                                                                                button.classList.remove('disabled');
-                                                                                button.style.pointerEvents = "auto"; // Re-enable clicking
-                                                                            }
-                                                                        },
-                                                                        error: function(xhr, status, error) {
-                                                                            console.error('Error: ' + error);
-                                                                            alert('An error occurred while sending the email.');
-                                                                            // Revert the button back to its original state on failure
-                                                                            button.innerHTML = '<i class="fas fa-envelope"></i>&nbsp;Send';
-                                                                            button.classList.remove('disabled');
-                                                                            button.style.pointerEvents = "auto"; // Re-enable clicking
-                                                                        }
-                                                                    });
-                                                                }
+                                if (response.success) {
+                                    alert(response.message);
+                                    // Change the button text and class after success
+                                    button.innerHTML = '<i class="fas fa-check"></i>&nbsp;' + response.buttonText; // Update button text
+                                    button.classList.remove('btn-success'); // Remove old class
+                                    button.classList.add(response.buttonClass); // Add new class
+                                    button.style.pointerEvents = "auto"; // Re-enable clicking
+                                    // Optionally refresh or navigate
+                                    window.location.reload();
+                                } else {
+                                    alert(response.message);
+                                    // Revert the button on failure
+                                    button.innerHTML = '<i class="fas fa-envelope"></i>&nbsp;Send';
+                                    button.classList.remove('disabled');
+                                    button.style.pointerEvents = "auto"; // Re-enable clicking
+                                }
+                            },
+                            error: function(xhr, status, error) {
+                                console.error('Error: ' + error);
+                                alert('An error occurred while sending the email.');
+                                // Revert the button back to its original state on failure
+                                button.innerHTML = '<i class="fas fa-envelope"></i>&nbsp;Send';
+                                button.classList.remove('disabled');
+                                button.style.pointerEvents = "auto"; // Re-enable clicking
+                            }
+                        });
+                    }
 
-                                                                function handleMailAction(selectElement, rowId) {
-                                                                    const action = selectElement.value;
-                                                                    if (action === 'resend') {
-                                                                        // Call the function to resend the mail
-                                                                        sendRowId(selectElement, rowId);
-                                                                    }
-                                                                }
+                    function handleMailAction(selectElement, rowId) {
+                        const action = selectElement.value;
+                        if (action === 'resend') {
+                            // Call the function to resend the mail
+                            sendRowId(selectElement, rowId);
+                        }
+                    }
 
-                                                                $(document).ready(function() {
-                                                                    CKEDITOR.replace('description');
+                    $(document).ready(function() {
+                        CKEDITOR.replace('description');
 
-                                                                    // Initialize Select2 for all dropdowns
-                                                                    $('.select2').select2({
-                                                                        // minimumResultsForSearch: Infinity // Disable search box if not needed
-                                                                    });
+                        // Initialize Select2 for all dropdowns
+                        $('.select2').select2({
+                            // minimumResultsForSearch: Infinity // Disable search box if not needed
+                        });
 
-                                                                    // Fetch Programmes
-                                                                    $.ajax({
-                                                                        url: "transection_exams/fetch_programmes.php",
-                                                                        method: "GET",
-                                                                        dataType: "json",
-                                                                        success: function(data) {
-                                                                            let programmeDropdown = $('#programme');
-                                                                            programmeDropdown.empty().append('<option value="">Select Programme</option>');
-                                                                            data.forEach(function(programme) {
-                                                                                let selected = (<?php echo ($isEdit && isset($assessment['programme_id'])) ? json_encode($assessment['programme_id']) : 'null'; ?> == programme.program_code) ? 'selected' : '';
-                                                                                programmeDropdown.append(`<option value="${programme.program_code}" ${selected}>${programme.program_name}</option>`);
-                                                                            });
-                                                                            <?php if ($isEdit): ?>
-                                                                                programmeDropdown.trigger('change');
-                                                                            <?php endif; ?>
-                                                                        }
-                                                                    });
+                        // Fetch Programmes
+                        $.ajax({
+                            url: "transection_exams/fetch_programmes.php",
+                            method: "GET",
+                            dataType: "json",
+                            success: function(data) {
+                                let programmeDropdown = $('#programme');
+                                programmeDropdown.empty().append('<option value="">Select Programme</option>');
+                                data.forEach(function(programme) {
+                                    let selected = (<?php echo ($isEdit && isset($assessment['programme_id'])) ? json_encode($assessment['programme_id']) : 'null'; ?> == programme.program_code) ? 'selected' : '';
+                                    programmeDropdown.append(`<option value="${programme.program_code}" ${selected}>${programme.program_name}</option>`);
+                                });
+                                <?php if ($isEdit): ?>
+                                    programmeDropdown.trigger('change');
+                                <?php endif; ?>
+                            }
+                        });
 
-                                                                    // Programme change event
-                                                                    $('#programme').change(function() {
-                                                                        let programmeId = $(this).val();
-                                                                        $.ajax({
-                                                                            url: "transection_exams/fetch_batches.php",
-                                                                            method: "POST",
-                                                                            data: {
-                                                                                programme_id: programmeId
-                                                                            },
-                                                                            dataType: "json",
-                                                                            success: function(data) {
-                                                                                let batchDropdown = $('#batch');
-                                                                                batchDropdown.empty().append('<option value="">Select Batch</option>');
-                                                                                data.forEach(function(batch) {
-                                                                                    let selected = (<?php echo ($isEdit && isset($assessment['batch_id'])) ? json_encode($assessment['batch_id']) : 'null'; ?> == batch.id) ? 'selected' : '';
-                                                                                    batchDropdown.append(`<option value="${batch.id}" ${selected}>${batch.batch_name}</option>`);
-                                                                                });
-                                                                                <?php if ($isEdit): ?>
-                                                                                    batchDropdown.trigger('change');
-                                                                                <?php endif; ?>
-                                                                            }
-                                                                        });
-                                                                    });
+                        // Programme change event
+                        $('#programme').change(function() {
+                            let programmeId = $(this).val();
+                            $.ajax({
+                                url: "transection_exams/fetch_batches.php",
+                                method: "POST",
+                                data: {
+                                    programme_id: programmeId
+                                },
+                                dataType: "json",
+                                success: function(data) {
+                                    let batchDropdown = $('#batch');
+                                    batchDropdown.empty().append('<option value="">Select Batch</option>');
+                                    data.forEach(function(batch) {
+                                        let selected = (<?php echo ($isEdit && isset($assessment['batch_id'])) ? json_encode($assessment['batch_id']) : 'null'; ?> == batch.id) ? 'selected' : '';
+                                        batchDropdown.append(`<option value="${batch.id}" ${selected}>${batch.batch_name}</option>`);
+                                    });
+                                    <?php if ($isEdit): ?>
+                                        batchDropdown.trigger('change');
+                                    <?php endif; ?>
+                                }
+                            });
+                        });
 
-                                                                    // Batch change event
-                                                                    $('#batch').change(function() {
-                                                                        let batchId = $(this).val();
-                                                                        $.ajax({
-                                                                            url: "transection_exams/fetch_modules.php",
-                                                                            method: "POST",
-                                                                            data: {
-                                                                                batch_id: batchId
-                                                                            },
-                                                                            dataType: "json",
-                                                                            success: function(data) {
-                                                                                let moduleDropdown = $('#module');
-                                                                                moduleDropdown.empty().append('<option value="">Select Module</option>');
-                                                                                data.forEach(function(module) {
-                                                                                    let selected = (<?php echo ($isEdit && isset($assessment['module_id'])) ? json_encode($assessment['module_id']) : 'null'; ?> == module.id) ? 'selected' : '';
-                                                                                    moduleDropdown.append(`<option value="${module.id}" ${selected}>${module.name}</option>`);
-                                                                                });
-                                                                            }
-                                                                        });
-                                                                    });
+                        // Batch change event
+                        $('#batch').change(function() {
+                            let batchId = $(this).val();
+                            $.ajax({
+                                url: "transection_exams/fetch_modules.php",
+                                method: "POST",
+                                data: {
+                                    batch_id: batchId
+                                },
+                                dataType: "json",
+                                success: function(data) {
+                                    let moduleDropdown = $('#module');
+                                    moduleDropdown.empty().append('<option value="">Select Module</option>');
+                                    data.forEach(function(module) {
+                                        let selected = (<?php echo ($isEdit && isset($assessment['module_id'])) ? json_encode($assessment['module_id']) : 'null'; ?> == module.id) ? 'selected' : '';
+                                        moduleDropdown.append(`<option value="${module.id}" ${selected}>${module.name}</option>`);
+                                    });
+                                }
+                            });
+                        });
 
-                                                                    $('#module').change(function() {
-                                                                        let moduleId = $(this).val();
-                                                                        console.log('Selected Module ID: ', moduleId); // Check if the module ID is being captured
+                        $('#module').change(function() {
+                            let moduleId = $(this).val();
+                            console.log('Selected Module ID: ', moduleId); // Check if the module ID is being captured
 
-                                                                        if (moduleId) {
-                                                                            $.ajax({
-                                                                                url: "transection_exams/fetch_year_semester.php",
-                                                                                method: "POST",
-                                                                                data: {
-                                                                                    module_id: moduleId
-                                                                                },
-                                                                                dataType: "json",
-                                                                                success: function(data) {
-                                                                                    console.log('Received Data: ', data); // Check the response from the server
-                                                                                    if (data) {
-                                                                                        $('#year').val(data.year_name).prop('readonly', true);
-                                                                                        $('#semester').val(data.semester_name).prop('readonly', true);
+                            if (moduleId) {
+                                $.ajax({
+                                    url: "transection_exams/fetch_year_semester.php",
+                                    method: "POST",
+                                    data: {
+                                        module_id: moduleId
+                                    },
+                                    dataType: "json",
+                                    success: function(data) {
+                                        console.log('Received Data: ', data); // Check the response from the server
+                                        if (data) {
+                                            $('#year').val(data.year_name).prop('readonly', true);
+                                            $('#semester').val(data.semester_name).prop('readonly', true);
 
-                                                                                        console.log('Year:', $('#year').val()); // Log year field value
-                                                                                        console.log('Semester:', $('#semester').val()); // Log semester field value
+                                            console.log('Year:', $('#year').val()); // Log year field value
+                                            console.log('Semester:', $('#semester').val()); // Log semester field value
 
-                                                                                    } else {
-                                                                                        $('#year').val('').prop('readonly', false);
-                                                                                        $('#semester').val('').prop('readonly', false);
-                                                                                    }
-                                                                                },
-                                                                                error: function(xhr, status, error) {
-                                                                                    console.error('AJAX error:', error); // In case of error
-                                                                                }
-                                                                            });
-                                                                        } else {
-                                                                            $('#year').val('').prop('readonly', false);
-                                                                            $('#semester').val('').prop('readonly', false);
-                                                                        }
-                                                                    });
+                                        } else {
+                                            $('#year').val('').prop('readonly', false);
+                                            $('#semester').val('').prop('readonly', false);
+                                        }
+                                    },
+                                    error: function(xhr, status, error) {
+                                        console.error('AJAX error:', error); // In case of error
+                                    }
+                                });
+                            } else {
+                                $('#year').val('').prop('readonly', false);
+                                $('#semester').val('').prop('readonly', false);
+                            }
+                        });
 
-                                                                    $('#module').change(function() {
-                                                                        let moduleId = $(this).val();
-                                                                        if (moduleId) {
-                                                                            $.ajax({
-                                                                                url: "transection_exams/fetch_main_components.php",
-                                                                                method: "POST",
-                                                                                data: {
-                                                                                    module_id: moduleId
-                                                                                },
-                                                                                dataType: "json",
-                                                                                success: function(data) {
-                                                                                    let mainComponentDropdown = $('#mainComponent');
-                                                                                    mainComponentDropdown.empty().append('<option value="">Select Main Component</option>');
-                                                                                    let uniqueComponents = [...new Set(data.map(component => component.as_main_component_name))];
-                                                                                    uniqueComponents.forEach(function(uniqueComponent) {
-                                                                                        mainComponentDropdown.append(`<option value="${data.find(component => component.as_main_component_name === uniqueComponent).main_component_id}">${uniqueComponent}</option>`);
-                                                                                    });
-                                                                                },
-                                                                                error: function(xhr, status, error) {
-                                                                                    console.error('Error fetching main components:', error);
-                                                                                }
-                                                                            });
-                                                                        } else {
-                                                                            $('#mainComponent').empty().append('<option value="">Select Main Component</option>');
-                                                                            $('#subComponent').empty().append('<option value="">Select Sub Component</option>');
-                                                                        }
-                                                                    });
+                        $('#module').change(function() {
+                            let moduleId = $(this).val();
+                            if (moduleId) {
+                                $.ajax({
+                                    url: "transection_exams/fetch_main_components.php",
+                                    method: "POST",
+                                    data: {
+                                        module_id: moduleId
+                                    },
+                                    dataType: "json",
+                                    success: function(data) {
+                                        let mainComponentDropdown = $('#mainComponent');
+                                        mainComponentDropdown.empty().append('<option value="">Select Main Component</option>');
+                                        let uniqueComponents = [...new Set(data.map(component => component.as_main_component_name))];
+                                        uniqueComponents.forEach(function(uniqueComponent) {
+                                            mainComponentDropdown.append(`<option value="${data.find(component => component.as_main_component_name === uniqueComponent).main_component_id}">${uniqueComponent}</option>`);
+                                        });
+                                    },
+                                    error: function(xhr, status, error) {
+                                        console.error('Error fetching main components:', error);
+                                    }
+                                });
+                            } else {
+                                $('#mainComponent').empty().append('<option value="">Select Main Component</option>');
+                                $('#subComponent').empty().append('<option value="">Select Sub Component</option>');
+                            }
+                        });
 
-                                                                    // Fetch sub components when a main component is selected
-                                                                    $('#mainComponent').change(function() {
-                                                                        let mainComponentId = $(this).val();
-                                                                        let moduleId = $('#module').val(); // Get the selected module ID
-                                                                        if (mainComponentId && moduleId) {
-                                                                            $.ajax({
-                                                                                url: "transection_exams/fetch_sub_components.php", // Ensure this path is correct
-                                                                                method: "POST",
-                                                                                data: {
-                                                                                    main_component_id: mainComponentId,
-                                                                                    module_id: moduleId
-                                                                                },
-                                                                                dataType: "json",
-                                                                                success: function(data) {
-                                                                                    let subComponentDropdown = $('#subComponent');
-                                                                                    subComponentDropdown.empty().append('<option value="">Select Sub Component</option>');
-                                                                                    if (data.length > 0) {
-                                                                                        data.forEach(function(subComponent) {
-                                                                                            subComponentDropdown.append(`<option value="${subComponent.id}">${subComponent.sub_component_name}</option>`);
-                                                                                        });
-                                                                                    } else {
-                                                                                        subComponentDropdown.append('<option value="">No Sub Components Available</option>');
-                                                                                    }
-                                                                                },
-                                                                                error: function(xhr, status, error) {
-                                                                                    console.error('Error fetching sub components:', error);
-                                                                                }
-                                                                            });
-                                                                        } else {
-                                                                            $('#subComponent').empty().append('<option value="">Select Sub Component</option>');
-                                                                        }
-                                                                    });
+                        // Fetch sub components when a main component is selected
+                        $('#mainComponent').change(function() {
+                            let mainComponentId = $(this).val();
+                            let moduleId = $('#module').val(); // Get the selected module ID
+                            if (mainComponentId && moduleId) {
+                                $.ajax({
+                                    url: "transection_exams/fetch_sub_components.php", // Ensure this path is correct
+                                    method: "POST",
+                                    data: {
+                                        main_component_id: mainComponentId,
+                                        module_id: moduleId
+                                    },
+                                    dataType: "json",
+                                    success: function(data) {
+                                        let subComponentDropdown = $('#subComponent');
+                                        subComponentDropdown.empty().append('<option value="">Select Sub Component</option>');
+                                        if (data.length > 0) {
+                                            data.forEach(function(subComponent) {
+                                                subComponentDropdown.append(`<option value="${subComponent.id}">${subComponent.sub_component_name}</option>`);
+                                            });
+                                        } else {
+                                            subComponentDropdown.append('<option value="">No Sub Components Available</option>');
+                                        }
+                                    },
+                                    error: function(xhr, status, error) {
+                                        console.error('Error fetching sub components:', error);
+                                    }
+                                });
+                            } else {
+                                $('#subComponent').empty().append('<option value="">Select Sub Component</option>');
+                            }
+                        });
 
-                                                                })
-                                                            </script>
+                    })
+                </script>
 
 </body>
 

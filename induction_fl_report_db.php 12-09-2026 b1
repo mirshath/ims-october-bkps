@@ -184,14 +184,14 @@ mysqli_set_charset($conn, "utf8mb4");
 <script src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.print.min.js"></script>
 
 <script>
-    $(document).ready(function() {
+    $(document).ready(function () {
         let table = $('#studentsTable').DataTable({
             processing: true,
             serverSide: false,
             ajax: {
                 url: 'induction_DB_folder/fetch_all_induction_db_students.php',
                 type: 'GET',
-                data: function(d) {
+                data: function (d) {
                     d.programme = $('#programmeFilter').val();
                     d.fees = $('#feesFilter').val();
                     d.attended = $('#attendedFilter').val();
@@ -212,14 +212,14 @@ mysqli_set_charset($conn, "utf8mb4");
                 [0, 'asc']
             ],
             columnDefs: [{
-                    targets: 0,
-                    width: "50px",
-                    orderable: true
-                },
-                {
-                    targets: '_all',
-                    orderable: true
-                }
+                targets: 0,
+                width: "50px",
+                orderable: true
+            },
+            {
+                targets: '_all',
+                orderable: true
+            }
             ],
             language: {
                 processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>',
@@ -240,49 +240,49 @@ mysqli_set_charset($conn, "utf8mb4");
                 "<'row'<'col-12'tr>>" +
                 "<'row'<'col-md-5'i><'col-md-7'p>>",
             buttons: [{
-                    extend: 'copyHtml5',
-                    text: '<i class="fas fa-copy"></i> Copy',
-                    className: 'btn btn-secondary btn-sm',
-                    exportOptions: {
-                        columns: ':visible'
-                    }
-                },
-                {
-                    extend: 'csvHtml5',
-                    text: '<i class="fas fa-file-csv"></i> CSV',
-                    className: 'btn btn-success btn-sm',
-                    exportOptions: {
-                        columns: ':visible'
-                    }
-                },
-                {
-                    extend: 'excelHtml5',
-                    text: '<i class="fas fa-file-excel"></i> Excel',
-                    className: 'btn btn-success btn-sm',
-                    exportOptions: {
-                        columns: ':visible'
-                    }
-                },
-                {
-                    extend: 'pdfHtml5',
-                    text: '<i class="fas fa-file-pdf"></i> PDF',
-                    className: 'btn btn-danger btn-sm',
-                    orientation: 'landscape',
-                    pageSize: 'A4',
-                    exportOptions: {
-                        columns: ':visible'
-                    }
-                },
-                {
-                    extend: 'print',
-                    text: '<i class="fas fa-print"></i> Print',
-                    className: 'btn btn-primary btn-sm',
-                    exportOptions: {
-                        columns: ':visible'
-                    }
+                extend: 'copyHtml5',
+                text: '<i class="fas fa-copy"></i> Copy',
+                className: 'btn btn-secondary btn-sm',
+                exportOptions: {
+                    columns: ':visible'
                 }
+            },
+            {
+                extend: 'csvHtml5',
+                text: '<i class="fas fa-file-csv"></i> CSV',
+                className: 'btn btn-success btn-sm',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            {
+                extend: 'excelHtml5',
+                text: '<i class="fas fa-file-excel"></i> Excel',
+                className: 'btn btn-success btn-sm',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            {
+                extend: 'pdfHtml5',
+                text: '<i class="fas fa-file-pdf"></i> PDF',
+                className: 'btn btn-danger btn-sm',
+                orientation: 'landscape',
+                pageSize: 'A4',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            {
+                extend: 'print',
+                text: '<i class="fas fa-print"></i> Print',
+                className: 'btn btn-primary btn-sm',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            }
             ],
-            drawCallback: function(settings) {
+            drawCallback: function (settings) {
                 // Update record count
                 let api = this.api();
                 let pageInfo = api.page.info();
@@ -291,7 +291,7 @@ mysqli_set_charset($conn, "utf8mb4");
                     (pageInfo.end) + ' of ' + pageInfo.recordsTotal + ' entries'
                 );
             },
-            initComplete: function(settings, json) {
+            initComplete: function (settings, json) {
                 // Move export buttons to the custom div
                 if (table.buttons) {
                     table.buttons().container().appendTo('#exportButtons');
@@ -307,27 +307,27 @@ mysqli_set_charset($conn, "utf8mb4");
                 url: 'induction_DB_folder/fetch_induction_fl_programmes.php',
                 type: 'GET',
                 dataType: 'json',
-                success: function(response) {
+                success: function (response) {
                     let select = $('#programmeFilter');
                     if (response && response.length > 0) {
-                        response.forEach(function(prog) {
+                        response.forEach(function (prog) {
                             select.append(new Option(prog, prog));
                         });
                     }
                 },
-                error: function(xhr, status, error) {
+                error: function (xhr, status, error) {
                     console.error('Error loading programmes:', error);
                 }
             });
         }
 
         // Filter change events
-        $('#programmeFilter, #feesFilter, #attendedFilter, #packCollectedFilter').on('change', function() {
+        $('#programmeFilter, #feesFilter, #attendedFilter, #packCollectedFilter').on('change', function () {
             table.ajax.reload();
         });
 
         // Clear filters button
-        $('#clearFilters').on('click', function() {
+        $('#clearFilters').on('click', function () {
             $('#programmeFilter').val('');
             $('#feesFilter').val('');
             $('#attendedFilter').val('');
