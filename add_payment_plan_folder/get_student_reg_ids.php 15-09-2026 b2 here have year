@@ -170,14 +170,27 @@ if (isset($_POST['program_code'], $_POST['batch_id'])) {
         $new_reg_ids[] = $id;
     }
 
-
-
+    // ------------------------------
+    // 2b. Check for a missing number in the new_student_registration_id
+    //     sequence, SCOPED TO THE CURRENT CALENDAR YEAR ONLY.
+    //
+    //     Format: YY + 6-digit running number (e.g. 26000100).
+    //     The "YY" here is the REAL year the ID was issued in - it has
+    //     NOTHING to do with the batch's own $year_no used above for the
+    //     old student_registration_id. A batch configured as "25" can
+    //     still generate new-format IDs prefixed "26" if new students are
+    //     being registered into it during 2026.
+    //
+    //     So: we only look at IDs whose first 2 digits match the current
+    //     year, and we start the gap-scan from 26000100 (this program's
+    //     agreed starting point for the current year), not from whatever
+    //     the lowest existing ID happens to be.
+    // ------------------------------
     $missing_new_id = null;
 
-    $running_start_no = 001; // running-number part of e.g. 26000100 -> adjust if needed
-
-    // Normalize $year_no to 2 digits (in case it ever comes as "2025" instead of "25").
-    $target_year_prefix = $year_no !== '' ? substr($year_no, -2) : date('y');
+    $current_year_suffix = date('y');                 // e.g. "26" for 2026
+    $id_width = strlen('26000100');                    // fixed width: 8 digits
+    $year_start_no = intval($current_year_suffix . '000100'); // e.g. 26000100
 
     $query2b = "SELECT DISTINCT new_student_registration_id 
                 FROM allocate_programme 
@@ -186,52 +199,36 @@ if (isset($_POST['program_code'], $_POST['batch_id'])) {
                   AND new_student_registration_id REGEXP '^[0-9]+$'";
     $result2b = $conn->query($query2b);
 
-    $running_numbers = []; // [runningNumber => true] - pooled across ALL years
-    $running_width = 6;    // fallback default width, e.g. 000100
-    $found_width = 0;      // actual width detected from data
+    $numeric_ids = [];   // [intValue => true] - only current-year IDs kept
 
     while ($row = $result2b->fetch_assoc()) {
         $val = $row['new_student_registration_id'];
 
-        if (strlen($val) < 3) continue; // need at least year(2) + running(1+)
+        // Only consider IDs that start with the CURRENT year's prefix.
+        // IDs from a previous year (e.g. 25xxxxxx) are a closed/past
+        // sequence and must not affect this year's missing-ID check.
+        if (substr($val, 0, 2) !== $current_year_suffix) {
+            continue;
+        }
 
-        $running_part = substr($val, 2); // strip first 2 chars (year), e.g. "25000001" -> "000001"
-        if ($running_part === '' || !ctype_digit($running_part)) continue;
-
-        $running_numbers[intval($running_part)] = true;
-        $found_width = max($found_width, strlen($running_part));
+        $numeric_ids[intval($val)] = true;
     }
 
-    if ($found_width > 0) {
-        $running_width = $found_width;
-    }
+    if (!empty($numeric_ids)) {
+        $minId = $year_start_no;                 // always start from 26000100
+        $maxId = max(array_keys($numeric_ids));  // highest current-year id found
 
-    if (!empty($running_numbers)) {
-        $minRunning = $running_start_no;
-        $maxRunning = max(array_keys($running_numbers));
-
-        if ($maxRunning >= $minRunning) {
-            for ($i = $minRunning; $i <= $maxRunning; $i++) {
-                if (!isset($running_numbers[$i])) {
-                    // Always use the FORM's year ($target_year_prefix), not
-                    // whatever year the surrounding ids in the database had.
-                    $missing_new_id = $target_year_prefix . str_pad($i, $running_width, '0', STR_PAD_LEFT);
-                    break; // smallest missing running number in the pooled range
+        // If the highest id found is somehow below the fixed start point,
+        // there's nothing to scan (avoids an inverted/huge loop).
+        if ($maxId >= $minId) {
+            for ($i = $minId; $i <= $maxId; $i++) {
+                if (!isset($numeric_ids[$i])) {
+                    $missing_new_id = str_pad($i, $id_width, '0', STR_PAD_LEFT);
+                    break; // smallest missing number in the range
                 }
             }
         }
     }
-
-    // ------------------------------------------------------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
 
     // ------------------------------
     // 3. Handle empty results
@@ -249,7 +246,7 @@ if (isset($_POST['program_code'], $_POST['batch_id'])) {
     $response['last_new_entered_id'] = $matched_new_id;          // latest valid continuous ID
     $response['student_reg_ids'] = array_reverse($reg_ids);
     $response['new_student_reg_ids'] = array_reverse($new_reg_ids);
-    $response['missing_new_id'] = $missing_new_id;               // first gap found in current year's running-number range, or null
+    $response['missing_new_id'] = $missing_new_id;               // first gap found in current year's range, or null
     $response['missing_reg_id'] = $missing_reg_id;                // first gap found in THIS program's own Reg ID sequence, or null
     $response['reg_id_range_min'] = $reg_id_range_min;            // lowest Reg ID matching this program's exact prefix
     $response['reg_id_range_max'] = $reg_id_range_max;            // highest Reg ID matching this program's exact prefix
