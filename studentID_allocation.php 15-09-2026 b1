@@ -119,6 +119,8 @@ require_once 'PermissionChecking.php';
                             </div>
                         </div>
 
+
+
                         <!-- CSS Styling -->
                         <style>
                             .form {
@@ -204,6 +206,7 @@ require_once 'PermissionChecking.php';
                                 background: #0d45a5;
                             }
                         </style>
+
 
                         <!-- Title + Programme/Batch -->
                         <div class="col-12 mt-3">

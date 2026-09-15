@@ -105,8 +105,7 @@ require_once 'PermissionChecking.php';
                                                 <th>Program</th>
                                                 <th style="width: 50px;">Batch</th>
                                                 <th style="width: 10px;">Student Code</th>
-                                                <th style="width: 80px;">program Reg No</th>
-                                                <th style="width: 80px;">BMS Reg No</th>
+                                                <th style="width: 80px;">Reg No</th>
                                                 <th>Name</th>
                                                 <th>Status</th>
                                                 <th>Remark</th>
@@ -138,14 +137,6 @@ require_once 'PermissionChecking.php';
     <script>
         $(document).ready(function() {
             $('.select2').select2();
-
-            $('#studentsTable').DataTable({
-                pageLength: 50,
-                lengthMenu: [
-                    [10, 25, 50, 100, 200, 500, -1],
-                    [10, 25, 50, 100, 200, 500, "All"]
-                ]
-            });
 
             // Load batches (only the actual batches for the correct program!) on program select
             $('#program').change(function() {
@@ -188,6 +179,27 @@ require_once 'PermissionChecking.php';
                             var table = $('#studentsTable').DataTable();
                             table.clear();
 
+                            // studentsData.forEach(function(student) {
+                            //     var statusOptions = getStatusOptions(student.status);
+                            //     // Now, store dataset with the real program/batch id as data attributes for later use
+                            //     table.row.add([
+                            //         "<span class='program-name' data-program-code='" + student.program_code + "'>" + student.program_name + "</span>",
+                            //         "<span class='batch-name' data-batch-id='" + student.batch_id + "'>" + student.batch_name + "</span>",
+                            //         student.student_code,
+                            //         student.student_registration_id,
+                            //         student.first_name + " " + student.last_name,
+                            //         "<select name='student_status' class='form-control'>" + statusOptions + "</select>",
+                            //         "<input type='text' name='additional_info[]' class='form-control' placeholder='Additional Info' value='" + student.dm_remark + "' />",
+                            //         "<button type='button' class='btn btn-sm btn-primary updateBtn' " +
+                            //         "data-registration-id='" + student.student_registration_id + "' " +
+                            //         "data-student-code='" + student.student_code + "' " +
+                            //         "data-program-code='" + student.program_code + "' " +
+                            //         "data-batch-id='" + student.batch_id + "' " +
+                            //         ">Update</button>"
+                            //     ]).draw();
+                            // });
+
+
                             studentsData.forEach(function(student) {
 
                                 var statusOptions = getStatusOptions(student.status);
@@ -207,7 +219,6 @@ require_once 'PermissionChecking.php';
                                     student.student_code,
 
                                     student.student_registration_id,
-                                    student.new_student_registration_id,
 
                                     student.first_name + " " + student.last_name,
 
@@ -224,9 +235,6 @@ require_once 'PermissionChecking.php';
                                     "<button type='button' class='btn btn-sm btn-primary updateBtn' " +
                                     "data-registration-id='" +
                                     student.student_registration_id + "' " +
-                                    "data-new-registration-id='" +
-                                    student.new_student_registration_id + "' " +
-
                                     "data-student-code='" +
                                     student.student_code + "' " +
                                     "data-program-code='" +
