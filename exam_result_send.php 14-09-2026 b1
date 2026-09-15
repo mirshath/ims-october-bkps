@@ -103,7 +103,7 @@ $assessment = null;
                                             <div class="form-group mb-3">
                                                 <select name="student_status" id="studentStatus" style="font-size: 14px;"
                                                     class="form-control select2">
-
+                                               
                                                     <option value="active" selected>Active Students</option>
                                                     <option value="completed">Completed Students</option>
                                                 </select>
@@ -634,7 +634,7 @@ $assessment = null;
                                 // }
 
                                 // Add only Email column for HD
-                                if (data.programme_type === 'HD' || data.programme_type === 'GDM' || data.programme_type === 'IFD' || data.programme_type === 'BTEC') {
+                                if (data.programme_type === 'HDs' || data.programme_type === 'GDM' || data.programme_type === 'IFD' || data.programme_type === 'BTEC') {
                                     headerHtml += `<th rowspan="2">Email</th>`;
                                 }
 
@@ -702,10 +702,24 @@ $assessment = null;
                                     }
 
                                     let ruleApplied = false;
+                                    if (mark === 49) {
+                                        mark = 50;
+                                        ruleApplied = true;
+                                    } else if (mark === 59) {
+                                        mark = 60;
+                                        ruleApplied = true;
+                                    } else if (mark === 69) {
+                                        mark = 70;
+                                        ruleApplied = true;
+                                    }
 
                                     let grade = 'N/A';
-                                    if (mark <= 49) {
+                                    if (mark === 0) {
+                                        grade = 'Absent';
+                                    } else if (mark <= 29) {
                                         grade = 'Re-sit';
+                                    } else if (mark <= 49) {
+                                        grade = 'Pending';
                                     } else if (mark <= 59) {
                                         grade = 'Pass';
                                     } else if (mark <= 69) {
@@ -802,7 +816,8 @@ $assessment = null;
                                             ) {
                                                 finalHDGrade = getGradeFromMark(finalResult);
                                             } else if (
-                                                ['pass', 'merit', 'distinction'].includes(g1) && ['pass', 'merit', 'distinction'].includes(g2)
+                                                ['pass', 'merit', 'distinction'].includes(g1) &&
+                                                ['pass', 'merit', 'distinction'].includes(g2)
                                             ) {
                                                 finalHDGrade = getGradeFromMark((componentMarks[0] || 0) + (componentMarks[1] || 0));
                                             } else if (
@@ -903,15 +918,12 @@ $assessment = null;
                                             const g = norm(componentGrades[0]);
                                             finalHDGrade = g === 'pending' ? getGradeFromMark(finalResult) : componentGrades[0];
                                         }
-                                    } else if (componentCount === 1) {
-                                        if (componentGrades.length >= 1) {
-                                            const g = norm(componentGrades[0]);
-                                            finalHDGrade = g === 'pending' ? getGradeFromMark(finalResult) : componentGrades[0];
-                                        }
                                     }
 
                                     return finalHDGrade;
                                 }
+
+
 
                                 const columns = [{
                                         // data: 'student_name (student_registration_id)',
@@ -995,8 +1007,10 @@ $assessment = null;
                                     }
                                 });
 
+
                                 // Add Grades of Modules column only for ECM ✅✅✅✅
                                 if (data.programme_type === 'ECM') {
+
 
                                     columns.push({
                                         data: 'final_result',
@@ -1038,7 +1052,8 @@ $assessment = null;
                                     });
                                 }
 
-                                if (data.programme_type === 'HD' || data.programme_type === 'GDM' || data.programme_type === 'IFD' || data.programme_type === 'BTEC') {
+
+                                if (data.programme_type === 'HDs' || data.programme_type === 'GDM' || data.programme_type === 'IFD' || data.programme_type === 'BTEC') {
                                     columns.push({
                                         data: null,
                                         title: 'Email',
@@ -1059,6 +1074,7 @@ $assessment = null;
                                     scrollX: true
                                 });
                             }
+
 
                             $('#resultsTable').off('click', '.send-email'); // Remove previous event handlers to avoid duplication
 
@@ -1145,6 +1161,8 @@ $assessment = null;
                     });
                 }
             }
+
+
         });
     </script>
 

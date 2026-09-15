@@ -166,10 +166,8 @@ require_once 'PermissionChecking.php';
                                             <div class="mb-3">
                                                 <div class="row">
                                                     <div class="col-md-3">
-                                                        <label for="compulsory_subjects" class="form-label">
-                                                            <input type="checkbox" id="select_all_compulsory">
-                                                            Compulsory Subjects:
-                                                        </label>
+                                                        <label for="compulsory_subjects" class="form-label">Compulsory
+                                                            Subjects:</label>
                                                     </div>
                                                     <div class="col">
                                                         <div id="compulsory_subjects" class="form-control"
@@ -362,22 +360,7 @@ require_once 'PermissionChecking.php';
             $('#student_name, #university, #programme, #batch, #registration_code').val('');
             $('#programme_id').val('');
             $('#compulsory_subjects, #elective_subjects').empty();
-            $('#select_all_compulsory').prop('checked', false);
         }
-
-        // ---- Select All (Compulsory Subjects) ----
-        // Master checkbox -> checks/unchecks all compulsory checkboxes.
-        // Delegated because #compulsory_subjects is filled in dynamically via AJAX.
-        $(document).on('change', '#select_all_compulsory', function() {
-            $('#compulsory_subjects input[type="checkbox"]').prop('checked', $(this).is(':checked'));
-        });
-
-        // If a child checkbox is toggled manually, keep the master checkbox in sync.
-        $(document).on('change', '#compulsory_subjects input[type="checkbox"]', function() {
-            const total = $('#compulsory_subjects input[type="checkbox"]').length;
-            const checked = $('#compulsory_subjects input[type="checkbox"]:checked').length;
-            $('#select_all_compulsory').prop('checked', total > 0 && total === checked);
-        });
 
         $('#student').change(function() {
             const student_code = $(this).val();

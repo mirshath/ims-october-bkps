@@ -29,7 +29,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $result = $stmt->get_result();
     $studentData = $result->fetch_assoc();
     $stmt->close();
-    
+
     $studentId = $studentData['student_registration_id'] ?? '';
     $student_code = $studentData['student_code'] ?? '';
 
@@ -53,7 +53,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if (!$assessmentDetails) {
         $errorMessage = "Assessment details not found.";
-        
+
         if ($isAjax) {
             echo json_encode(['success' => false, 'message' => $errorMessage]);
             exit;
@@ -96,8 +96,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $mail->isSMTP();
         $mail->Host = 'smtp.office365.com';
         $mail->SMTPAuth = true;
+
         $mail->Username = 'noreply@bms.ac.lk';
-        $mail->Password = 'Lox51527';
+        $mail->Password = 'gqfxxrphvjnlmwrn';
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = 587;
 
@@ -203,7 +204,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         $mail->send();
-        
+
         // Record successful email sending in the assessment_email_log table
         $sentBy = $_SESSION['username'] ?? 'system';
         $logQuery = "INSERT INTO assessment_email_log 
@@ -235,7 +236,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $logStmt = $conn->prepare($logQuery);
         $logStmt->bind_param("iisss", $assessment_id, $student_code, $to, $sentBy, $errorMsg);
         $logStmt->execute();
-        
+
         if ($isAjax) {
             echo json_encode(['success' => false, 'message' => "Failed to send email: " . $mail->ErrorInfo]);
         } else {

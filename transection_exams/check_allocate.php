@@ -63,11 +63,11 @@ $module_name = $assessment['module_name'];
 foreach ($all_students as $student) {
     $compulsory_subs = explode(',', $student['compulsory_sub']);
     $elective_subs_array = explode(',', $student['elective_subs']);
-    
+
     // Trim whitespace from each module name
     $compulsory_subs = array_map('trim', $compulsory_subs);
     $elective_subs_array = array_map('trim', $elective_subs_array);
-    
+
     if (in_array($module_name, $compulsory_subs) || in_array($module_name, $elective_subs_array)) {
         $students[] = $student;
     }
@@ -91,7 +91,7 @@ $mail->isSMTP();
 $mail->Host = 'smtp.office365.com';
 $mail->SMTPAuth = true;
 $mail->Username = 'noreply@bms.ac.lk';
-$mail->Password = 'Lox51527';
+$mail->Password = 'gqfxxrphvjnlmwrn';
 $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
 $mail->Port = 587;
 $mail->setFrom('noreply@bms.ac.lk', 'BMS Campus');
@@ -105,21 +105,21 @@ foreach ($students as $student) {
     if (in_array($student['bms_email'], $removed_emails)) {
         continue;
     }
-    
+
     // Removed the check for previously sent emails to allow resending
-    
+
     try {
         // Clear previous recipients
         $mail->clearAddresses();
         $mail->clearAttachments();
-        
+
         // Add this student as recipient
         $mail->addAddress($student['bms_email'], $student['first_name'] . ' ' . $student['last_name']);
-        
+
         // Email content
         $mail->isHTML(true);
         $mail->Subject = "Assessment : " . $assessment['module_name'] . " - " . $assessment['as_main_component_name'];
-        
+
         // Get student registration ID
         $studentId = '';
         $studentIdQuery = "SELECT student_registration_id FROM allocate_programme WHERE student_code = ?";
@@ -129,7 +129,7 @@ foreach ($students as $student) {
         $studentIdStmt->bind_result($studentId);
         $studentIdStmt->fetch();
         $studentIdStmt->close();
-        
+
         // Create email body
         $emailBody = "
         <html>
@@ -211,7 +211,7 @@ foreach ($students as $student) {
 
         $mail->Body = $emailBody;
         $mail->AltBody = strip_tags(str_replace(['<br>', '</p>'], ["\n", "\n\n"], $emailBody));
-        
+
         // Attach files if they exist
         $attachments = [];
         if (!empty($assessment['attachment_4'])) {
@@ -226,16 +226,16 @@ foreach ($students as $student) {
         if (!empty($assessment['attachment_1'])) {
             $attachments[] = "../uploads_exam_assessments/" . $assessment['attachment_1'];
         }
-        
+
         foreach ($attachments as $attachment) {
             if (file_exists($attachment)) {
                 $mail->addAttachment($attachment);
             }
         }
-        
+
         // Send the email
         $mail->send();
-        
+
         // Record successful email sending
         $logQuery = "INSERT INTO assessment_email_log 
                     (assessment_id, student_id, email, status, sent_date, sent_by) 
@@ -243,7 +243,7 @@ foreach ($students as $student) {
         $logStmt = $conn->prepare($logQuery);
         $logStmt->bind_param("iiss", $assessment_id, $student['student_code'], $student['bms_email'], $sentBy);
         $logStmt->execute();
-        
+
         $success_count++;
     } catch (Exception $e) {
         // Record failed email sending
@@ -254,13 +254,13 @@ foreach ($students as $student) {
         $logStmt = $conn->prepare($logQuery);
         $logStmt->bind_param("iisss", $assessment_id, $student['student_code'], $student['bms_email'], $sentBy, $errorMsg);
         $logStmt->execute();
-        
+
         // Also log to the failed_emails table (keeping original functionality)
         $failedStmt = $conn->prepare("INSERT INTO failed_emails (assessment_id, student_email, error_message) VALUES (?, ?, ?)");
         $failedStmt->bind_param("iss", $assessment_id, $student['bms_email'], $errorMsg);
         $failedStmt->execute();
         $failedStmt->close();
-        
+
         $failed_count++;
         $failed_emails[] = ['email' => $student['bms_email'], 'error' => $errorMsg];
     }
@@ -277,4 +277,3 @@ echo json_encode([
     'failedCount' => $failed_count,
     'failedEmails' => $failed_emails
 ]);
-?>

@@ -1691,13 +1691,28 @@ if ($result->num_rows > 0) {
                 else if (dividedMark <= 80) grade = 'Distinction';
                 break;
             case 100:
-                if (dividedMark < 0) grade = 'Absent';
-                else if (dividedMark <= 48) grade = 'Re-sit'; // 0 - 48
-                else if (dividedMark <= 59) grade = 'Pass'; // 49 - 59
+                if (dividedMark < 0) grade = 'Absent'; // 0 - Absent
+                else if (dividedMark <= 29) grade = 'Re-sit'; // 1 - 29
+                else if (dividedMark <= 49) grade = 'Pending'; // 30 - 49
+                else if (dividedMark <= 59) grade = 'Pass'; // 50 - 59      
                 else if (dividedMark <= 69) grade = 'Merit'; // 60 - 69
-                else if (dividedMark <= 100) grade = 'Distinction'; // 70 - 100
+                else if (dividedMark <= 100) grade = 'Distinction'; // 70 - 100 
                 break;
+                // case 100:
 
+                //     if ($dividedMark < 0) {
+                //         $grade = 'Absent';
+                //     } else if ($dividedMark <= 48) {
+                //         $grade = 'Re-sit';
+                //     } else if ($dividedMark <= 59) {
+                //         $grade = 'Pass';
+                //     } else if ($dividedMark <= 69) {
+                //         $grade = 'Merit';
+                //     } else if ($dividedMark <= 100) {
+                //         $grade = 'Distinction';
+                //     }
+
+                //     break;
             default:
                 grade = 'Unknown';
         }

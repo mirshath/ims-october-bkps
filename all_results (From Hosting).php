@@ -162,10 +162,10 @@ $semester = $details['semester_name'];
                                                 <td><strong>Student Status:</strong></td>
                                                 <td>
                                                     <select id="studentStatus" name="studentStatus"
-                                                        class="form-control form-control-sm select2 d-inline-block"
-                                                        style="width: auto; min-width: 220px;"
-                                                        onchange="reloadWithStudentStatus(this.value)">
-
+                                                            class="form-control form-control-sm select2 d-inline-block"
+                                                            style="width: auto; min-width: 220px;"
+                                                            onchange="reloadWithStudentStatus(this.value)">
+                                                        <!--<option value="" <?= $studentStatus === '' ? 'selected' : ''; ?>>All Students</option>-->
                                                         <option value="active" <?= $studentStatus === 'active' ? 'selected' : ''; ?>>Active Students</option>
                                                         <option value="completed" <?= $studentStatus === 'completed' ? 'selected' : ''; ?>>Completed Students</option>
                                                     </select>
@@ -361,7 +361,7 @@ $semester = $details['semester_name'];
                                     }
                                 }
 
-
+                             
                                 // --------------------------------------------------------------------------- 
                                 // Email sending section for the module -> main component wise -> send all 
                                 // --------------------------------------------------------------------------- 
@@ -577,6 +577,51 @@ $semester = $details['semester_name'];
                                                 </div>
                                              </body>
                                             </html>';
+
+
+                                            // ---------------- 
+                                            // try {
+                                            //     $mail->send();
+
+                                            //     $logQuery = "INSERT INTO email_sending_log 
+                                            //                 (student_id, program_id, batch_id, module_id, main_component_id, sub_component_id, 
+                                            //                 email_sent, sent_date, sent_by, status) 
+                                            //                 VALUES (?, ?, ?, ?, ?, ?, 1, NOW(), ?, 'sent')";
+                                            //     $logStmt = $conn->prepare($logQuery);
+                                            //     $sentBy = $_SESSION['username'];
+                                            //     $logStmt->bind_param(
+                                            //         "iiiiiss",
+                                            //         $studentId,
+                                            //         $programmeId,
+                                            //         $batchId,
+                                            //         $moduleId,
+                                            //         $mainComponentId,
+                                            //         $subComponentId,
+                                            //         $sentBy
+                                            //     );
+                                            //     $logStmt->execute();
+                                            // } catch (Exception $e) {
+                                            //     $errorMsg = $mail->ErrorInfo;
+                                            //     $logQuery = "INSERT INTO email_sending_log 
+                                            //                 (student_id, program_id, batch_id, module_id, main_component_id, sub_component_id, 
+                                            //                 email_sent, sent_date, sent_by, status, error_message) 
+                                            //                 VALUES (?, ?, ?, ?, ?, ?, 0, NOW(), ?, 'failed', ?)";
+                                            //     $logStmt = $conn->prepare($logQuery);
+                                            //     $sentBy = $_SESSION['username'];
+                                            //     $logStmt->bind_param(
+                                            //         "iiiiisss",
+                                            //         $studentId,
+                                            //         $programmeId,
+                                            //         $batchId,
+                                            //         $moduleId,
+                                            //         $mainComponentId,
+                                            //         $subComponentId,
+                                            //         $sentBy,
+                                            //         $errorMsg
+                                            //     );
+                                            //     $logStmt->execute();
+                                            // }
+                                            // $emailedResult = ($paymentStatus == 'withheld' || empty($paymentStatus)) ? 'Withheld' : $finalResult;
 
                                             try {
                                                 $mail->send();
@@ -1004,7 +1049,8 @@ $semester = $details['semester_name'];
 
                                                                 echo "<td>" . htmlspecialchars($status) . "</td>";
                                                             }
-
+                                                            // ------------------------- 
+                                                            // ------------------------- 
                                                             // ------------------------- 
                                                             // ------------------------- 
                                                             else {
@@ -1133,6 +1179,14 @@ $semester = $details['semester_name'];
                                     </div>
                                 </div>
 
+                                <!-- DataTables Scripts -->
+                                <script>
+                                    // $(document).ready(function() {
+                                    //     $('#studentsTable').DataTable({
+                                    //         pageLength: 100
+                                    //     });
+                                    // });
+                                </script>
                             <?php
                             } else {
                                 if (isset($_GET['programmeId'], $_GET['programmeName'], $_GET['batchId'], $_GET['moduleId'])) {
@@ -1232,6 +1286,7 @@ $semester = $details['semester_name'];
                                         </form>
                                     </div>
                                 </div>
+
 
                                 <script>
                                     $(document).ready(function() {
@@ -1333,6 +1388,9 @@ $semester = $details['semester_name'];
                                                 $('#sentCount').text(0);
                                                 $('#emailProgressBar').css('width', '0%');
                                                 $('#emailProgress small').text('Preparing to send emails...');
+
+
+
 
                                                 // Show sending modal
                                                 modals['emailSendingModal'].show();
@@ -1443,6 +1501,7 @@ $semester = $details['semester_name'];
                                     });
                                 </script>
 
+
                                 <!-- Student Update Data Table -->
                                 <div class="card">
                                     <div class="card-header">Student Update Data (module all sending)</div>
@@ -1501,6 +1560,15 @@ $semester = $details['semester_name'];
                                                     </thead>
                                                     <tbody>
                                                         <?php
+                                                        // function getHDGradeFromMarks($finalMark)
+                                                        // {
+                                                        //     if ($finalMark <= 29) return 'Re-sit';   // 0-29 
+                                                        //     elseif ($finalMark <= 49) return 'Pending'; // 30-49
+                                                        //     elseif ($finalMark <= 59) return 'Pass'; // 50-59
+                                                        //     elseif ($finalMark <= 69) return 'Merit'; // 60-69
+                                                        //     elseif ($finalMark <= 100) return 'Distinction'; // 70-100
+                                                        //     return 'Unknown';
+                                                        // }
 
                                                         foreach ($filteredResultsModule as $row) {
                                                             $finalResult = htmlspecialchars($row['final_result']);
@@ -1513,17 +1581,9 @@ $semester = $details['semester_name'];
                                                                 htmlspecialchars($details['program_name'] ?? 'N/A') === 'BSc (Hons) in Software Engineering' ||
                                                                 htmlspecialchars($details['program_name'] ?? 'N/A') === 'Higher Diploma in Medical Biotechnology'
                                                             ) {
-                                                                // $grade = getHDGradeFromMarks($finalResult);
-
-                                                                $grade = ($componentCount == 1)
-                                                                    ? getHDGradeFromMarksSingle($finalResult)
-                                                                    : getHDGradeFromMarks($finalResult);
-
+                                                                $grade = getHDGradeFromMarks($finalResult);
 
                                                                 $studentId = $row['student_code'];
-                                                                $rowProgramId = (int) ($row['program_id'] ?? $programmeId);
-                                                                $rowBatchId = (int) ($row['batch_id'] ?? $batchId);
-                                                                $rowModuleId = (int) ($row['module_id'] ?? $moduleId);
                                                                 $componentsQuery = "
                                                                 SELECT ac.as_main_component_name, sc.sub_component_name, sr.result, 
                                                                     sr.hd_converted_marks, sr.hd_resit3_converted_marks, 
@@ -1532,11 +1592,7 @@ $semester = $details['semester_name'];
                                                                 FROM student_results sr
                                                                 LEFT JOIN assignment_components ac ON sr.main_component_id = ac.id
                                                                 LEFT JOIN sub_assign_components sc ON sr.sub_component_id = sc.id
-                                                                WHERE sr.student_id = '$studentId'
-                                                                  AND sr.program_id = '$rowProgramId'
-                                                                  AND sr.batch_id = '$rowBatchId'
-                                                                  AND sr.module_id = '$rowModuleId'
-                                                                ORDER BY sr.main_component_id, sr.sub_component_id
+                                                                WHERE sr.student_id = '$studentId' AND sr.module_id = '$moduleId'
                                                                 ";
                                                                 $componentsResult = $conn->query($componentsQuery);
 
@@ -1551,25 +1607,15 @@ $semester = $details['semester_name'];
                                                                         $subComponentName = htmlspecialchars($compRow['sub_component_name']);
                                                                         $componentResult = htmlspecialchars($compRow['result']);
 
-                                                                        if ($compRow['hd_resit3_converted_marks'] !== null && $compRow['hd_resit3_converted_marks'] !== '') {
-                                                                            $convertedMarks = $compRow['hd_resit3_converted_marks'];
-                                                                        } elseif ($compRow['hd_resit2_converted_marks'] !== null && $compRow['hd_resit2_converted_marks'] !== '') {
-                                                                            $convertedMarks = $compRow['hd_resit2_converted_marks'];
-                                                                        } elseif ($compRow['hd_resit1_converted_marks'] !== null && $compRow['hd_resit1_converted_marks'] !== '') {
-                                                                            $convertedMarks = $compRow['hd_resit1_converted_marks'];
-                                                                        } else {
-                                                                            $convertedMarks = $compRow['hd_converted_marks'];
-                                                                        }
+                                                                        $convertedMarks = $compRow['hd_resit3_converted_marks'] ??
+                                                                            $compRow['hd_resit2_converted_marks'] ??
+                                                                            $compRow['hd_resit1_converted_marks'] ??
+                                                                            $compRow['hd_converted_marks'];
 
-                                                                        if ($compRow['hd_resit3_grade'] !== null && $compRow['hd_resit3_grade'] !== '') {
-                                                                            $compGrade = $compRow['hd_resit3_grade'];
-                                                                        } elseif ($compRow['hd_resit2_grade'] !== null && $compRow['hd_resit2_grade'] !== '') {
-                                                                            $compGrade = $compRow['hd_resit2_grade'];
-                                                                        } elseif ($compRow['hd_resit1_grade'] !== null && $compRow['hd_resit1_grade'] !== '') {
-                                                                            $compGrade = $compRow['hd_resit1_grade'];
-                                                                        } else {
-                                                                            $compGrade = $compRow['hd_grade'];
-                                                                        }
+                                                                        $compGrade = $compRow['hd_resit3_grade'] ??
+                                                                            $compRow['hd_resit2_grade'] ??
+                                                                            $compRow['hd_resit1_grade'] ??
+                                                                            $compRow['hd_grade'];
 
                                                                         $componentsOutput .= "<div>{$componentName} {$subComponentName}: {$componentResult} (Converted Marks: {$convertedMarks}, Grade: {$compGrade})</div>";
 
@@ -1665,35 +1711,6 @@ $semester = $details['semester_name'];
                                                                         $g = strtolower($componentGrades[0]);
                                                                         $finalHDGrade = $g === 'pending' ? getHDGradeFromMarks($finalResult) : $componentGrades[0];
                                                                     }
-                                                                } else if ($componentCount == 1) {
-                                                                    if (isset($componentGrades[0])) {
-                                                                        $norm = function ($x) {
-                                                                            $x = strtolower(trim((string)$x));
-                                                                            $x = str_replace(['-', '_'], ' ', $x);
-                                                                            $x = preg_replace('/\s+/', ' ', $x);
-                                                                            if ($x === 'resit' || $x === 're sit') $x = 're-sit';
-                                                                            if ($x === 'not submitted') $x = 'not submitted';
-                                                                            return $x;
-                                                                        };
-                                                                        $g1 = $norm($componentGrades[0]);
-                                                                        $mark = floatval($componentMarks[0] ?? $finalResult);
-
-                                                                        if ($g1 === 're-sit') {
-                                                                            $finalHDGrade = 'Re-sit';
-                                                                        } elseif ($g1 === 'pending') {
-                                                                            $finalHDGrade = getHDGradeFromMarksSingle($mark);
-                                                                        } elseif ($g1 === 'absent') {
-                                                                            $finalHDGrade = 'Absent';
-                                                                        } elseif ($g1 === 'not submitted') {
-                                                                            $finalHDGrade = 'Not Submitted';
-                                                                        } elseif (in_array($g1, ['pass', 'merit', 'distinction'])) {
-                                                                            $finalHDGrade = getHDGradeFromMarksSingle($mark);
-                                                                        } else {
-                                                                            $finalHDGrade = 'Pending';
-                                                                        }
-                                                                    } else {
-                                                                        $finalHDGrade = getHDGradeFromMarksSingle($finalResult);
-                                                                    }
                                                                 } else if ($componentCount == 3) {
                                                                     if (count($componentGrades) >= 3) {
                                                                         $norm = function ($x) {
@@ -1769,7 +1786,7 @@ $semester = $details['semester_name'];
                                                                         $finalHDGrade = $g === 'pending' ? getHDGradeFromMarks($finalResult) : $componentGrades[0];
                                                                     }
                                                                 } else {
-                                                                    echo "Error: No grades found for component 0111";
+                                                                    echo "Error: No grades found for component";
                                                                 }
                                                             }
 
@@ -1839,6 +1856,7 @@ $semester = $details['semester_name'];
 
                                                                 <!-- ------------- payment status changes manually ------------------  -->
                                                                 <!-- ------------------ 30.06 .2025  ------------------   -->
+
 
                                                                 <td>
                                                                     <!-- <input type="checkbox" name="payment_status" value="paid"> -->
@@ -1959,8 +1977,11 @@ $semester = $details['semester_name'];
                             <?php
                             }
 
+
                             ?>
+
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -1974,42 +1995,42 @@ $semester = $details['semester_name'];
 <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
-    // Global: rebuild current URL with new / updated studentStatus parameter, keeping all other GET params.
-    function reloadWithStudentStatus(newStatus) {
-        try {
-            const url = new URL(window.location.href);
-            if (!newStatus || newStatus === '') {
-                url.searchParams.delete('studentStatus');
-            } else {
-                url.searchParams.set('studentStatus', newStatus);
-            }
-            window.location.href = url.toString();
-        } catch (e) {
-            // Fallback for older browsers (IE etc.)
-            const base = window.location.href.split('#')[0].split('?')[0];
-            const params = new URLSearchParams(window.location.search);
-            if (!newStatus || newStatus === '') {
-                params.delete('studentStatus');
-            } else {
-                params.set('studentStatus', newStatus);
-            }
-            const qs = params.toString();
-            window.location.href = base + (qs ? ('?' + qs) : '');
+// Global: rebuild current URL with new / updated studentStatus parameter, keeping all other GET params.
+function reloadWithStudentStatus(newStatus) {
+    try {
+        const url = new URL(window.location.href);
+        if (!newStatus || newStatus === '') {
+            url.searchParams.delete('studentStatus');
+        } else {
+            url.searchParams.set('studentStatus', newStatus);
+        }
+        window.location.href = url.toString();
+    } catch (e) {
+        // Fallback for older browsers (IE etc.)
+        const base = window.location.href.split('#')[0].split('?')[0];
+        const params = new URLSearchParams(window.location.search);
+        if (!newStatus || newStatus === '') {
+            params.delete('studentStatus');
+        } else {
+            params.set('studentStatus', newStatus);
+        }
+        const qs = params.toString();
+        window.location.href = base + (qs ? ('?' + qs) : '');
+    }
+}
+
+// Initialize select2 on the status dropdown after page loads (after jQuery/select2 are loaded)
+$(document).ready(function () {
+    if (window.jQuery && jQuery.fn.select2) {
+        const $sel = jQuery('#studentStatus');
+        if ($sel.length && !$sel.hasClass('select2-hidden-accessible')) {
+            $sel.select2({
+                minimumResultsForSearch: Infinity,
+                width: 'resolve'
+            });
         }
     }
-
-    // Initialize select2 on the status dropdown after page loads (after jQuery/select2 are loaded)
-    $(document).ready(function() {
-        if (window.jQuery && jQuery.fn.select2) {
-            const $sel = jQuery('#studentStatus');
-            if ($sel.length && !$sel.hasClass('select2-hidden-accessible')) {
-                $sel.select2({
-                    minimumResultsForSearch: Infinity,
-                    width: 'resolve'
-                });
-            }
-        }
-    });
+});
 </script>
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/css/select2.min.css" rel="stylesheet" />
@@ -2251,6 +2272,317 @@ $semester = $details['semester_name'];
 
 
 <?php
+
+
+// --------------------------------------------------------------------------- 
+// Resend Email Handler for Module-wise (Individual Student)
+// --------------------------------------------------------------------------- 
+// if (isset($_POST['resend_email_module'])) {
+//     $resendStudentId = $_POST['student_id'];
+//     $resendProgramId = $_POST['program_id'];
+//     $resendBatchId = $_POST['batch_id'];
+//     $resendModuleId = $_POST['module_id'];
+
+//     // Fetch student data
+//     $resendQuery = "
+//         SELECT DISTINCT fsr.*,
+//         CONCAT(s.first_name, ' ', s.last_name) AS full_name,
+//         s.bms_email,
+//         s.student_code,
+//         pt.program_name,
+//         bt.batch_name,
+//         ap.student_registration_id,
+//         m.module_name,
+//         COALESCE(pw.payment_status, 'Paid') as payment_status
+//         FROM final_student_results fsr
+//         INNER JOIN students s ON fsr.student_id = s.student_code
+//         INNER JOIN allocate_programme ap ON (s.student_code = ap.student_code 
+//             AND ap.programme_code = fsr.program_id 
+//             AND ap.batch_id = '$resendBatchId'
+//             AND ap.status = 'active')
+//         INNER JOIN program_table pt ON ap.programme_code = pt.program_code
+//         INNER JOIN batch_table bt ON ap.batch_id = bt.id
+//         INNER JOIN modules m ON fsr.module_id = m.id
+//         LEFT JOIN payment_withheld_table pw ON (s.student_code = pw.student_code 
+//             AND pw.program_id = fsr.program_id 
+//             AND pw.batch_id = '$resendBatchId')
+//         WHERE fsr.program_id = '$resendProgramId'
+//         AND fsr.batch_id = '$resendBatchId'
+//         AND fsr.module_id = '$resendModuleId'
+//         AND fsr.student_id = '$resendStudentId'
+//     ";
+
+//     $resendResult = $conn->query($resendQuery);
+//     if ($resendResult && $resendResult->num_rows > 0) {
+//         $resendRow = $resendResult->fetch_assoc();
+//         $programDetails = $resendRow;
+
+//         $mail = new PHPMailer(true);
+//         try {
+//             $mail->isSMTP();
+//             $mail->Host = 'smtp.office365.com';
+//             $mail->SMTPAuth = true;
+//             $mail->Username = 'noreply@bms.ac.lk';
+//             $mail->Password = 'gqfxxrphvjnlmwrn';
+//             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+//             $mail->Port = 587;
+//             $mail->setFrom('noreply@bms.ac.lk', 'Business Management School');
+//             $mail->Subject = $programmeName . ' results';
+//             $mail->addAddress($resendRow['bms_email']);
+//             $mail->isHTML(true);
+
+//             $finalResult = htmlspecialchars($resendRow['final_result']);
+//             $programName = htmlspecialchars($resendRow['program_name']);
+//             $batchName = htmlspecialchars($resendRow['batch_name']);
+//             $moduleName = htmlspecialchars($resendRow['module_name']);
+//             $fullName = htmlspecialchars($resendRow['full_name']);
+//             $st_reg_ID = htmlspecialchars($resendRow['student_registration_id']);
+//             $paymentStatus = $resendRow['payment_status'];
+
+//             // Build email body (same structure as module-wise email)
+//             $mail->Body = '
+//                 <html>
+//                 <head>
+//                     <style>
+//                         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; padding: 20px; }
+//                         table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; }
+//                         th, td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 14px; }
+//                         th { background-color: #f2f2f2; width: 30%; }
+//                     </style>
+//                 </head>
+//                 <body>
+//                     <div style="padding: 20px; text-align: center;">
+//                         <img src="https://ims.bms.ac.lk/assets/BMS-Logo.png" alt="BMS Logo" style="max-width: 150px;">
+//                         <h2 style="margin-top: 10px;">Business Management School</h2>
+//                         <p style="font-size: 14px; color: #666;">Result Notification</p>
+//                     </div>
+//                     <div>
+//                         <div class="section-title">Program Details</div>
+//                         <table>
+//                             <tr><th>Student Name:</th><td>' . $fullName . '</td></tr>
+//                             <tr><th>Student Registration ID:</th><td>' . $st_reg_ID . '</td></tr>
+//                             <tr><th>BMS Email:</th><td>' . $resendRow['bms_email'] . '</td></tr>
+//                             <tr><th>Program Name:</th><td>' . $programName . '</td></tr>
+//                             <tr><th>Batch Name:</th><td>' . $batchName . '</td></tr>
+//                             <tr><th>Module Name:</th><td>' . $moduleName . '</td></tr>
+//                             <tr><th>Semester:</th><td>' . $semester . '</td></tr>
+//                         </table>';
+
+//             // Calculate HD final grade if needed
+//             $finalHDGrade = 'N/A';
+//             if (
+//                 $programName == 'Higher Diploma in Biomedical Science' ||
+//                 $programName == 'Higher Diploma in Biotechnology' ||
+//                 $programName == 'Higher Diploma in Food Science and Nutrition' ||
+//                 $programName == 'BSc (Hons) in Software Engineering' ||
+//                 $programName == 'Higher Diploma in Medical Biotechnology'
+//             ) {
+//                 $componentsQuery = "
+//                     SELECT sr.*, sr.result, 
+//                             sr.hd_converted_marks, sr.hd_resit3_converted_marks, 
+//                             sr.hd_resit2_converted_marks, sr.hd_resit1_converted_marks,
+//                             sr.hd_resit3_grade, sr.hd_resit2_grade, sr.hd_resit1_grade, sr.hd_grade,
+//                            ac.as_main_component_name AS main_component_name,
+//                            sc.sub_component_name AS sub_component_name
+//                     FROM student_results sr
+//                     LEFT JOIN assignment_components ac ON sr.main_component_id = ac.id
+//                     LEFT JOIN sub_assign_components sc ON sr.sub_component_id = sc.id
+//                     WHERE sr.student_id = '$resendStudentId' AND sr.module_id = '$resendModuleId'
+//                     ORDER BY sr.main_component_id, sr.sub_component_id
+//                 ";
+//                 $componentsResult = $conn->query($componentsQuery);
+//                 $compGrades = [];
+//                 $compMarks = [];
+//                 if ($componentsResult && $componentsResult->num_rows > 0) {
+//                     $componentsResult->data_seek(0);
+//                     while ($compRow = $componentsResult->fetch_assoc()) {
+//                         $compGrades[] = $compRow['hd_resit3_grade'] ?? $compRow['hd_resit2_grade'] ?? $compRow['hd_resit1_grade'] ?? $compRow['hd_grade'];
+//                         $m = $compRow['hd_resit3_converted_marks'] ?? $compRow['hd_resit2_converted_marks'] ?? $compRow['hd_resit1_converted_marks'] ?? $compRow['hd_converted_marks'];
+//                         $compMarks[] = $m;
+//                     }
+//                     $finalHDGrade = calculateFinalHDGrade($compGrades, $compMarks, $componentCount);
+//                 }
+//             }
+
+//             // Build result section (same logic as module-wise sending)
+//             if ($programName == 'Executive Certificate in Management') {
+//                 if (is_numeric($finalResult)) {
+//                     $gradeStatus = ($finalResult >= 70) ? 'Distinction' : (($finalResult >= 60) ? 'Merit' : (($finalResult >= 50) ? 'Pass' : 'Resit'));
+//                 } else {
+//                     $gradeStatus = $finalResult;
+//                 }
+//                 $gradeStatus = ($paymentStatus == 'withheld' || empty($paymentStatus)) ? 'Withheld' : $gradeStatus;
+
+//                 if (strcasecmp(trim($gradeStatus), 'Pending') === 0) {
+//                     $mail->Body .= '<tr><td><strong style="font-size: 17px; font-weight: bolder;">Final Grade:</strong></td><td><strong style="font-size: 17px; font-weight: bolder;">Pending</strong></td></tr>';
+//                 } else {
+//                     $mail->Body .= '<tr><td><strong style="font-size: 17px; font-weight: bolder;">Final Grade:</strong></td><td><strong style="font-size: 17px; font-weight: bolder;">' . ucfirst($gradeStatus) . '</strong></td></tr>';
+//                     if (strtolower($gradeStatus) == 'withheld') {
+//                         $mail->Body .= '<br><br><tr><th>Note :</th><td>You are kindly Requested to Contact BMS Campus <br> Finance Department <br> 0704001092</td></tr>';
+//                     }
+//                 }
+//                 $emailedResult = $gradeStatus;
+//             } else if (
+//                 $programName == 'Higher Diploma in Biomedical Science' ||
+//                 $programName == 'Higher Diploma in Biotechnology' ||
+//                 $programName == 'Higher Diploma in Food Science and Nutrition' ||
+//                 $programName == 'BSc (Hons) in Software Engineering' ||
+//                 $programName == 'Higher Diploma in Medical Biotechnology'
+//             ) {
+//                 $mail->Body .= '<tr><td><strong style="font-size: 17px; font-weight: bolder;">Final HD Grade:</strong></td><td>' . (($paymentStatus == 'withheld' || empty($paymentStatus)) ? 'Withheld' : ucfirst($finalHDGrade)) . '</td></tr>';
+//                 if ($paymentStatus == 'withheld' || empty($paymentStatus)) {
+//                     $mail->Body .= '<br><br><tr><th>Note :</th><td>You are kindly Requested to Contact BMS Campus <br> Finance Department <br> 0704001092</td></tr>';
+//                 }
+//                 $emailedResult = ($paymentStatus == 'withheld' || empty($paymentStatus)) ? 'withheld' : $finalHDGrade;
+//             } else if (
+//                 $programName == 'International Foundation Diploma (Business) - ATHE Level 3' ||
+//                 $programName == 'International Foundation Diploma (Applied Science) - ATHE Level 3' ||
+//                 $programName == 'BTEC Higher National Diploma in Business'
+//             ) {
+//                 $mail->Body .= '<tr><td><strong style="font-size: 17px; font-weight: bolder;">Final Result:</strong></td><td style="font-size: 17px; font-weight: bolder;">' . (($paymentStatus == 'withheld' || empty($paymentStatus)) ? 'Withheld' : ucfirst($finalResult)) . '</td></tr>';
+//                 if ($paymentStatus == 'withheld' || empty($paymentStatus)) {
+//                     $mail->Body .= '<br><br><tr><th>Note :</th><td>You are kindly Requested to Contact BMS Campus <br> Finance Department <br> 0704001092</td></tr>';
+//                 }
+//                 $emailedResult = ($paymentStatus == 'withheld' || empty($paymentStatus)) ? 'withheld' : $finalResult;
+//             } else if ($programName == 'Graduate Diploma in Management (Level 6)') {
+//                 // GDM component logic
+//                 $componentsQuery = "
+//                     SELECT sr.*, sr.result, 
+//                             sr.hd_converted_marks, sr.hd_resit3_converted_marks, 
+//                             sr.hd_resit2_converted_marks, sr.hd_resit1_converted_marks,
+//                             sr.hd_resit3_grade, sr.hd_resit2_grade, sr.hd_resit1_grade, sr.hd_grade,
+//                            ac.as_main_component_name AS main_component_name,
+//                            sc.sub_component_name AS sub_component_name
+//                     FROM student_results sr
+//                     LEFT JOIN assignment_components ac ON sr.main_component_id = ac.id
+//                     LEFT JOIN sub_assign_components sc ON sr.sub_component_id = sc.id
+//                     WHERE sr.student_id = '$resendStudentId' AND sr.module_id = '$resendModuleId'
+//                     ORDER BY sr.main_component_id, sr.sub_component_id
+//                 ";
+//                 $componentsResult = $conn->query($componentsQuery);
+
+//                 $componentRowsBuffer = '';
+//                 if ($componentsResult && $componentsResult->num_rows > 0) {
+//                     while ($compRow = $componentsResult->fetch_assoc()) {
+//                         $componentName = !empty($compRow['main_component_name']) ? htmlspecialchars($compRow['main_component_name']) : 'Component';
+//                         $subComponentName = !empty($compRow['sub_component_name']) ? ' - ' . htmlspecialchars($compRow['sub_component_name']) : '';
+//                         $componentResult = !empty($compRow['resit_result_4']) ? $compRow['resit_result_4'] : 
+//                                           (!empty($compRow['resit_result_3']) ? $compRow['resit_result_3'] : 
+//                                           (!empty($compRow['resit_result_2']) ? $compRow['resit_result_2'] : 
+//                                           (!empty($compRow['resit_result_1']) ? $compRow['resit_result_1'] : $compRow['result'])));
+//                         $componentStatus = htmlspecialchars($componentResult);
+
+//                         if ($paymentStatus == 'withheld' || empty($paymentStatus)) {
+//                             // Withheld: show nothing
+//                         } else {
+//                             $commentHtml = !empty($compRow['comment']) ? '<br><span style="font-weight:normal;">(' . htmlspecialchars($compRow['comment']) . ')</span>' : '';
+//                             $componentRowsBuffer .= '
+//                                 <tr>
+//                                     <td style="border:1px solid #ddd; background: #fafafa; font-family: Arial, sans-serif; font-size:15px;">
+//                                         <strong>' . $componentName . $subComponentName . '</strong>' . $commentHtml . '
+//                                     </td>
+//                                     <td style="border:1px solid #ddd; font-family: Arial, sans-serif; font-size:15px;">' . ucfirst($componentStatus) . '</td>
+//                                 </tr>';
+//                         }
+//                     }
+//                 }
+
+//                 // Build the unified table
+//                 $mail->Body .= '
+//                     <tr>
+//                         <td colspan="2" style="padding:0;">
+//                             <table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;font-size:15px;">
+//                 ';
+
+//                 if (!empty($componentRowsBuffer)) {
+//                     $mail->Body .= $componentRowsBuffer;
+//                 }
+
+//                 // Final Result Row
+//                 $mail->Body .= '
+//                                 <tr>
+//                                     <td style="font-weight: bold; padding:8px 7px; border:1px solid #ddd; background: #fafafa; font-size:16px;">Final Result:</td>
+//                                     <td style="font-weight: bold; padding:8px 7px; border:1px solid #ddd; font-size:17px;">' . (($paymentStatus == 'withheld' || empty($paymentStatus)) ? 'Withheld' : ucfirst($finalResult)) . '</td>
+//                                 </tr>
+//                 ';
+
+//                 // Payment withheld note if applicable
+//                 if ($paymentStatus == 'withheld' || empty($paymentStatus)) {
+//                     $mail->Body .= '
+//                                 <tr>
+//                                     <td style="font-weight: bold; padding:8px 7px; border:1px solid #ddd; background: #fafafa;">Note</td>
+//                                     <td style="padding:8px 7px; border:1px solid #ddd;">You are kindly Requested to Contact BMS Campus <br> Finance Department <br> 0704001092</td>
+//                                 </tr>
+//                     ';
+//                 } else {
+//                     // Academic appeals note
+//                     $mail->Body .= '
+//                                     <tr>
+//                                         <td colspan="2" style="color: #c0392b; font-size: 14px; padding-top: 15px; border:1px solid #ddd; background: #fff;">
+//                                             <strong>Academic Appeals:</strong> If any, shall be submitted within 7 days from the date hereof.<br>
+//                                             Please email: <a href="mailto:shankar@bms.ac.lk" style="color: #2980b9;">shankar@bms.ac.lk</a>
+//                                         </td>
+//                                     </tr>
+//                                 </table>
+//                             </td>
+//                         </tr>';
+//                 }
+
+//                 $emailedResult = ($paymentStatus == 'withheld' || empty($paymentStatus)) ? 'withheld' : $finalResult;
+//             } else {
+//                 $status = (strpos(strtolower($finalResult), 'merit') !== false ||
+//                     strpos(strtolower($finalResult), 'pass') !== false ||
+//                     strpos(strtolower($finalResult), 'distinction') !== false) ? 'Completed' : 'Not Completed';
+//                 $mail->Body .= '<tr><td><strong>Status:</strong></td><td>' . (($paymentStatus == 'withheld' || empty($paymentStatus)) ? 'Withheld' : ucfirst($status)) . '</td></tr>';
+//                 if ($paymentStatus == 'withheld' || empty($paymentStatus)) {
+//                     $mail->Body .= '<tr><th>Note</th><td>You are kindly Requested to Contact BMS Campus <br> Finance Department <br> 0704001092</td></tr>';
+//                 }
+//                 $emailedResult = ($paymentStatus == 'withheld' || empty($paymentStatus)) ? 'withheld' : $finalResult;
+//             }
+
+//             $mail->Body .= '
+//                     </table>
+//                     <div style="font-size: 12px; color: #999; text-align: center; border-top: 1px solid #ccc; padding: 10px 0; margin-top: 20px;">
+//                         This is an automated email from the BMS Results System. Please do not reply.<br>
+//                         &copy; ' . date('Y') . ' Business Management School, All rights reserved.
+//                     </div>
+//                 </div>
+//             </body>
+//             </html>';
+
+//             $mail->send();
+
+//             // Log successful resend
+//             $logQuery = "INSERT INTO email_sending_log 
+//                 (student_id, program_id, batch_id, module_id, main_component_id, sub_component_id, 
+//                 email_sent, sent_date, sent_by, status, emailed_result) 
+//                 VALUES (?, ?, ?, ?, ?, ?, 1, NOW(), ?, 'sent', ?)";
+//             $logStmt = $conn->prepare($logQuery);
+//             $sentBy = $_SESSION['username'];
+//             $logStmt->bind_param("iiiiiiss", $resendStudentId, $resendProgramId, $resendBatchId, 
+//                                 $resendModuleId, null, null, $sentBy, $emailedResult);
+//             $logStmt->execute();
+
+//             echo json_encode(['success' => true, 'message' => 'Email resent successfully']);
+//         } catch (Exception $e) {
+//             $errorMsg = $mail->ErrorInfo;
+//             $logQuery = "INSERT INTO email_sending_log 
+//                 (student_id, program_id, batch_id, module_id, main_component_id, sub_component_id,
+//                 email_sent, sent_date, sent_by, status, error_message, emailed_result)
+//                 VALUES (?, ?, ?, ?, ?, ?, 0, NOW(), ?, 'failed', ?, ?)";
+//             $logStmt = $conn->prepare($logQuery);
+//             $sentBy = $_SESSION['username'];
+//             $logStmt->bind_param("iiiiiisss", $resendStudentId, $resendProgramId, $resendBatchId, 
+//                                 $resendModuleId, null, null, $sentBy, $errorMsg, $emailedResult ?? '');
+//             $logStmt->execute();
+//             echo json_encode(['success' => false, 'message' => 'Error: ' . $errorMsg]);
+//         }
+//     } else {
+//         echo json_encode(['success' => false, 'message' => 'Student data not found']);
+//     }
+//     exit;
+// }
+
 // --------------------------------------------------------------------------- 
 // Email sending section for the module wise result -> send all 
 // --------------------------------------------------------------------------- 
@@ -2454,9 +2786,6 @@ if (isset($_POST['send_to_all']) && !empty($programmeId) && !empty($batchId) && 
                             <tr><th>Semester:</th><td>' . $semester . '</td></tr>
                         </table>';
 
-            $rowProgramId = (int) ($row['program_id'] ?? $programmeId);
-            $rowBatchId = (int) ($row['batch_id'] ?? $batchId);
-            $rowModuleId = (int) ($row['module_id'] ?? $moduleId);
             $componentsQuery = "
             SELECT sr.*,  sr.result, 
                         sr.hd_converted_marks, sr.hd_resit3_converted_marks, 
@@ -2467,10 +2796,7 @@ if (isset($_POST['send_to_all']) && !empty($programmeId) && !empty($batchId) && 
                 FROM student_results sr
             LEFT JOIN assignment_components ac ON sr.main_component_id = ac.id
             LEFT JOIN sub_assign_components sc ON sr.sub_component_id = sc.id
-            WHERE sr.student_id = '$studentId'
-              AND sr.program_id = '$rowProgramId'
-              AND sr.batch_id = '$rowBatchId'
-              AND sr.module_id = '$rowModuleId'
+            WHERE sr.student_id = '$studentId' AND sr.module_id = '$moduleId'
             ORDER BY sr.main_component_id, sr.sub_component_id
             ";
 
@@ -2495,31 +2821,75 @@ if (isset($_POST['send_to_all']) && !empty($programmeId) && !empty($batchId) && 
                 if ($componentsResult && $componentsResult->num_rows > 0) {
                     $componentsResult->data_seek(0);
                     while ($compRow = $componentsResult->fetch_assoc()) {
-                        if ($compRow['hd_resit3_grade'] !== null && $compRow['hd_resit3_grade'] !== '') {
-                            $compGrades[] = $compRow['hd_resit3_grade'];
-                        } elseif ($compRow['hd_resit2_grade'] !== null && $compRow['hd_resit2_grade'] !== '') {
-                            $compGrades[] = $compRow['hd_resit2_grade'];
-                        } elseif ($compRow['hd_resit1_grade'] !== null && $compRow['hd_resit1_grade'] !== '') {
-                            $compGrades[] = $compRow['hd_resit1_grade'];
-                        } else {
-                            $compGrades[] = $compRow['hd_grade'];
-                        }
-
-                        if ($compRow['hd_resit3_converted_marks'] !== null && $compRow['hd_resit3_converted_marks'] !== '') {
-                            $m = $compRow['hd_resit3_converted_marks'];
-                        } elseif ($compRow['hd_resit2_converted_marks'] !== null && $compRow['hd_resit2_converted_marks'] !== '') {
-                            $m = $compRow['hd_resit2_converted_marks'];
-                        } elseif ($compRow['hd_resit1_converted_marks'] !== null && $compRow['hd_resit1_converted_marks'] !== '') {
-                            $m = $compRow['hd_resit1_converted_marks'];
-                        } else {
-                            $m = $compRow['hd_converted_marks'];
-                        }
+                        $compGrades[] = $compRow['hd_resit3_grade'] ?? $compRow['hd_resit2_grade'] ?? $compRow['hd_resit1_grade'] ?? $compRow['hd_grade'];
+                        $m = $compRow['hd_resit3_converted_marks'] ?? $compRow['hd_resit2_converted_marks'] ?? $compRow['hd_resit1_converted_marks'] ?? $compRow['hd_converted_marks'];
                         $compMarks[] = $m;
                     }
                     $finalHDGrade = calculateFinalHDGrade($compGrades, $compMarks, $componentCount);
                     $componentsResult->data_seek(0); // Reset pointer for potential reuse
                 }
             }
+
+
+            // Add component results to email body
+            // if ($componentsResult && $componentsResult->num_rows > 0) {
+
+            //     // Check if final result (GDM) is distinction, merit, or pass (case-insensitive)
+            //     $finalResultLower = strtolower($finalResult);
+            //     $showComponentResults = !(stripos($finalResultLower, 'distinction') !== false ||
+            //         stripos($finalResultLower, 'merit') !== false ||
+            //         stripos($finalResultLower, 'pass') !== false);
+
+            //     while ($compRow = $componentsResult->fetch_assoc()) {
+            //         $componentName = !empty($compRow['main_component_name']) ? htmlspecialchars($compRow['main_component_name']) : 'Component';
+            //         $subComponentName = !empty($compRow['sub_component_name']) ? ' - ' . htmlspecialchars($compRow['sub_component_name']) : '';
+
+            //         $componentGrades[] = $compRow['hd_resit3_grade'] ?? $compRow['hd_resit2_grade'] ?? $compRow['hd_resit1_grade'] ?? $compRow['hd_grade'];
+            //         $componentMarks[] = $compRow['hd_resit3_converted_marks'] ?? $compRow['hd_resit2_converted_marks'] ?? $compRow['hd_resit1_converted_marks'] ?? $compRow['hd_converted_marks'];
+
+            //         $componentResult = htmlspecialchars($compRow['result']);
+            //         $convertedMarks = htmlspecialchars($compRow['hd_converted_marks']);
+
+            //         // ------------------   GDM SECTION  ------------------
+            //         if (
+            //             $programName == 'Graduate Diploma in Management (Level 6)'
+
+            //         ) {
+            //             // Always show component results regardless of final result
+            //             $componentResult = !empty($compRow['resit_result_4']) ? $compRow['resit_result_4'] : (
+            //                 !empty($compRow['resit_result_3']) ? $compRow['resit_result_3'] : (
+            //                     !empty($compRow['resit_result_2']) ? $compRow['resit_result_2'] : (
+            //                         !empty($compRow['resit_result_1']) ? $compRow['resit_result_1'] : $compRow['result']
+            //                     )
+            //                 )
+            //             );
+
+            //             // Simply display the raw grade as-is
+            //             $componentStatus = htmlspecialchars($componentResult);
+
+            //             if ($paymentStatus == 'withheld' || empty($paymentStatus)) {
+            //                 // withheld: show nothing
+            //             } else {
+            //                 // $mail->Body .= '
+            //                 //         <tr>
+            //                 //             <td><strong>' . $componentName . $subComponentName . ':</strong></td>
+            //                 //             <td>' . $componentStatus . '</td>
+            //                 //         </tr>';
+
+            //                 $mail->Body .= '
+            //                     <table border="0" cellspacing="0" cellpadding="6" style="border-collapse:collapse; width:100%; font-family:Arial, sans-serif; font-size:14px;">
+            //                         <tr>
+            //                             <td style="width:60%;"><strong>' . $componentName . $subComponentName . ':</strong></td>
+            //                             <td style="width:40%;">' . $componentStatus . '</td>
+            //                         </tr>
+            //                     </table>';
+            //             }
+            //         }
+            //     }
+            //     // Logic to determine the final HD grade based on the grades and marks
+            //     $finalHDGrade = calculateFinalHDGrade($componentGrades, $componentMarks);
+            // }
+
 
             // -------------
             if ($programName == 'Executive Certificate in Management') {
@@ -2646,6 +3016,82 @@ if (isset($_POST['send_to_all']) && !empty($programmeId) && !empty($batchId) && 
 
             // GDM only  
             else if ($programName == 'Graduate Diploma in Management (Level 6)') {
+
+                // Gather component table rows if there are any components and not withheld
+                // $componentRowsBuffer = '';
+                // if ($componentsResult && $componentsResult->num_rows > 0) {
+                //     while ($compRow = $componentsResult->fetch_assoc()) {
+                //         $componentName = !empty($compRow['main_component_name']) ? htmlspecialchars($compRow['main_component_name']) : 'Component';
+                //         $subComponentName = !empty($compRow['sub_component_name']) ? ' - ' . htmlspecialchars($compRow['sub_component_name']) : '';
+
+                //         if ($programName == 'Graduate Diploma in Management (Level 6)') {
+                //             $componentResult = !empty($compRow['resit_result_4']) ? $compRow['resit_result_4'] : (!empty($compRow['resit_result_3']) ? $compRow['resit_result_3'] : (!empty($compRow['resit_result_2']) ? $compRow['resit_result_2'] : (!empty($compRow['resit_result_1']) ? $compRow['resit_result_1'] : $compRow['result'])));
+                //             $componentStatus = htmlspecialchars($componentResult);
+                //         } else {
+                //             $componentResult = $compRow['result'];
+                //             $componentStatus = htmlspecialchars($componentResult);
+                //         }
+                //         if ($paymentStatus == 'withheld' || empty($paymentStatus)) {
+                //             // Withheld: show nothing
+                //         } else {
+                //             $componentRowsBuffer .= '
+                //                 <tr>
+                //                     <td style="border:1px solid #ddd; background: #fafafa; font-family: Arial, sans-serif; font-size:15px;">
+                //                         <strong>' . $componentName . $subComponentName . '</strong>
+                //                     </td>
+                //                     <td style="border:1px solid #ddd; font-family: Arial, sans-serif; font-size:15px;">' . ucfirst($componentStatus) . '</td>
+                //                 </tr>';
+                //         }
+                //     }
+                // }   
+
+                // // Build the unified table (one table design)
+                // $mail->Body .= '
+                //     <tr>
+                //         <td colspan="2" style="padding:0;">
+                //             <table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;font-size:15px;">
+                // ';
+
+                // //     <tr>
+                // //     <td colspan="2" style="font-weight: bold; background: #eaeaea; border:1px solid #ddd; text-align:center;">Component Results</td>
+                // // </tr>
+                // // Component-wise rows
+                // if (!empty($componentRowsBuffer)) {
+                //     $mail->Body .= '
+
+                //                 ' . $componentRowsBuffer;
+                // }
+
+                // // Final Result Row
+                // $mail->Body .= '
+                //                 <tr>
+                //                     <td style="font-weight: bold; padding:8px 7px; border:1px solid #ddd; background: #fafafa; font-size:16px;">Final Result:</td>
+                //                     <td style="font-weight: bold; padding:8px 7px; border:1px solid #ddd; font-size:17px;">' . (($paymentStatus == 'withheld' || empty($paymentStatus)) ? 'Withheld' : ucfirst($finalResult)) . '</td>
+                //                 </tr>
+                // ';
+
+                // // Payment withheld note if applicable
+                // if ($paymentStatus == 'withheld' || empty($paymentStatus)) {
+                //     $mail->Body .= '
+                //                 <tr>
+                //                     <td style="font-weight: bold; padding:8px 7px; border:1px solid #ddd; background: #fafafa;">Note</td>
+                //                     <td style="padding:8px 7px; border:1px solid #ddd;">You are kindly Requested to Contact BMS Campus <br> Finance Department <br> 0704001092</td>
+                //                 </tr>
+                //     ';
+                // }
+
+                // // Academic appeals note
+                // $mail->Body .= '
+                //                 <tr>
+                //                     <td colspan="2" style="color: #c0392b; font-size: 14px; padding-top: 15px; border:1px solid #ddd; background: #fff;">
+                //                         <strong>Academic Appeals:</strong> If any, shall be submitted within 7 days from the date hereof.<br>
+                //                         Please email: <a href="mailto:shankar@bms.ac.lk" style="color: #2980b9;">shankar@bms.ac.lk</a>
+                //                     </td>
+                //                 </tr>
+                //             </table>
+                //         </td>
+                //     </tr>';
+
 
 
                 // new updated ------ 19-01-2026 -----------
@@ -2774,6 +3220,23 @@ if (isset($_POST['send_to_all']) && !empty($programmeId) && !empty($batchId) && 
                 // $emailedResult = ($paymentStatus == 'withheld' || empty($paymentStatus)) ? 'withheld' : $finalResult;
 
                 // $emailedResult = ($paymentStatus == 'withheld' || empty($paymentStatus)) ? 'withheld' : $finalResult;
+                
+                // -----------------------------------------------------------------------------------------
+                // if ($paymentStatus == 'withheld' || empty($paymentStatus)) {
+                //     $emailedResult = 'withheld';
+                // } else if (
+                //     $programName == 'Higher Diploma in Biomedical Science' ||
+                //     $programName == 'Higher Diploma in Biotechnology' ||
+                //     $programName == 'Higher Diploma in Food Science and Nutrition' ||
+                //     $programName == 'Higher Diploma in Medical Biotechnology'
+                // ) {
+                //     $emailedResult = $finalHDGrade;
+                // } else {
+                //     $emailedResult = $finalResult;
+                // }
+
+                // ---------------------------------------NEW UPDATDE 01-09-2026 --------------------------------------------------
+                
                 if ($paymentStatus == 'withheld' || empty($paymentStatus)) {
                     $emailedResult = 'withheld';
                 } else if (
@@ -2791,7 +3254,7 @@ if (isset($_POST['send_to_all']) && !empty($programmeId) && !empty($batchId) && 
                 } else {
                     $emailedResult = $finalResult;
                 }
-
+                // -----------------------------------------------------------------------------------------
 
                 $sentBy = $_SESSION['username'];
 
@@ -2865,24 +3328,158 @@ if (isset($_POST['send_to_all']) && !empty($programmeId) && !empty($batchId) && 
 }
 
 
+// function getHDGradeFromMarks($finalMark)
+// {
+//     if ($finalMark <= 29)
+//         return 'Re-sit';   // 0-29 
+//     elseif ($finalMark <= 49)
+//         return 'Pending'; // 30-49
+//     elseif ($finalMark <= 59)
+//         return 'Pass'; // 50-59
+//     elseif ($finalMark <= 69)
+//         return 'Merit'; // 60-69
+//     elseif ($finalMark <= 100)
+//         return 'Distinction'; // 70-100
+//     return 'Unknown';
+// }
+
+// function calculateFinalHDGrade($componentGrades, $componentMarks, $componentCount)
+// {
+//     $finalHDGrade = 'N/A';
+//     $count = count($componentGrades);
+//      $count = $componentCount;
+
+//     if ($count == 2) {
+//         if (count($componentGrades) >= 2) {
+//             $g1 = strtolower($componentGrades[0]);
+//             $g2 = strtolower($componentGrades[1]);
+
+//             if ($g1 === 're-sit' && $g2 === 're-sit') {
+//                 $finalHDGrade = 'Re-sit';
+//             } elseif ($g1 === 'pending' && $g2 === 'pending') {
+//                 $finalHDGrade = 'Re-sit';
+//             } elseif (($g1 === 're-sit' && $g2 === 'pending') || ($g2 === 're-sit' && $g1 === 'pending')) {
+//                 $finalHDGrade = 'Re-sit';
+//             } elseif (($g1 === 're-sit' && in_array($g2, ['pass', 'merit', 'distinction'])) || ($g2 === 're-sit' && in_array($g1, ['pass', 'merit', 'distinction']))) {
+//                 $finalHDGrade = 'Pending';
+//             } elseif (($g1 === 'pending' && in_array($g2, ['pass', 'merit', 'distinction'])) || ($g2 === 'pending' && in_array($g1, ['pass', 'merit', 'distinction']))) {
+//                 $finalHDGrade = getHDGradeFromMarks(array_sum($componentMarks));
+//             } elseif (in_array($g1, ['pass', 'merit', 'distinction']) && in_array($g2, ['pass', 'merit', 'distinction'])) {
+//                 $sumMarks = ($componentMarks[0] ?? 0) + ($componentMarks[1] ?? 0);
+//                 $finalHDGrade = getHDGradeFromMarks($sumMarks);
+//             } elseif ($g1 === 'absent' && in_array($g2, ['pass', 'merit', 'distinction']) || $g2 === 'absent' && in_array($g1, ['pass', 'merit', 'distinction'])) {
+//                 $finalHDGrade = 'pending';
+//             } elseif ($g1 === 'absent' && $g2 === 'absent') {
+//                 $finalHDGrade = 'absent';
+//             } else {
+//                 $finalHDGrade = 'Pending';
+//             }
+//         } elseif (isset($componentGrades[0])) {
+//             $g = strtolower($componentGrades[0]);
+//             $finalHDGrade = $g === 'pending' ? getHDGradeFromMarks(array_sum($componentMarks)) : $componentGrades[0];
+//         }
+//     } elseif ($count == 3) {
+//         if (count($componentGrades) >= 3) {
+//             $g1 = strtolower($componentGrades[0]);
+//             $g2 = strtolower($componentGrades[1]);
+//             $g3 = strtolower($componentGrades[2]);
+
+//             $resitCount = 0;
+//             $pendingCount = 0;
+//             $absentCount = 0;
+//             $validGrades = 0;
+//             $sumMarks = 0;
+
+//             for ($i = 0; $i < 3; $i++) {
+//                 $g = strtolower($componentGrades[$i]);
+//                 $m = floatval($componentMarks[$i] ?? 0);
+
+//                 if (in_array($g, ['pass', 'merit', 'distinction'])) {
+//                     $validGrades++;
+//                     $sumMarks += $m;
+//                 } elseif ($g === 're-sit') {
+//                     $resitCount++;
+//                     $sumMarks += $m;
+//                 } elseif ($g === 'pending') {
+//                     $pendingCount++;
+//                     $sumMarks += $m;
+//                 } elseif ($g === 'absent') {
+//                     $absentCount++;
+//                 }
+//             }
+
+//             if ($resitCount === 3) {
+//                 $finalHDGrade = 'Re-sit';
+//             } elseif ($pendingCount === 3) {
+//                 $finalHDGrade = ($sumMarks < 50) ? 'Re-sit' : getHDGradeFromMarks($sumMarks);
+//             } elseif ($absentCount === 3) {
+//                 $finalHDGrade = 'Absent';
+//             } elseif ($resitCount === 2 && $pendingCount === 1) {
+//                 $finalHDGrade = 'Re-sit';
+//             } elseif ($resitCount === 2 && $validGrades === 1) {
+//                 $finalHDGrade = 'Pending';
+//             } elseif ($pendingCount === 2 && $validGrades === 1) {
+//                 $finalHDGrade = ($sumMarks < 50) ? 'Pending' : getHDGradeFromMarks($sumMarks);
+//             } elseif ($resitCount === 1 && $pendingCount === 1 && $validGrades === 1) {
+//                 $finalHDGrade = 'Pending';
+//             } elseif ($resitCount === 1 && $validGrades === 2) {
+//                 $finalHDGrade = 'Pending';
+//             } elseif ($pendingCount === 1 && $validGrades === 2) {
+//                 $finalHDGrade = getHDGradeFromMarks($sumMarks);
+//             } elseif ($validGrades === 3) {
+//                 $finalHDGrade = getHDGradeFromMarks($sumMarks);
+//             } elseif ($absentCount === 2 && $pendingCount === 1) {
+//                 $finalHDGrade = 'Re-sit';
+//             } elseif ($absentCount === 2 && $resitCount === 1) {
+//                 $finalHDGrade = 'Re-sit';
+//             } elseif ($pendingCount === 2 && $resitCount === 1) {
+//                 $finalHDGrade = ($sumMarks < 50) ? 'Re-sit' : getHDGradeFromMarks($sumMarks);
+//             } else {
+//                 $finalHDGrade = 'Pending';
+//             }
+//         } elseif (isset($componentGrades[0])) {
+//             $g = strtolower($componentGrades[0]);
+//             $finalHDGrade = $g === 'pending' ? getHDGradeFromMarks(array_sum($componentMarks)) : $componentGrades[0];
+//         }
+//     } else {
+//         $finalHDGrade = 'Error: No grades found for component';
+//     }
+
+//     return $finalHDGrade;
+// }
+
+
+
+
+
 
 
 // ================================
 // 1️⃣ Function: Convert Marks to HD Grade (with 2.6 rule) hasni bro Did
 // ================================
-function getHDGradeFromMarksSingle($marks)
-{
-    $marks = floatval($marks);
-    if ($marks >= 70) {
-        return 'Distinction';
-    } elseif ($marks >= 60) {
-        return 'Merit';
-    } elseif ($marks >= 50) {
-        return 'Pass';
-    } else {
-        return 'Re-sit'; // covers 0–48 (and 49, per your ranges)
-    }
-}
+// function getHDGradeFromMarks($finalMark)
+// {
+//     // 2.6 rule: promote borderline marks
+//     if ($finalMark == 49)
+//         $finalMark = 50;
+//     if ($finalMark == 59)
+//         $finalMark = 60;
+//     if ($finalMark == 69)
+//         $finalMark = 70;
+
+//     if ($finalMark <= 29)
+//         return 'Re-sit';       // 0-29
+//     elseif ($finalMark <= 49)
+//         return 'Pending';  // 30-49
+//     elseif ($finalMark <= 59)
+//         return 'Pass';     // 50-59
+//     elseif ($finalMark <= 69)
+//         return 'Merit';    // 60-69
+//     elseif ($finalMark <= 100)
+//         return 'Distinction'; // 70-100
+
+//     return 'Unknown';
+// }
 
 function getHDGradeFromMarks($finalMark)
 {
@@ -2920,27 +3517,16 @@ function getHDGradeFromMarks($finalMark)
 // ================================
 // 2️⃣ Function: Calculate Final HD Grade from Components
 // ================================
-
-
 // function calculateFinalHDGrade($componentGrades, $componentMarks, $componentCount)
 // {
 //     $finalHDGrade = 'N/A';
 //     $count = $componentCount;
-//     $norm = function ($x) {
-//         $x = strtolower(trim((string)$x));
-//         $x = str_replace(['-', '_'], ' ', $x);
-//         $x = preg_replace('/\s+/', ' ', $x);
-//         if ($x === 'resit' || $x === 're sit') $x = 're-sit';
-//         if ($x === 'not submitted') $x = 'not submitted';
-//         return $x;
-//     };
 
 //     if ($count == 2) {
 //         if (count($componentGrades) >= 2) {
-//             $g1 = $norm($componentGrades[0]);
-//             $g2 = $norm($componentGrades[1]);
+//             $g1 = strtolower($componentGrades[0]);
+//             $g2 = strtolower($componentGrades[1]);
 
-//             // Distinguish between only 'absent' and only 'not submitted'
 //             if ($g1 === 're-sit' && $g2 === 're-sit') {
 //                 $finalHDGrade = 'Re-sit';
 //             } elseif ($g1 === 'pending' && $g2 === 'pending') {
@@ -2949,67 +3535,27 @@ function getHDGradeFromMarks($finalMark)
 //                 $finalHDGrade = 'Re-sit';
 //             } elseif (($g1 === 're-sit' && in_array($g2, ['pass', 'merit', 'distinction'])) || ($g2 === 're-sit' && in_array($g1, ['pass', 'merit', 'distinction']))) {
 //                 $finalHDGrade = 'Pending';
-//             } elseif (
-//                 ($g1 === 're-sit' && in_array($g2, ['absent', 'not submitted'])) ||
-//                 ($g2 === 're-sit' && in_array($g1, ['absent', 'not submitted']))
-//             ) {
-//                 $finalHDGrade = 'Re-sit';
 //             } elseif (($g1 === 'pending' && in_array($g2, ['pass', 'merit', 'distinction'])) || ($g2 === 'pending' && in_array($g1, ['pass', 'merit', 'distinction']))) {
 //                 $finalHDGrade = getHDGradeFromMarks(array_sum($componentMarks));
-//             } elseif (
-//                 ($g1 === 'pending' && in_array($g2, ['absent', 'not submitted'])) ||
-//                 ($g2 === 'pending' && in_array($g1, ['absent', 'not submitted']))
-//             ) {
-//                 $finalHDGrade = 'Pending';
 //             } elseif (in_array($g1, ['pass', 'merit', 'distinction']) && in_array($g2, ['pass', 'merit', 'distinction'])) {
 //                 $finalHDGrade = getHDGradeFromMarks(array_sum($componentMarks));
-//             } elseif (
-//                 ($g1 === 'not submitted' && $g2 === 'not submitted')
-//             ) {
-//                 // Both are not submitted
-//                 $finalHDGrade = 'Not Submitted';
-//             } elseif (
-//                 ($g1 === 'absent' && $g2 === 'absent')
-//             ) {
-//                 // Both are absent
+//             } elseif (($g1 === 'absent' && in_array($g2, ['pass', 'merit', 'distinction'])) || ($g2 === 'absent' && in_array($g1, ['pass', 'merit', 'distinction']))) {
+//                 $finalHDGrade = 'Pending';
+//             } elseif ($g1 === 'absent' && $g2 === 'absent') {
 //                 $finalHDGrade = 'Absent';
-//             } elseif (
-//                 ($g1 === 'not submitted' && in_array($g2, ['pass', 'merit', 'distinction'])) ||
-//                 ($g2 === 'not submitted' && in_array($g1, ['pass', 'merit', 'distinction']))
-//             ) {
-//                 $finalHDGrade = 'Pending';
-//             } elseif (
-//                 ($g1 === 'absent' && in_array($g2, ['pass', 'merit', 'distinction'])) ||
-//                 ($g2 === 'absent' && in_array($g1, ['pass', 'merit', 'distinction']))
-//             ) {
-//                 $finalHDGrade = 'Pending';
-//             } elseif (
-//                 ($g1 === 'absent' && $g2 === 'not submitted') ||
-//                 ($g1 === 'not submitted' && $g2 === 'absent')
-//             ) {
-//                 $finalHDGrade = 'Not Submitted';
 //             } else {
 //                 $finalHDGrade = 'Pending';
 //             }
 //         } elseif (isset($componentGrades[0])) {
-//             $g = $norm($componentGrades[0]);
-//             // This covers single not submitted and absent cases for rare 1-component case
-//             if ($g === 'not submitted') {
-//                 $finalHDGrade = 'Not Submitted';
-//             } elseif ($g === 'absent') {
-//                 $finalHDGrade = 'Absent';
-//             } elseif ($g === 'pending') {
-//                 $finalHDGrade = getHDGradeFromMarks(array_sum($componentMarks));
-//             } else {
-//                 $finalHDGrade = $componentGrades[0];
-//             }
+//             $g = strtolower($componentGrades[0]);
+//             $finalHDGrade = $g === 'pending' ? getHDGradeFromMarks(array_sum($componentMarks)) : $componentGrades[0];
 //         }
 //     } elseif ($count == 3) {
 //         if (count($componentGrades) >= 3) {
-//             $resitCount = $pendingCount = $absentCount = $notSubmittedCount = $validGrades = $sumMarks = 0;
+//             $resitCount = $pendingCount = $absentCount = $validGrades = $sumMarks = 0;
 
 //             for ($i = 0; $i < 3; $i++) {
-//                 $g = $norm($componentGrades[$i]);
+//                 $g = strtolower($componentGrades[$i]);
 //                 $m = floatval($componentMarks[$i] ?? 0);
 
 //                 if (in_array($g, ['pass', 'merit', 'distinction'])) {
@@ -3023,42 +3569,27 @@ function getHDGradeFromMarks($finalMark)
 //                     $sumMarks += $m;
 //                 } elseif ($g === 'absent') {
 //                     $absentCount++;
-//                 } elseif ($g === 'not submitted') {
-//                     $notSubmittedCount++;
 //                 }
 //             }
 
+
 //             // Apply rules
-//             if ($resitCount === 3)
-//                 $finalHDGrade = 'Re-sit';
-//             elseif ($pendingCount === 3)
-//                 $finalHDGrade = ($sumMarks < 50) ? 'Re-sit' : getHDGradeFromMarks($sumMarks);
-//             elseif (($absentCount + $notSubmittedCount) === 3)
-//                 $finalHDGrade = ($notSubmittedCount === 3) ? 'Not Submitted' : (($absentCount === 3) ? 'Absent' : 'Not Submitted');
-//             elseif ($resitCount === 2 && $pendingCount === 1)
-//                 $finalHDGrade = 'Re-sit';
-//             elseif ($resitCount === 2 && $validGrades === 1)
-//                 $finalHDGrade = 'Pending';
-//             elseif ($pendingCount === 2 && $validGrades === 1)
-//                 $finalHDGrade = ($sumMarks < 50) ? 'Pending' : getHDGradeFromMarks($sumMarks);
-//             elseif ($resitCount === 1 && $pendingCount === 1 && $validGrades === 1)
-//                 $finalHDGrade = 'Pending';
-//             elseif ($resitCount === 1 && $validGrades === 2)
-//                 $finalHDGrade = 'Pending';
-//             elseif ($pendingCount === 1 && $validGrades === 2)
-//                 $finalHDGrade = getHDGradeFromMarks($sumMarks);
-//             elseif ($validGrades === 3)
-//                 $finalHDGrade = getHDGradeFromMarks($sumMarks);
-//             elseif (($absentCount + $notSubmittedCount) === 2 && $pendingCount === 1)
-//                 $finalHDGrade = 'Re-sit';
-//             elseif (($absentCount + $notSubmittedCount) === 2 && $resitCount === 1)
-//                 $finalHDGrade = 'Re-sit';
-//             elseif ($pendingCount === 2 && $resitCount === 1)
-//                 $finalHDGrade = ($sumMarks < 50) ? 'Re-sit' : getHDGradeFromMarks($sumMarks);
-//             else
-//                 $finalHDGrade = 'Pending';
+//             if ($resitCount === 3) $finalHDGrade = 'Re-sit';
+//             elseif ($pendingCount === 3) $finalHDGrade = ($sumMarks < 50) ? 'Re-sit' : getHDGradeFromMarks($sumMarks);
+//             elseif ($absentCount === 3) $finalHDGrade = 'Absent';
+//             elseif ($resitCount === 2 && $pendingCount === 1) $finalHDGrade = 'Re-sit';
+//             elseif ($resitCount === 2 && $validGrades === 1) $finalHDGrade = 'Pending';
+//             elseif ($pendingCount === 2 && $validGrades === 1) $finalHDGrade = ($sumMarks < 50) ? 'Pending' : getHDGradeFromMarks($sumMarks);
+//             elseif ($resitCount === 1 && $pendingCount === 1 && $validGrades === 1) $finalHDGrade = 'Pending';
+//             elseif ($resitCount === 1 && $validGrades === 2) $finalHDGrade = 'Pending';
+//             elseif ($pendingCount === 1 && $validGrades === 2) $finalHDGrade = getHDGradeFromMarks($sumMarks);
+//             elseif ($validGrades === 3) $finalHDGrade = getHDGradeFromMarks($sumMarks);
+//             elseif ($absentCount === 2 && $pendingCount === 1) $finalHDGrade = 'Re-sit';
+//             elseif ($absentCount === 2 && $resitCount === 1) $finalHDGrade = 'Re-sit';
+//             elseif ($pendingCount === 2 && $resitCount === 1) $finalHDGrade = ($sumMarks < 50) ? 'Re-sit' : getHDGradeFromMarks($sumMarks);
+//             else $finalHDGrade = 'Pending';
 //         } elseif (isset($componentGrades[0])) {
-//             $g = $norm($componentGrades[0]);
+//             $g = strtolower($componentGrades[0]);
 //             $finalHDGrade = $g === 'pending' ? getHDGradeFromMarks(array_sum($componentMarks)) : $componentGrades[0];
 //         }
 //     } else {
@@ -3067,6 +3598,10 @@ function getHDGradeFromMarks($finalMark)
 
 //     return $finalHDGrade;
 // }
+
+
+
+
 
 function calculateFinalHDGrade($componentGrades, $componentMarks, $componentCount)
 {
@@ -3081,28 +3616,7 @@ function calculateFinalHDGrade($componentGrades, $componentMarks, $componentCoun
         return $x;
     };
 
-    if ($count == 1) {
-        if (isset($componentGrades[0])) {
-            $g1 = $norm($componentGrades[0]);
-            $mark = floatval($componentMarks[0] ?? 0);
-
-            if ($g1 === 're-sit') {
-                $finalHDGrade = 'Re-sit';
-            } elseif ($g1 === 'pending') {
-                $finalHDGrade = getHDGradeFromMarks($mark);
-            } elseif ($g1 === 'absent') {
-                $finalHDGrade = 'Absent';
-            } elseif ($g1 === 'not submitted') {
-                $finalHDGrade = 'Not Submitted';
-            } elseif (in_array($g1, ['pass', 'merit', 'distinction'])) {
-                $finalHDGrade = getHDGradeFromMarks($mark);
-            } else {
-                $finalHDGrade = 'Pending';
-            }
-        } else {
-            $finalHDGrade = 'Pending';
-        }
-    } elseif ($count == 2) {
+    if ($count == 2) {
         if (count($componentGrades) >= 2) {
             $g1 = $norm($componentGrades[0]);
             $g2 = $norm($componentGrades[1]);
@@ -3234,9 +3748,5 @@ function calculateFinalHDGrade($componentGrades, $componentMarks, $componentCoun
 
     return $finalHDGrade;
 }
-
-
-
-
 
 ?>

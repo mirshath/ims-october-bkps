@@ -103,7 +103,7 @@ $assessment = null;
                                             <div class="form-group mb-3">
                                                 <select name="student_status" id="studentStatus" style="font-size: 14px;"
                                                     class="form-control select2">
-
+                                                    
                                                     <option value="active" selected>Active Students</option>
                                                     <option value="completed">Completed Students</option>
                                                 </select>
@@ -634,7 +634,7 @@ $assessment = null;
                                 // }
 
                                 // Add only Email column for HD
-                                if (data.programme_type === 'HD' || data.programme_type === 'GDM' || data.programme_type === 'IFD' || data.programme_type === 'BTEC') {
+                                if (data.programme_type === 'HDs' || data.programme_type === 'GDM' || data.programme_type === 'IFD' || data.programme_type === 'BTEC') {
                                     headerHtml += `<th rowspan="2">Email</th>`;
                                 }
 
@@ -660,258 +660,7 @@ $assessment = null;
 
                                 $('#resultsTable thead').html(headerHtml);
 
-                                function normalizeHDGrade(grade) {
-                                    let value = String(grade ?? '').trim().toLowerCase();
-                                    value = value.replace(/[-_]/g, ' ').replace(/\s+/g, ' ');
-                                    if (value === 'resit' || value === 're sit') value = 're-sit';
-                                    return value;
-                                }
 
-                                function getHDMarkInfo(rawMark) {
-                                    if (rawMark === null || rawMark === undefined || rawMark === '') {
-                                        return {
-                                            mark: null,
-                                            grade: '',
-                                            ruleApplied: false
-                                        };
-                                    }
-
-                                    if (rawMark === 'Not Submitted' || rawMark === -1 || rawMark === '-1') {
-                                        return {
-                                            mark: -1,
-                                            grade: 'Not Submitted',
-                                            ruleApplied: false
-                                        };
-                                    }
-
-                                    if (rawMark === 'Absent' || rawMark === -2 || rawMark === '-2') {
-                                        return {
-                                            mark: -2,
-                                            grade: 'Absent',
-                                            ruleApplied: false
-                                        };
-                                    }
-
-                                    let mark = parseFloat(rawMark);
-                                    if (isNaN(mark)) {
-                                        return {
-                                            mark: rawMark,
-                                            grade: String(rawMark),
-                                            ruleApplied: false
-                                        };
-                                    }
-
-                                    let ruleApplied = false;
-
-                                    let grade = 'N/A';
-                                    if (mark <= 49) {
-                                        grade = 'Re-sit';
-                                    } else if (mark <= 59) {
-                                        grade = 'Pass';
-                                    } else if (mark <= 69) {
-                                        grade = 'Merit';
-                                    } else if (mark <= 100) {
-                                        grade = 'Distinction';
-                                    }
-
-                                    return {
-                                        mark,
-                                        grade,
-                                        ruleApplied
-                                    };
-                                }
-
-                                function getLatestHDComponentAttempt(componentData) {
-                                    if (!componentData) return null;
-
-                                    for (let i = 7; i >= 1; i--) {
-                                        const markKey = `resit_${i}`;
-                                        const gradeKey = `resit${i}_Grade`;
-                                        const hasMark = componentData[markKey] !== null && componentData[markKey] !== undefined && componentData[markKey] !== '';
-                                        const hasGrade = componentData[gradeKey] !== null && componentData[gradeKey] !== undefined && componentData[gradeKey] !== '';
-
-                                        if (hasMark || hasGrade) {
-                                            const markInfo = getHDMarkInfo(componentData[markKey]);
-                                            return {
-                                                grade: componentData[gradeKey] || markInfo.grade,
-                                                mark: typeof markInfo.mark === 'number' ? markInfo.mark : 0
-                                            };
-                                        }
-                                    }
-
-                                    const mainMarkInfo = getHDMarkInfo(componentData.main_result);
-                                    if (
-                                        (componentData.main_result_Grade !== null && componentData.main_result_Grade !== undefined && componentData.main_result_Grade !== '') ||
-                                        (componentData.main_result !== null && componentData.main_result !== undefined && componentData.main_result !== '')
-                                    ) {
-                                        return {
-                                            grade: componentData.main_result_Grade || mainMarkInfo.grade,
-                                            mark: typeof mainMarkInfo.mark === 'number' ? mainMarkInfo.mark : 0
-                                        };
-                                    }
-
-                                    return null;
-                                }
-
-                                function calculateHDGradeFromComponents(row, allComponents, finalResult) {
-                                    const componentGrades = [];
-                                    const componentMarks = [];
-                                    const componentCount = Array.isArray(allComponents) ? allComponents.length : 0;
-
-                                    (allComponents || []).forEach(component => {
-                                        const componentData = row.components ? row.components[component.main_component_id] : null;
-                                        const latestAttempt = getLatestHDComponentAttempt(componentData);
-
-                                        if (!latestAttempt) return;
-
-                                        if (latestAttempt.grade !== null && latestAttempt.grade !== undefined && latestAttempt.grade !== '') {
-                                            componentGrades.push(latestAttempt.grade);
-                                            componentMarks.push(parseFloat(latestAttempt.mark || 0));
-                                        }
-                                    });
-
-                                    const norm = normalizeHDGrade;
-                                    const getGradeFromMark = function(mark) {
-                                        return getHDMarkInfo(mark).grade;
-                                    };
-
-                                    let finalHDGrade = '';
-
-                                    if (componentCount === 2) {
-                                        if (componentGrades.length >= 2) {
-                                            const g1 = norm(componentGrades[0]);
-                                            const g2 = norm(componentGrades[1]);
-
-                                            if (g1 === 're-sit' && g2 === 're-sit') {
-                                                finalHDGrade = 'Re-sit';
-                                            } else if (g1 === 'pending' && g2 === 'pending') {
-                                                finalHDGrade = 'Re-sit';
-                                            } else if (
-                                                (g1 === 're-sit' && g2 === 'pending') ||
-                                                (g2 === 're-sit' && g1 === 'pending')
-                                            ) {
-                                                finalHDGrade = 'Re-sit';
-                                            } else if (
-                                                (g1 === 're-sit' && ['pass', 'merit', 'distinction'].includes(g2)) ||
-                                                (g2 === 're-sit' && ['pass', 'merit', 'distinction'].includes(g1))
-                                            ) {
-                                                finalHDGrade = 'Pending';
-                                            } else if (
-                                                (g1 === 'pending' && ['pass', 'merit', 'distinction'].includes(g2)) ||
-                                                (g2 === 'pending' && ['pass', 'merit', 'distinction'].includes(g1))
-                                            ) {
-                                                finalHDGrade = getGradeFromMark(finalResult);
-                                            } else if (
-                                                ['pass', 'merit', 'distinction'].includes(g1) && ['pass', 'merit', 'distinction'].includes(g2)
-                                            ) {
-                                                finalHDGrade = getGradeFromMark((componentMarks[0] || 0) + (componentMarks[1] || 0));
-                                            } else if (
-                                                (g1 === 're-sit' && ['absent', 'not submitted'].includes(g2)) ||
-                                                (g2 === 're-sit' && ['absent', 'not submitted'].includes(g1))
-                                            ) {
-                                                finalHDGrade = 'Re-sit';
-                                            } else if (
-                                                (g1 === 'pending' && ['absent', 'not submitted'].includes(g2)) ||
-                                                (g2 === 'pending' && ['absent', 'not submitted'].includes(g1))
-                                            ) {
-                                                finalHDGrade = 'Pending';
-                                            } else if (g1 === 'not submitted' && g2 === 'not submitted') {
-                                                finalHDGrade = 'Not Submitted';
-                                            } else if (g1 === 'absent' && g2 === 'absent') {
-                                                finalHDGrade = 'Absent';
-                                            } else if (
-                                                (g1 === 'not submitted' && ['pass', 'merit', 'distinction'].includes(g2)) ||
-                                                (g2 === 'not submitted' && ['pass', 'merit', 'distinction'].includes(g1))
-                                            ) {
-                                                finalHDGrade = 'Pending';
-                                            } else if (
-                                                (g1 === 'absent' && ['pass', 'merit', 'distinction'].includes(g2)) ||
-                                                (g2 === 'absent' && ['pass', 'merit', 'distinction'].includes(g1))
-                                            ) {
-                                                finalHDGrade = 'Pending';
-                                            } else if (
-                                                (g1 === 'absent' && g2 === 'not submitted') ||
-                                                (g1 === 'not submitted' && g2 === 'absent')
-                                            ) {
-                                                finalHDGrade = 'Not Submitted';
-                                            } else {
-                                                finalHDGrade = 'Pending';
-                                            }
-                                        } else if (componentGrades.length === 1) {
-                                            const g = norm(componentGrades[0]);
-                                            finalHDGrade = g === 'pending' ? getGradeFromMark(finalResult) : componentGrades[0];
-                                        }
-                                    } else if (componentCount === 3) {
-                                        if (componentGrades.length >= 3) {
-                                            let resitCount = 0;
-                                            let pendingCount = 0;
-                                            let absentCount = 0;
-                                            let notSubmittedCount = 0;
-                                            let validGrades = 0;
-                                            let sumMarks = 0;
-
-                                            for (let i = 0; i < 3; i++) {
-                                                const g = norm(componentGrades[i]);
-                                                const m = parseFloat(componentMarks[i] || 0);
-
-                                                if (['pass', 'merit', 'distinction'].includes(g)) {
-                                                    validGrades++;
-                                                    sumMarks += m;
-                                                } else if (g === 're-sit') {
-                                                    resitCount++;
-                                                    sumMarks += m;
-                                                } else if (g === 'pending') {
-                                                    pendingCount++;
-                                                    sumMarks += m;
-                                                } else if (g === 'absent') {
-                                                    absentCount++;
-                                                } else if (g === 'not submitted') {
-                                                    notSubmittedCount++;
-                                                }
-                                            }
-
-                                            if (resitCount === 3) {
-                                                finalHDGrade = 'Re-sit';
-                                            } else if (pendingCount === 3) {
-                                                finalHDGrade = sumMarks < 50 ? 'Re-sit' : getGradeFromMark(sumMarks);
-                                            } else if ((absentCount + notSubmittedCount) === 3) {
-                                                finalHDGrade = notSubmittedCount === 3 ? 'Not Submitted' : (absentCount === 3 ? 'Absent' : 'Not Submitted');
-                                            } else if (resitCount === 2 && pendingCount === 1) {
-                                                finalHDGrade = 'Re-sit';
-                                            } else if (resitCount === 2 && validGrades === 1) {
-                                                finalHDGrade = 'Pending';
-                                            } else if (pendingCount === 2 && validGrades === 1) {
-                                                finalHDGrade = sumMarks < 50 ? 'Pending' : getGradeFromMark(sumMarks);
-                                            } else if (resitCount === 1 && pendingCount === 1 && validGrades === 1) {
-                                                finalHDGrade = 'Pending';
-                                            } else if (resitCount === 1 && validGrades === 2) {
-                                                finalHDGrade = 'Pending';
-                                            } else if (pendingCount === 1 && validGrades === 2) {
-                                                finalHDGrade = getGradeFromMark(sumMarks);
-                                            } else if (validGrades === 3) {
-                                                finalHDGrade = getGradeFromMark(sumMarks);
-                                            } else if ((absentCount + notSubmittedCount) === 2 && pendingCount === 1) {
-                                                finalHDGrade = 'Re-sit';
-                                            } else if ((absentCount + notSubmittedCount) === 2 && resitCount === 1) {
-                                                finalHDGrade = 'Re-sit';
-                                            } else if (pendingCount === 2 && resitCount === 1) {
-                                                finalHDGrade = sumMarks < 50 ? 'Re-sit' : getGradeFromMark(sumMarks);
-                                            } else {
-                                                finalHDGrade = 'Pending';
-                                            }
-                                        } else if (componentGrades.length === 1) {
-                                            const g = norm(componentGrades[0]);
-                                            finalHDGrade = g === 'pending' ? getGradeFromMark(finalResult) : componentGrades[0];
-                                        }
-                                    } else if (componentCount === 1) {
-                                        if (componentGrades.length >= 1) {
-                                            const g = norm(componentGrades[0]);
-                                            finalHDGrade = g === 'pending' ? getGradeFromMark(finalResult) : componentGrades[0];
-                                        }
-                                    }
-
-                                    return finalHDGrade;
-                                }
 
                                 const columns = [{
                                         // data: 'student_name (student_registration_id)',
@@ -958,24 +707,54 @@ $assessment = null;
                                     title: 'Final Result (Module)',
                                     render: function(value, type, row) {
 
-                                        if (value === null || value === undefined || value === '') return '-';
+                                        if (!value) return '-';
+
+                                        let mark = parseFloat(value);
+
+                                        if (isNaN(mark)) return value;
 
                                         // me done on 27.02.2026 (here inlcuded the Not Submitted and absent students)
                                         if (data.programme_type === 'HD') {
-                                            const markInfo = getHDMarkInfo(value);
-                                            const finalHDGrade = calculateHDGradeFromComponents(row, data.components, value) || markInfo.grade;
 
-                                            if (finalHDGrade === 'Not Submitted' || finalHDGrade === 'Absent') {
-                                                return finalHDGrade;
+                                            // Handle special cases first, returning only the grade string
+                                            if (mark === -1) {
+                                                return 'Not Submitted';
+                                            }
+                                            if (mark === -2) {
+                                                return 'Absent';
                                             }
 
-                                            if (markInfo.mark === null || typeof markInfo.mark !== 'number') {
-                                                return finalHDGrade || value;
+                                            let ruleApplied = false;
+
+                                            if (mark === 49) {
+                                                mark = 50;
+                                                ruleApplied = true;
+                                            } else if (mark === 59) {
+                                                mark = 60;
+                                                ruleApplied = true;
+                                            } else if (mark === 69) {
+                                                mark = 70;
+                                                ruleApplied = true;
                                             }
 
-                                            let output = `${markInfo.mark} - ${finalHDGrade}`;
+                                            let grade = '';
 
-                                            if (markInfo.ruleApplied) {
+                                            // Grade calculation for numeric marks
+                                            if (mark >= 70) {
+                                                grade = 'Distinction';
+                                            } else if (mark >= 60) {
+                                                grade = 'Merit';
+                                            } else if (mark >= 50) {
+                                                grade = 'Pass';
+                                            } else if (mark >= 0 && mark < 50) { // Correctly define the range for Resit
+                                                grade = 'Resit';
+                                            } else {
+                                                grade = 'N/A'; // Fallback for any other unexpected marks
+                                            }
+
+                                            let output = `${mark} - ${grade}`;
+
+                                            if (ruleApplied) {
                                                 return `
                                                     ${output}
                                                     <br>
@@ -986,17 +765,15 @@ $assessment = null;
 
                                             return output;
                                         }
-
-                                        let mark = parseFloat(value);
-                                        if (isNaN(mark)) return value;
-
                                         // Other programmes unchanged
                                         return value;
                                     }
                                 });
 
+
                                 // Add Grades of Modules column only for ECM ✅✅✅✅
                                 if (data.programme_type === 'ECM') {
+
 
                                     columns.push({
                                         data: 'final_result',
@@ -1038,7 +815,8 @@ $assessment = null;
                                     });
                                 }
 
-                                if (data.programme_type === 'HD' || data.programme_type === 'GDM' || data.programme_type === 'IFD' || data.programme_type === 'BTEC') {
+
+                                if (data.programme_type === 'HDs' || data.programme_type === 'GDM' || data.programme_type === 'IFD' || data.programme_type === 'BTEC') {
                                     columns.push({
                                         data: null,
                                         title: 'Email',
@@ -1059,6 +837,7 @@ $assessment = null;
                                     scrollX: true
                                 });
                             }
+
 
                             $('#resultsTable').off('click', '.send-email'); // Remove previous event handlers to avoid duplication
 
@@ -1145,6 +924,8 @@ $assessment = null;
                     });
                 }
             }
+
+
         });
     </script>
 
