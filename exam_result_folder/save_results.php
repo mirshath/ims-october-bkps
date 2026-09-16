@@ -342,7 +342,7 @@ try {
             // $programName === 'BSc (Hons) in Software Engineering'
         ) {
             // ---- Realtime final_student_results for ECM.
-          
+
             $finalResult = calculateFinalResult(
                 $studentIdInt,
                 $moduleIdInt,
@@ -358,13 +358,13 @@ try {
                 $ecmTransientRow = [
                     'converted_marks_grade'       => $result['additional_input']    ?? null,
                     'converted_marks'             => $result['convertedMarks']      ?? null,
-                    'ecm_r1_converted_marks_grade'=> $result['additional_input_r1'] ?? null,
+                    'ecm_r1_converted_marks_grade' => $result['additional_input_r1'] ?? null,
                     'ecm_r1_converted_marks'      => $result['ecm_r1_converted_marks'] ?? null,
-                    'ecm_r2_converted_marks_grade'=> $result['additional_input_r2'] ?? null,
+                    'ecm_r2_converted_marks_grade' => $result['additional_input_r2'] ?? null,
                     'ecm_r2_converted_marks'      => $result['ecm_r2_converted_marks'] ?? null,
-                    'ecm_r3_converted_marks_grade'=> $result['additional_input_r3'] ?? null,
+                    'ecm_r3_converted_marks_grade' => $result['additional_input_r3'] ?? null,
                     'ecm_r3_converted_marks'      => $result['ecm_r3_converted_marks'] ?? null,
-                    'ecm_r4_converted_marks_grade'=> $result['additional_input_r4'] ?? null,
+                    'ecm_r4_converted_marks_grade' => $result['additional_input_r4'] ?? null,
                     'ecm_r4_converted_marks'      => $result['ecm_r4_converted_marks'] ?? null,
                 ];
 
@@ -482,12 +482,7 @@ try {
             $programName === 'BTEC Higher National Diploma in Business' ||
             $programName === 'International Foundation Diploma (Applied Science) - ATHE Level 3'
         ) {
-            // Component-based Overall Grade
-            // Rule: each student_results row = ONE component (all resit columns are attempts for THAT component)
-            //   - 2 rows for same (program, batch, module, student) -> Component 1, Component 2
-            //   - 3 rows for same (program, batch, module, student) -> Component 1, Component 2, Component 3
-            // For each row, pick the LATEST non-empty attempt:
-            //   resit_result_4 > resit_result_3 > resit_result_2 > resit_result_1 > result
+
             // Rows are ordered by allocated_components.id so Component 1 / 2 / 3 match the module setup exactly.
             if (!function_exists('extractFinalComponentGrade')) {
                 function extractFinalComponentGrade($row)
@@ -572,12 +567,6 @@ try {
                         return $worstGrade;
                     }
 
-                    // ---- NO PASS GRADES PRESENT BEYOND THIS POINT ----
-                    // Priority: Resit > Absent > Not Submitted, but:
-                    //   - Any Resit (alone or mixed) -> Resit
-                    //   - Uniform all-Absent -> Absent
-                    //   - Uniform all-Not Submitted -> Not Submitted
-                    //   - Mixed Absent + Not Submitted (no Resit) -> Absent / Not Submitted
 
                     // Rule 3: Any Resit (Resit+Resit, Resit+Absent, Resit+Not Submitted, any count) -> Resit
                     if ($hasResit) {
@@ -941,7 +930,7 @@ function calculateFinalResult($studentId, $moduleId, $conn, $programId = null, $
         $rows = $overrideRows;
     } else {
         // NOTE: filter on ALL 4 keys (student/program/batch/module) so a
-       
+
         $whereSql  = "WHERE student_id = ? AND module_id = ?";
         $whereTypes = "ii";
         $whereParams = [$studentIdInt, $moduleIdInt];
@@ -987,7 +976,7 @@ function calculateFinalResult($studentId, $moduleId, $conn, $programId = null, $
     }
 
     // ---- Step 2: for each row, pick the LATEST non-empty attempt
-   
+
     $grades = [];
     $marks  = [];
 
@@ -1015,12 +1004,20 @@ function calculateFinalResult($studentId, $moduleId, $conn, $programId = null, $
             }
 
             // This attempt is the latest one with data → pick it for this row.
-          
+
             $knownTextGrades = [
-                'pass','merit','distinction',
-                'resit','re-sit','re sit',
-                'absent','not submitted', 'not_submitted',
-                'pending','completed','not completed'
+                'pass',
+                'merit',
+                'distinction',
+                'resit',
+                're-sit',
+                're sit',
+                'absent',
+                'not submitted',
+                'not_submitted',
+                'pending',
+                'completed',
+                'not completed'
             ];
 
             $markTrimmed = $mHas ? trim((string)$mRaw) : '';
@@ -1088,7 +1085,7 @@ function calculateFinalResult($studentId, $moduleId, $conn, $programId = null, $
         return null; // no results found (and no overrideRows either)
     }
 
-    // ---- Step 3: decision engine — ONE place for ECM rules.
+    // ---- Step 3: decision engine — ONE place for ECM rules. ----------------------------------------------------------------------------------------
     // Both the live DB-read path AND the first-insert overrideRows path
     // end up here, so the final_student_results value is 100% identical.
 
@@ -1110,14 +1107,16 @@ function calculateFinalResult($studentId, $moduleId, $conn, $programId = null, $
         return 'Absent';
     }
     // Rule: Absent + Not Submitted (only these two types present)
-    if (count($uniqueGrades) === 2
+    if (
+        count($uniqueGrades) === 2
         && in_array('Absent', $uniqueGrades, true)
         && in_array('Not Submitted', $uniqueGrades, true)
     ) {
         return 'Absent';
     }
     // Rule: Not Submitted + Resit
-    if (count($uniqueGrades) === 2
+    if (
+        count($uniqueGrades) === 2
         && in_array('Not Submitted', $uniqueGrades, true)
         && in_array('Resit', $uniqueGrades, true)
     ) {
@@ -1130,7 +1129,7 @@ function calculateFinalResult($studentId, $moduleId, $conn, $programId = null, $
         count(array_intersect($passGrades,    $uniqueGrades)) > 0
     );
     if ($hasPassSpecial) {
-        if (in_array('Resit', $uniqueGrades, true))         return 'Resit';
+        if (in_array('Resit', $uniqueGrades, true))         return 'Pending';
         if (in_array('Not Submitted', $uniqueGrades, true)) return 'Not Submitted';
         if (in_array('Absent', $uniqueGrades, true))        return 'Absent';
     }
