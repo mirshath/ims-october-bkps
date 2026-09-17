@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit'])) {
         $sql = "INSERT INTO assignment_components (assessment_code, as_main_component_name, main_component_percent) 
                 VALUES ('$assessment_code', '$as_main_component_name', '$as_main_component_name_percent')";
 
-        if (mysqli_query($conn, $sql)) {
+         if (mysqli_query($conn, $sql)) {
             // echo "<script>alert('Component added successfully!');</script>";
             // show the session message corectly 
             $_SESSION['message'] = "Main Component added successfully!";
@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_sub_component'])) 
         // Insert into database
         $sql = "INSERT INTO sub_assign_components (sub_component_name,sub_component_percent) VALUES ('$sub_component_name','$sub_component_percent')";
 
-
+       
         if (mysqli_query($conn, $sql)) {
             // echo "<script>alert('Sub-component added successfully!');</script>";
             // show the session message corectly
@@ -199,6 +199,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_nested_component']
                             </div>
                         </div>
                     </div>
+
+
                 </div>
 
 

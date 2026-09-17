@@ -1,37 +1,4 @@
 <?php
-/**
- * ob_start() catches ANY accidental output (PHP notices/deprecation
- * warnings, whitespace/BOM before a <?php tag in an included file,
- * duplicate session_start() warnings, etc.) so it can be discarded
- * right before we send file-download headers below. Without this,
- * a single stray byte of output makes header() fail silently on
- * hosts where output_buffering is off (common on live servers but
- * often on by default in local dev stacks), and the "CSV" download
- * ends up as a corrupted file or a raw HTML/warning page instead.
- */
-ob_start();
-error_reporting(E_ALL);
-ini_set('display_errors', '0'); // never leak warnings into a file download
-ini_set('log_errors', '1');
-
-// If something fatal happens while we're mid-export (e.g. a DB error),
-// discard whatever partial output/CSV bytes were buffered and log the
-// real error instead of letting a raw PHP error page corrupt the download.
-register_shutdown_function(function () {
-    $err = error_get_last();
-    if ($err && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
-        error_log('[pos_detailed_sales.php] Fatal: ' . $err['message'] . ' in ' . $err['file'] . ':' . $err['line']);
-        if (ob_get_length() !== false) {
-            ob_clean();
-        }
-        if (!headers_sent()) {
-            http_response_code(500);
-            header('Content-Type: text/plain; charset=utf-8');
-            echo 'Export failed due to a server error. Please try again or contact support.';
-        }
-    }
-});
-
 session_start();
 include("database/connection.php");
 include("pos-includes/bootstrap.php");
@@ -61,15 +28,9 @@ function validate_ymd($d)
 }
 
 // CSV export function
-function csv_export_and_exit($filename, $headers, $rows, $totalSales = 0, $totalOrders = 0, $totalItems = 0, $totalQuantity = 0, $totalDiscount = 0)
+function csv_export_and_exit($filename, $headers, $rows, $totalSales = 0, $totalOrders = 0, $totalItems = 0, $totalQuantity = 0)
 {
     // Output CSV with BOM for Excel
-    // Discard any accidental output buffered so far (notices, BOM,
-    // whitespace from an included file) so the headers below actually
-    // take effect instead of triggering a silent "headers already sent".
-    if (ob_get_length() !== false) {
-        ob_clean();
-    }
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     $out = fopen('php://output', 'w');
@@ -93,21 +54,14 @@ function csv_export_and_exit($filename, $headers, $rows, $totalSales = 0, $total
     fputcsv($out, $pad('Total Orders', $totalOrders));
     fputcsv($out, $pad('Total Items Sold', $totalItems));
     fputcsv($out, $pad('Total Quantity', $totalQuantity));
-    fputcsv($out, $pad('Total Discount (Rs)', number_format($totalDiscount, 2)));
     fputcsv($out, $pad('Total Sales (Rs)', number_format($totalSales, 2)));
     fclose($out);
     exit;
 }
 
 // Excel export function (HTML table format)
-function excel_export_and_exit($filename, $headers, $rows, $totalSales = 0, $totalOrders = 0, $totalItems = 0, $totalQuantity = 0, $totalDiscount = 0)
+function excel_export_and_exit($filename, $headers, $rows, $totalSales = 0, $totalOrders = 0, $totalItems = 0, $totalQuantity = 0)
 {
-    // Discard any accidental output buffered so far (notices, BOM,
-    // whitespace from an included file) so the headers below actually
-    // take effect instead of triggering a silent "headers already sent".
-    if (ob_get_length() !== false) {
-        ob_clean();
-    }
     header('Content-Type: application/vnd.ms-excel');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     echo '<html><head><meta charset="UTF-8"></head><body>';
@@ -130,21 +84,14 @@ function excel_export_and_exit($filename, $headers, $rows, $totalSales = 0, $tot
     echo '<tr><td style="padding: 5px; font-weight: bold;">Total Orders</td><td style="padding: 5px;">' . $totalOrders . '</td><td colspan="' . (count($headers) - 2) . '"></td></tr>';
     echo '<tr><td style="padding: 5px; font-weight: bold;">Total Items Sold</td><td style="padding: 5px;">' . $totalItems . '</td><td colspan="' . (count($headers) - 2) . '"></td></tr>';
     echo '<tr><td style="padding: 5px; font-weight: bold;">Total Quantity</td><td style="padding: 5px;">' . $totalQuantity . '</td><td colspan="' . (count($headers) - 2) . '"></td></tr>';
-    echo '<tr><td style="padding: 5px; font-weight: bold;">Total Discount (Rs)</td><td style="padding: 5px; color: #d32f2f;">' . number_format($totalDiscount, 2) . '</td><td colspan="' . (count($headers) - 2) . '"></td></tr>';
     echo '<tr><td style="padding: 5px; font-weight: bold;">Total Sales (Rs)</td><td style="padding: 5px; font-weight: bold; color: #d32f2f;">' . number_format($totalSales, 2) . '</td><td colspan="' . (count($headers) - 2) . '"></td></tr>';
     echo '</table></body></html>';
     exit;
 }
 
 // PDF export function (print-optimized HTML with grouped rows)
-function pdf_export_and_exit($filename, $headers, $rows, $from, $to, $orderGroups, $totalSales = 0, $totalOrders = 0, $totalItems = 0, $totalQuantity = 0, $totalDiscount = 0)
+function pdf_export_and_exit($filename, $headers, $rows, $from, $to, $orderGroups, $totalSales = 0, $totalOrders = 0, $totalItems = 0, $totalQuantity = 0)
 {
-    // Discard any accidental output buffered so far (notices, BOM,
-    // whitespace from an included file) so the headers below actually
-    // take effect instead of triggering a silent "headers already sent".
-    if (ob_get_length() !== false) {
-        ob_clean();
-    }
     header('Content-Type: text/html; charset=UTF-8');
     ?>
     <!DOCTYPE html>
@@ -285,18 +232,11 @@ function pdf_export_and_exit($filename, $headers, $rows, $from, $to, $orderGroup
                             <td><?php echo htmlspecialchars($row['product_name']); ?></td>
                             <td><?php echo htmlspecialchars($row['qty']); ?></td>
                             <td><?php echo number_format((float) $row['price'], 2); ?></td>
-                            <td><?php echo number_format((float) $row['line_discount'], 2); ?></td>
                             <td><?php echo number_format((float) $row['line_total'], 2); ?></td>
 
                             <?php if ($isFirst): ?>
                                 <td rowspan="<?php echo $rowCount; ?>" style="vertical-align: middle;">
                                     <?php echo number_format((float) $firstRow['subtotal'], 2); ?>
-                                </td>
-                                <td rowspan="<?php echo $rowCount; ?>" style="vertical-align: middle;">
-                                    <?php echo number_format((float) $firstRow['order_discount'], 2); ?>
-                                </td>
-                                <td rowspan="<?php echo $rowCount; ?>" style="vertical-align: middle;">
-                                    <?php echo number_format((float) $firstRow['discount_pct'], 2); ?>%
                                 </td>
                                 <td rowspan="<?php echo $rowCount; ?>" style="vertical-align: middle;">
                                     <?php echo number_format((float) $firstRow['tax'], 2); ?>
@@ -315,11 +255,11 @@ function pdf_export_and_exit($filename, $headers, $rows, $from, $to, $orderGroup
             <tfoot>
                 <tr style="background-color: #f0f0f0;">
                     <td colspan="5" style="text-align: right; font-weight: bold; padding: 8px;">Grand Total:</td>
-                    <td colspan="6" style="padding: 8px;">
+                    <td colspan="5" style="padding: 8px;">
                         <strong>Orders: <?php echo $totalOrders; ?> | Items: <?php echo $totalItems; ?> | Qty:
-                            <?php echo $totalQuantity; ?> | Discount: <?php echo number_format($totalDiscount, 2); ?></strong>
+                            <?php echo $totalQuantity; ?></strong>
                     </td>
-                    <td colspan="5" style="text-align: right; font-weight: bold; padding: 8px; color: #d32f2f;">
+                    <td colspan="3" style="text-align: right; font-weight: bold; padding: 8px; color: #d32f2f;">
                         <?php echo number_format($totalSales, 2); ?>
                     </td>
                 </tr>
@@ -341,10 +281,6 @@ function pdf_export_and_exit($filename, $headers, $rows, $from, $to, $orderGroup
                 <tr>
                     <td style="padding: 8px; font-weight: bold;">Total Quantity:</td>
                     <td style="padding: 8px;"><?php echo number_format($totalQuantity); ?></td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px; font-weight: bold;">Total Discount (Rs):</td>
-                    <td style="padding: 8px; color: #d32f2f;"><?php echo number_format($totalDiscount, 2); ?></td>
                 </tr>
                 <tr style="background-color: #fff3cd;">
                     <td style="padding: 8px; font-weight: bold; font-size: 12pt;">Total Sales (Rs):</td>
@@ -376,22 +312,12 @@ if ($from && !validate_ymd($from))
 if ($to && !validate_ymd($to))
     $to = '';
 
-// BMS POS vs Award Ceremony POS filter - so this list (and its CSV/Excel/PDF
-// exports below, which reuse the same query) don't mix the two sales streams.
-$posMode = isset($_GET['pos_mode']) ? trim($_GET['pos_mode']) : 'all';
-if (!in_array($posMode, ['all', 'bms', 'award'], true)) {
-    $posMode = 'all';
-}
-
 // Build query with prepared statement
 $query = "
 SELECT 
     o.id AS order_id,
     o.created_at,
-    o.pos_mode,
     o.subtotal,
-    o.discount AS order_discount,
-    ROUND(o.discount_rate * 100, 2) AS discount_pct,
     o.tax,
     o.total,
     COALESCE(NULLIF(o.customer_type, ''), 'Cash') AS customer_type,
@@ -401,9 +327,7 @@ SELECT
     p.name AS product_name,
     oi.qty,
     oi.price,
-    oi.discount AS line_discount,
-    (oi.qty * oi.price) AS line_gross,
-    (oi.qty * oi.price - oi.discount) AS line_total
+    (oi.qty * oi.price) AS line_total
 FROM orders o
 JOIN order_items oi ON oi.order_id = o.id
 JOIN products p ON p.id = oi.product_id
@@ -425,11 +349,6 @@ if ($from) {
 if ($to) {
     $conditions[] = "o.created_at <= ?";
     $params[] = $to . ' 23:59:59';
-    $types .= 's';
-}
-if ($posMode !== 'all') {
-    $conditions[] = "o.pos_mode = ?";
-    $params[] = $posMode;
     $types .= 's';
 }
 
@@ -462,7 +381,7 @@ if ($result) {
 }
 
 // Prepare export data - grouped by order (like frontend display)
-$export_headers = ['Order ID', 'Date & Time', 'Cashier', 'Customer Type', 'Customer Name', 'Product Code', 'Product Name', 'Qty', 'Unit Price (Rs)', 'Line Discount (Rs)', 'Line Total (Rs)', 'Order Subtotal (Rs)', 'Order Discount (Rs)', 'Discount %', 'Order Tax (Rs)', 'Order Total (Rs)'];
+$export_headers = ['Order ID', 'Date & Time', 'Cashier', 'Customer Type', 'Customer Name', 'Product Code', 'Product Name', 'Qty', 'Unit Price (Rs)', 'Line Total (Rs)', 'Order Subtotal (Rs)', 'Order Tax (Rs)', 'Order Total (Rs)'];
 
 // Group rows by order_id
 $orderGroups = [];
@@ -476,7 +395,6 @@ foreach ($rows as $row) {
 
 // Calculate totals
 $totalSales = 0;
-$totalDiscount = 0;
 $totalOrders = count($orderGroups);
 $totalItems = 0;
 $totalQuantity = 0;
@@ -484,7 +402,6 @@ $totalQuantity = 0;
 foreach ($orderGroups as $orderId => $orderRows) {
     $firstRow = $orderRows[0];
     $totalSales += (float) $firstRow['total'];
-    $totalDiscount += (float) $firstRow['order_discount'];
     foreach ($orderRows as $row) {
         $totalItems++;
         $totalQuantity += (int) $row['qty'];
@@ -508,11 +425,8 @@ foreach ($orderGroups as $orderId => $orderRows) {
             $row['product_name'],
             $row['qty'],
             number_format((float) $row['price'], 2),
-            number_format((float) $row['line_discount'], 2),
             number_format((float) $row['line_total'], 2),
             $isFirst ? number_format((float) $firstRow['subtotal'], 2) : '',  // Order Subtotal only on first row
-            $isFirst ? number_format((float) $firstRow['order_discount'], 2) : '',  // Order Discount only on first row
-            $isFirst ? number_format((float) $firstRow['discount_pct'], 2) . '%' : '',  // Discount % only on first row
             $isFirst ? number_format((float) $firstRow['tax'], 2) : '',  // Order Tax only on first row
             $isFirst ? number_format((float) $firstRow['total'], 2) : ''  // Order Total only on first row
         ];
@@ -522,14 +436,14 @@ foreach ($orderGroups as $orderId => $orderRows) {
 
 // Handle exports
 if ($export === 'csv') {
-    $filename = 'detailed_sales' . ($posMode !== 'all' ? '_' . $posMode : '') . '_' . date('Ymd_His') . '.csv';
-    csv_export_and_exit($filename, $export_headers, $export_rows, $totalSales, $totalOrders, $totalItems, $totalQuantity, $totalDiscount);
+    $filename = 'detailed_sales_' . date('Ymd_His') . '.csv';
+    csv_export_and_exit($filename, $export_headers, $export_rows, $totalSales, $totalOrders, $totalItems, $totalQuantity);
 } elseif ($export === 'excel') {
-    $filename = 'detailed_sales' . ($posMode !== 'all' ? '_' . $posMode : '') . '_' . date('Ymd_His') . '.xls';
-    excel_export_and_exit($filename, $export_headers, $export_rows, $totalSales, $totalOrders, $totalItems, $totalQuantity, $totalDiscount);
+    $filename = 'detailed_sales_' . date('Ymd_His') . '.xls';
+    excel_export_and_exit($filename, $export_headers, $export_rows, $totalSales, $totalOrders, $totalItems, $totalQuantity);
 } elseif ($export === 'pdf') {
-    $filename = 'detailed_sales' . ($posMode !== 'all' ? '_' . $posMode : '') . '_' . date('Ymd_His') . '.html';
-    pdf_export_and_exit($filename, $export_headers, $export_rows, $from, $to, $orderGroups, $totalSales, $totalOrders, $totalItems, $totalQuantity, $totalDiscount);
+    $filename = 'detailed_sales_' . date('Ymd_His') . '.html';
+    pdf_export_and_exit($filename, $export_headers, $export_rows, $from, $to, $orderGroups, $totalSales, $totalOrders, $totalItems, $totalQuantity);
 }
 
 include("includes/header.php");
@@ -574,14 +488,6 @@ include("includes/header.php");
                                     <label class="form-label">Date To</label>
                                     <input type="date" name="to" class="form-control" value="<?php echo esc($to); ?>">
                                 </div>
-                                <div class="col-6 col-md-3">
-                                    <label class="form-label">POS Mode</label>
-                                    <select name="pos_mode" class="form-select">
-                                        <option value="all" <?php echo $posMode === 'all' ? 'selected' : ''; ?>>All Sales</option>
-                                        <option value="bms" <?php echo $posMode === 'bms' ? 'selected' : ''; ?>>BMS POS</option>
-                                        <option value="award" <?php echo $posMode === 'award' ? 'selected' : ''; ?>>Award Ceremony POS</option>
-                                    </select>
-                                </div>
                                 <div class="col-12 col-md-6">
                                     <div class="d-flex flex-wrap gap-2">
                                         <button type="submit" class="pos-btn pos-btn-navy"><i class="fas fa-filter"></i>
@@ -596,19 +502,19 @@ include("includes/header.php");
                                                 <ul class="dropdown-menu">
                                                     <li>
                                                         <a class="dropdown-item"
-                                                            href="?from=<?php echo urlencode($from); ?>&to=<?php echo urlencode($to); ?>&pos_mode=<?php echo urlencode($posMode); ?>&export=csv">
+                                                            href="?from=<?php echo urlencode($from); ?>&to=<?php echo urlencode($to); ?>&export=csv">
                                                             <i class="fas fa-file-csv me-1"></i> Export as CSV
                                                         </a>
                                                     </li>
                                                     <li>
                                                         <a class="dropdown-item"
-                                                            href="?from=<?php echo urlencode($from); ?>&to=<?php echo urlencode($to); ?>&pos_mode=<?php echo urlencode($posMode); ?>&export=excel">
+                                                            href="?from=<?php echo urlencode($from); ?>&to=<?php echo urlencode($to); ?>&export=excel">
                                                             <i class="fas fa-file-excel me-1"></i> Export as Excel
                                                         </a>
                                                     </li>
                                                     <li>
                                                         <a class="dropdown-item"
-                                                            href="?from=<?php echo urlencode($from); ?>&to=<?php echo urlencode($to); ?>&pos_mode=<?php echo urlencode($posMode); ?>&export=pdf"
+                                                            href="?from=<?php echo urlencode($from); ?>&to=<?php echo urlencode($to); ?>&export=pdf"
                                                             target="_blank">
                                                             <i class="fas fa-file-pdf me-1"></i> Export as PDF
                                                         </a>
@@ -645,14 +551,6 @@ include("includes/header.php");
                                 </div>
                                 <div class="pos-stat-label">Total Quantity</div>
                                 <div class="pos-stat-value"><?php echo number_format($totalQuantity); ?></div>
-                            </div>
-                            <div class="pos-stat-card is-green">
-                                <div class="pos-stat-top">
-                                    <div class="pos-stat-icon"><i class="fas fa-tags"></i></div>
-                                </div>
-                                <div class="pos-stat-label">Total Discount (Rs)</div>
-                                <div class="pos-stat-value" style="font-size:1.3rem;">
-                                    <?php echo number_format($totalDiscount, 2); ?></div>
                             </div>
                             <div class="pos-stat-card is-red">
                                 <div class="pos-stat-top">
@@ -691,11 +589,7 @@ include("includes/header.php");
                                                 <th>Product Name</th>
                                                 <th>Qty</th>
                                                 <th>Unit Price (Rs)</th>
-                                                <th>Line Discount (Rs)</th>
                                                 <th>Line Total (Rs)</th>
-                                                <th>Order Subtotal (Rs)</th>
-                                                <th>Order Discount (Rs)</th>
-                                                <th>Discount %</th>
                                                 <th>Order Total (Rs)</th>
                                             </tr>
                                         </thead>
@@ -732,11 +626,6 @@ include("includes/header.php");
                                                         <?php if ($isFirst): ?>
                                                             <td rowspan="<?php echo $rowCount; ?>" style="vertical-align: middle;">
                                                                 <span class="pos-code-tag">#<?php echo esc($orderId); ?></span>
-                                                                <?php if (($firstRow['pos_mode'] ?? 'bms') === 'award'): ?>
-                                                                    <span class="badge bg-warning text-dark d-block mt-1"><i class="fas fa-trophy"></i> Award</span>
-                                                                <?php else: ?>
-                                                                    <span class="badge bg-secondary d-block mt-1"><i class="fas fa-store"></i> BMS</span>
-                                                                <?php endif; ?>
                                                             </td>
                                                             <td rowspan="<?php echo $rowCount; ?>" style="vertical-align: middle;">
                                                                 <?php echo esc($firstRow['created_at']); ?>
@@ -753,19 +642,9 @@ include("includes/header.php");
                                                         <td><?php echo esc($row['product_name']); ?></td>
                                                         <td><?php echo esc($row['qty']); ?></td>
                                                         <td><?php echo number_format((float) $row['price'], 2); ?></td>
-                                                        <td><?php echo number_format((float) $row['line_discount'], 2); ?></td>
                                                         <td><?php echo number_format((float) $row['line_total'], 2); ?></td>
 
                                                         <?php if ($isFirst): ?>
-                                                            <td rowspan="<?php echo $rowCount; ?>" style="vertical-align: middle;">
-                                                                <?php echo number_format((float) $firstRow['subtotal'], 2); ?>
-                                                            </td>
-                                                            <td rowspan="<?php echo $rowCount; ?>" style="vertical-align: middle;">
-                                                                <?php echo number_format((float) $firstRow['order_discount'], 2); ?>
-                                                            </td>
-                                                            <td rowspan="<?php echo $rowCount; ?>" style="vertical-align: middle;">
-                                                                <?php echo number_format((float) $firstRow['discount_pct'], 2); ?>%
-                                                            </td>
                                                             <td rowspan="<?php echo $rowCount; ?>" style="vertical-align: middle;">
                                                                 <strong
                                                                     class="pos-price-tag"><?php echo number_format((float) $firstRow['total'], 2); ?></strong>
@@ -781,11 +660,10 @@ include("includes/header.php");
                                         <tfoot>
                                             <tr style="background:var(--pos-slate-50);">
                                                 <td colspan="4" class="text-end"><strong>Grand Total:</strong></td>
-                                                <td colspan="6" class="text-end"><strong>Items:
+                                                <td colspan="3" class="text-end"><strong>Items:
                                                         <?php echo number_format($totalItems); ?> | Qty:
                                                         <?php echo number_format($totalQuantity); ?></strong></td>
-                                                <td colspan="3" class="text-end"><strong>Discount:
-                                                        <?php echo number_format($totalDiscount, 2); ?></strong></td>
+                                                <td colspan="2" class="text-end"><strong>Total Sales:</strong></td>
                                                 <td class="text-end">
                                                     <strong><?php echo number_format($totalSales, 2); ?></strong></td>
                                             </tr>

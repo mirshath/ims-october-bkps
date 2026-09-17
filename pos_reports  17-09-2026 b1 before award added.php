@@ -125,14 +125,6 @@ pos_require_admin();
         $conn = get_db();
         $orderId = isset($_GET['order_id']) ? intval($_GET['order_id']) : 0;
         $showAllOrders = isset($_GET['show_all']) && $_GET['show_all'] === '1';
-
-        // BMS POS vs Award Ceremony POS filter - keeps the two sales streams
-        // from collapsing into one number on the store-wide report.
-        $posMode = isset($_GET['pos_mode']) ? $_GET['pos_mode'] : 'all';
-        if (!in_array($posMode, ['all', 'bms', 'award'], true)) {
-            $posMode = 'all';
-        }
-        $posModeWhere = ($posMode !== 'all') ? " AND o.pos_mode = '" . ($posMode === 'award' ? 'award' : 'bms') . "'" : '';
         ?>
         <div class="container-fluid">
           <div class="pos-page-header">
@@ -149,30 +141,16 @@ pos_require_admin();
             </div>
           </div>
 
-          <?php if (!$orderId): ?>
-            <div class="btn-group mb-3" role="group" aria-label="POS mode filter">
-              <a class="pos-btn pos-btn-sm <?= $posMode === 'all' ? 'pos-btn-navy' : 'pos-btn-outline' ?>" href="?pos_mode=all<?= $showAllOrders ? '&show_all=1' : '' ?>">All Sales</a>
-              <a class="pos-btn pos-btn-sm <?= $posMode === 'bms' ? 'pos-btn-navy' : 'pos-btn-outline' ?>" href="?pos_mode=bms<?= $showAllOrders ? '&show_all=1' : '' ?>"><i class="fas fa-store"></i> BMS POS</a>
-              <a class="pos-btn pos-btn-sm <?= $posMode === 'award' ? 'pos-btn-navy' : 'pos-btn-outline' ?>" href="?pos_mode=award<?= $showAllOrders ? '&show_all=1' : '' ?>"><i class="fas fa-trophy"></i> Award Ceremony</a>
-            </div>
-          <?php endif; ?>
-
           <?php if ($orderId && $conn): ?>
             <?php $o = null;
-            $r = mysqli_query($conn, "SELECT id, subtotal, discount, discount_rate, tax, total, customer_type, customer_name, created_at, pos_mode FROM orders WHERE id=" . $orderId);
+            $r = mysqli_query($conn, "SELECT id, subtotal, discount, discount_rate, tax, total, customer_type, customer_name, created_at FROM orders WHERE id=" . $orderId);
             if ($r) {
               $o = mysqli_fetch_assoc($r);
             } ?>
             <?php if ($o): ?>
               <div class="pos-card">
                 <div class="pos-card-header">
-                  <div class="pos-card-title"><span class="pos-mini-icon"><i class="fas fa-receipt"></i></span> Order #<?= $o['id'] ?>
-                    <?php if (($o['pos_mode'] ?? 'bms') === 'award'): ?>
-                      <span class="badge bg-warning text-dark ms-2"><i class="fas fa-trophy"></i> Award Ceremony</span>
-                    <?php else: ?>
-                      <span class="badge bg-secondary ms-2"><i class="fas fa-store"></i> BMS POS</span>
-                    <?php endif; ?>
-                  </div>
+                  <div class="pos-card-title"><span class="pos-mini-icon"><i class="fas fa-receipt"></i></span> Order #<?= $o['id'] ?></div>
                   <span class="text-muted small"><?= htmlspecialchars($o['created_at']) ?></span>
                 </div>
                 <div class="pos-card-body">
@@ -253,7 +231,7 @@ pos_require_admin();
             $storeSum = intval($invRow['ss']);
             $oosCountR = mysqli_query($conn, "SELECT COUNT(*) c FROM products WHERE stock=0");
             $oosCount = $oosCountR ? intval(mysqli_fetch_assoc($oosCountR)['c']) : 0;
-            $or = mysqli_query($conn, "SELECT COUNT(*) c, COALESCE(SUM(subtotal),0) sb, COALESCE(SUM(discount),0) di, COALESCE(SUM(total),0) t FROM orders o WHERE 1=1" . $posModeWhere);
+            $or = mysqli_query($conn, "SELECT COUNT(*) c, COALESCE(SUM(subtotal),0) sb, COALESCE(SUM(discount),0) di, COALESCE(SUM(total),0) t FROM orders");
             $osum = $or ? mysqli_fetch_assoc($or) : ['c' => 0, 'sb' => 0, 'di' => 0, 't' => 0];
             ?>
 
@@ -365,7 +343,7 @@ pos_require_admin();
                           </tr>
                         </thead>
                         <tbody>
-                          <?php $tp = mysqli_query($conn, "SELECT p.name, SUM(oi.qty) q, SUM(oi.qty*oi.price) r FROM order_items oi JOIN products p ON p.id=oi.product_id JOIN orders o ON o.id=oi.order_id WHERE 1=1" . $posModeWhere . " GROUP BY p.name ORDER BY q DESC LIMIT 10");
+                          <?php $tp = mysqli_query($conn, "SELECT p.name, SUM(oi.qty) q, SUM(oi.qty*oi.price) r FROM order_items oi JOIN products p ON p.id=oi.product_id GROUP BY p.name ORDER BY q DESC LIMIT 10");
                           if ($tp && mysqli_num_rows($tp) > 0) {
                             $rank = 0;
                             while ($t = mysqli_fetch_assoc($tp)) {
@@ -388,9 +366,9 @@ pos_require_admin();
               <div class="pos-card-header">
                 <div class="pos-card-title"><span class="pos-mini-icon"><i class="fas fa-clock-rotate-left"></i></span> <?= $showAllOrders ? 'All Orders' : 'Recent Orders' ?></div>
                 <?php if ($showAllOrders): ?>
-                  <a class="pos-btn pos-btn-outline pos-btn-sm" href="pos_reports.php?pos_mode=<?= htmlspecialchars($posMode) ?>">Show Less</a>
+                  <a class="pos-btn pos-btn-outline pos-btn-sm" href="pos_reports.php">Show Less</a>
                 <?php else: ?>
-                  <a class="pos-btn pos-btn-ghost-navy pos-btn-sm" href="pos_reports.php?pos_mode=<?= htmlspecialchars($posMode) ?>&show_all=1"><i class="fas fa-list"></i> View All Orders</a>
+                  <a class="pos-btn pos-btn-ghost-navy pos-btn-sm" href="pos_reports.php?show_all=1"><i class="fas fa-list"></i> View All Orders</a>
                 <?php endif; ?>
               </div>
               <div class="pos-card-body-flush">
@@ -405,7 +383,7 @@ pos_require_admin();
                     </thead>
                     <tbody>
                       <?php
-                      $ordersSql = "SELECT id,total,created_at FROM orders o WHERE 1=1" . $posModeWhere . " ORDER BY id DESC" . ($showAllOrders ? '' : ' LIMIT 10');
+                      $ordersSql = "SELECT id,total,created_at FROM orders ORDER BY id DESC" . ($showAllOrders ? '' : ' LIMIT 10');
                       $ro = mysqli_query($conn, $ordersSql);
                       if ($ro && mysqli_num_rows($ro) > 0) {
                         while ($o = mysqli_fetch_assoc($ro)) {

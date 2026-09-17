@@ -91,55 +91,16 @@ require_once 'PermissionChecking.php';
 
                 <div class="pos-store-hero d-flex align-items-center justify-content-between flex-wrap gap-3">
                     <div>
-                        <h4 id="pos-store-title"><i class="fas fa-store me-2"></i>BMS POS - Store</h4>
-                        <p id="pos-store-subtitle">Tap a product to add it to the cart, then complete the purchase.</p>
+                        <h4><i class="fas fa-store me-2"></i>BMS POS - Store</h4>
+                        <p>Tap a product to add it to the cart, then complete the purchase.</p>
                     </div>
-
-                    <div class="d-flex align-items-center flex-wrap gap-3">
-                        <!-- POS Mode switch: BMS POS (default) vs Award Ceremony POS.
-                             Selection is remembered on this device (localStorage) and
-                             changes the discount rules used for the sale; see cart.js
-                             getTieredDiscount() and pos_checkout.php for the matching logic. -->
-                        <div id="pos-mode-toggle" class="btn-group" role="group" aria-label="POS Mode">
-                            <input type="radio" class="btn-check" name="pos-mode" id="pos-mode-bms" autocomplete="off" checked>
-                            <label class="btn pos-mode-btn" for="pos-mode-bms"><i class="fas fa-store"></i>&nbsp;BMS POS</label>
-
-                            <input type="radio" class="btn-check" name="pos-mode" id="pos-mode-award" autocomplete="off">
-                            <label class="btn pos-mode-btn is-award" for="pos-mode-award"><i class="fas fa-trophy"></i>&nbsp;Graduation POS</label>
-                        </div>
-
-                        <?php if (pos_is_admin()): ?>
-                            <a href="pos_dashboard.php" class="pos-btn pos-btn-navy"
-                                style="background:#fff; color:var(--pos-navy); box-shadow:none;">
-                                <i class="fas fa-cogs"></i>&nbsp; POS Admin Panel
-                            </a>
-                        <?php endif; ?>
-                    </div>
+                    <?php if (pos_is_admin()): ?>
+                        <a href="pos_dashboard.php" class="pos-btn pos-btn-navy"
+                            style="background:#fff; color:var(--pos-navy); box-shadow:none;">
+                            <i class="fas fa-cogs"></i>&nbsp; POS Admin Panel
+                        </a>
+                    <?php endif; ?>
                 </div>
-
-                <style>
-                    #pos-mode-toggle .pos-mode-btn {
-                        background: rgba(255, 255, 255, 0.12);
-                        color: #fff;
-                        border: 1px solid rgba(255, 255, 255, 0.55);
-                        font-weight: 600;
-                        font-size: 0.82rem;
-                        padding: 0.45rem 0.9rem;
-                        white-space: nowrap;
-                    }
-
-                    #pos-mode-toggle .btn-check:checked+.pos-mode-btn {
-                        background: #fff;
-                        color: var(--pos-navy);
-                        border-color: #fff;
-                    }
-
-                    #pos-mode-toggle .btn-check:checked+.pos-mode-btn.is-award {
-                        background: var(--pos-amber);
-                        color: #fff;
-                        border-color: var(--pos-amber);
-                    }
-                </style>
 
                 <style>
                     @keyframes pulseEffect {

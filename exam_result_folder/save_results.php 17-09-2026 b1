@@ -1122,14 +1122,6 @@ function calculateFinalResult($studentId, $moduleId, $conn, $programId = null, $
     ) {
         return 'Resit';
     }
-    // Rule: Resit + Absent (only these two types present)
-    if (
-        count($uniqueGrades) === 2
-        && in_array('Resit', $uniqueGrades, true)
-        && in_array('Absent', $uniqueGrades, true)
-    ) {
-        return 'Resit';
-    }
     // Rule: Any special grade + any pass grade
     //   → return the special grade with priority: Resit > Not Submitted > Absent
     $hasPassSpecial = (
@@ -1139,7 +1131,7 @@ function calculateFinalResult($studentId, $moduleId, $conn, $programId = null, $
     if ($hasPassSpecial) {
         if (in_array('Resit', $uniqueGrades, true))         return 'Pending';
         if (in_array('Not Submitted', $uniqueGrades, true)) return 'Not Submitted';
-        if (in_array('Absent', $uniqueGrades, true))        return 'Pending';
+        if (in_array('Absent', $uniqueGrades, true))        return 'Absent';
     }
     // Rule: All passes → sum of latest-attempt marks (numeric total)
     if (count(array_diff($uniqueGrades, $passGrades)) === 0) {

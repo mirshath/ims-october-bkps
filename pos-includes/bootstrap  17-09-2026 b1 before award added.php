@@ -38,26 +38,6 @@ function get_db()
     return $conn;
 }
 
-/**
- * Guarantee orders.pos_mode exists (BMS POS vs Award Ceremony POS tag).
- * pos_checkout.php also self-heals this column on every sale, but report
- * pages can be opened before any sale ever runs on a fresh DB - so we
- * check here too, on every POS page load, before anything queries it.
- */
-function pos_ensure_pos_mode_column($conn)
-{
-    static $checked = false;
-    if ($checked || !$conn) {
-        return;
-    }
-    $checked = true;
-    $row = mysqli_fetch_assoc(mysqli_query($conn, "SHOW COLUMNS FROM `orders` LIKE 'pos_mode'"));
-    if (!$row) {
-        @mysqli_query($conn, "ALTER TABLE `orders` ADD COLUMN `pos_mode` VARCHAR(20) NOT NULL DEFAULT 'bms'");
-    }
-}
-pos_ensure_pos_mode_column($conn);
-
 /* ---------------------------------------------------------------------
  * CSRF helpers (kept from the original POS module, namespaced so they
  * never collide with anything IMS might add later).

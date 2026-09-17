@@ -17,7 +17,7 @@ if (isset($_POST['program_code'], $_POST['batch_id'])) {
     $program_code = $_POST['program_code'];
     $batch_id = $_POST['batch_id'];
 
-  
+
     // ------------------------------
     $prog_code = isset($_POST['prog_code']) ? trim($_POST['prog_code']) : '';
     $batch_no  = isset($_POST['batch_no']) ? trim($_POST['batch_no']) : '';
@@ -51,7 +51,7 @@ if (isset($_POST['program_code'], $_POST['batch_id'])) {
     }
 
     // ------------------------------
- 
+
     // ------------------------------
     $missing_reg_id = null;
     $reg_id_range_min = null;

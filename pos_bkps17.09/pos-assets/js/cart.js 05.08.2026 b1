@@ -3,118 +3,6 @@ $(function () {
   var catalog = {};
   var taxRate = 0.0;
 
-  // ---- POS Mode (BMS POS vs Graduation POS) ----
-  // Remembered per-device via localStorage so it survives the page reload
-  // that happens after every checkout. Defaults to "bms" for anyone who
-  // has never picked a mode. Sent to pos_checkout.php as pos_mode so the
-  // server (source of truth for money math) applies the matching tiers.
-  var POS_MODE_KEY = "pos_active_mode";
-  var posMode = localStorage.getItem(POS_MODE_KEY) === "award" ? "award" : "bms";
-
-  var $modeBms = $("#pos-mode-bms");
-  var $modeAward = $("#pos-mode-award");
-  var $storeTitle = $("#pos-store-title");
-  var $storeSubtitle = $("#pos-store-subtitle");
-
-  function applyModeUI() {
-    if (posMode === "award") {
-      $modeAward.prop("checked", true);
-      $storeTitle.html('<i class="fas fa-trophy me-2"></i>Graduation POS - Store');
-      $storeSubtitle.text("Graduation discount rules are active for this sale.");
-    } else {
-      $modeBms.prop("checked", true);
-      $storeTitle.html('<i class="fas fa-store me-2"></i>BMS POS - Store');
-      $storeSubtitle.text("Tap a product to add it to the cart, then complete the purchase.");
-    }
-  }
-  applyModeUI();
-
-  $(document).on("change", 'input[name="pos-mode"]', function () {
-    posMode = $modeAward.is(":checked") ? "award" : "bms";
-    localStorage.setItem(POS_MODE_KEY, posMode);
-    applyModeUI();
-    render();
-  });
-
-  function getTieredDiscount(subtotal, customerType) {
-    // Total quantity across ALL products in the cart (not distinct product count)
-    var totalQty = Object.values(cart).reduce(function (acc, it) {
-      return acc + it.qty;
-    }, 0);
-    var rate = 0.0;
-    var tierLabel = "";
-
-    if (posMode === "award") {
-      // Graduation POS discount rules (kept in sync with pos_checkout.php):  
-      //   Staff              -> 1 item     -> 5%
-      //   Other (non-Staff)  -> 2 items    -> 5%
-      //   Staff or Other     -> above 2    -> 10%
-      var isStaff = customerType === "Staff";
-      if (totalQty > 2) {
-        rate = 0.10;
-        tierLabel = "10% (" + totalQty + " items)";
-      } else if (isStaff && totalQty >= 1) {
-        rate = 0.05;
-        tierLabel = "5% (Staff, " + totalQty + " item" + (totalQty > 1 ? "s" : "") + ")";
-      } else if (!isStaff && totalQty >= 2) {
-        rate = 0.05;
-        tierLabel = "5% (" + totalQty + " items)";
-      } else {
-        rate = 0.0;
-        tierLabel = totalQty > 0 ? "0% (" + totalQty + " item)" : "";
-      }
-    } else {
-      // BMS POS discount rules (unchanged)
-      if (totalQty >= 3) {
-        rate = 0.15;
-        tierLabel = "15% (" + totalQty + " items)";
-      } else if (totalQty === 2) {
-        rate = 0.1;
-        tierLabel = "10% (" + totalQty + " items)";
-      } else if (totalQty === 1) {
-        rate = 0.0;
-        tierLabel = "0% (" + totalQty + " item)";
-      } else {
-        tierLabel = "";
-      }
-    }
-
-    var amount = subtotal * rate;
-    return { rate: rate, amount: amount, label: tierLabel };
-  }
-
-  function getTotals() {
-    var customerType = $("#pos-customer-type").val();
-    if (customerType === "Corporate") {
-      return {
-        subtotal: 0.0,
-        discount: 0.0,
-        discountRate: 0.0,
-        discountLabel: "",
-        afterDiscount: 0.0,
-        tax: 0.0,
-        grand: 0.0,
-      };
-    }
-    var subtotal = Object.values(cart).reduce(function (acc, it) {
-      return acc + it.price * it.qty;
-    }, 0);
-    var disc = getTieredDiscount(subtotal, customerType);
-    var afterDiscount = subtotal - disc.amount;
-    if (afterDiscount < 0) afterDiscount = 0;
-    var tax = afterDiscount * taxRate;
-    var grand = afterDiscount + tax;
-    return {
-      subtotal: subtotal,
-      discount: disc.amount,
-      discountRate: disc.rate,
-      discountLabel: disc.label,
-      afterDiscount: afterDiscount,
-      tax: tax,
-      grand: grand,
-    };
-  }
-
   // Build catalog dynamically and support realtime updates
   function syncCatalogFromGrid() {
     catalog = {};
@@ -146,7 +34,7 @@ $(function () {
           item.qty = item.stock;
           showTempMessage(
             "Stock changed, adjusted quantity for: " + item.name,
-            "warning",
+            "warning"
           );
         }
       }
@@ -174,6 +62,7 @@ $(function () {
         stock: parseInt(currentCat.stock, 10),
         qty: 1,
         image: currentCat.image,
+        free: false,
       };
     } else {
       if (cart[id].qty < cart[id].stock) {
@@ -198,6 +87,7 @@ $(function () {
   function updateQuantity(key, qty) {
     var item = cart[key];
     if (!item) return;
+    if (item.free) return;
     syncCatalogFromGrid();
     var catItem = catalog[item.name];
     if (catItem) {
@@ -218,7 +108,7 @@ $(function () {
   // Adjust quantity realtime
   function adjustQuantity(key, delta) {
     var item = cart[key];
-    if (!item) return;
+    if (!item || item.free) return;
     syncCatalogFromGrid();
     var catItem = catalog[item.name];
     if (catItem) {
@@ -238,7 +128,85 @@ $(function () {
     }
   }
 
+  // Promotion logic always calculated realtime
+  function applyPromotions() {
+    // var tumbler = findPaidByContains("Vacuum Tumbler");
+    var vacuum = findPaidByContains("vacuum");
+    var teddy = findPaidByContains("teddy");
+    var penInfo = findCatalogByContains("pen");
+    var paidPen = findPaidByContains("pen");
+    var freeId = penInfo ? penInfo.id : null;
+    var freeQty = 0;
+
+    // Promotion: 1 free pen per tumbler
+    // if (tumbler && tumbler.qty >= 1) freeQty += tumbler.qty;
+    // Promotion: 1 free pen per vacuum
+    if (vacuum && vacuum.qty >= 1) freeQty += vacuum.qty;
+
+    // Promotion: 1 free pen per teddy (from 2)
+    if (teddy && teddy.qty >= 2) freeQty += teddy.qty;
+
+    var paidPenQty = paidPen ? paidPen.qty : 0;
+
+    if (freeId && penInfo) {
+      var available = penInfo.stock - paidPenQty;
+      if (freeQty > available) {
+        freeQty = available;
+      }
+
+      var freeKey = "__free_" + freeId;
+      var freeItem = cart[freeKey];
+
+      if (freeQty > 0) {
+        if (!freeItem) {
+          cart[freeKey] = {
+            key: freeKey,
+            id: freeId,
+            name: "Wooden Pen (Free) x",
+            price: 0,
+            stock: penInfo.stock,
+            qty: freeQty,
+            image: penInfo.image,
+            free: true,
+          };
+        } else {
+          freeItem.qty = freeQty;
+          freeItem.stock = penInfo.stock; // Keep synced
+        }
+      } else {
+        if (freeItem) delete cart[freeKey];
+      }
+    }
+  }
+
+  // Find paid item in cart (non-free) by term
+  function findPaidByContains(term) {
+    term = String(term).toLowerCase();
+    var found = null;
+    Object.values(cart).forEach(function (i) {
+      if (!i.free && String(i.name).toLowerCase().includes(term)) {
+        found = i;
+      }
+    });
+    return found;
+  }
+
+  // Find catalog item by term
+  function findCatalogByContains(term) {
+    syncCatalogFromGrid(); // realtime
+    term = String(term).toLowerCase();
+    var found = null;
+    Object.keys(catalog).forEach(function (k) {
+      if (String(k).toLowerCase().includes(term)) {
+        found = catalog[k];
+      }
+    });
+    return found;
+  }
+
+  // Main render triggers everything (realtime)
   function render() {
+    applyPromotions();
     renderCart();
     renderTotals();
     renderSummary();
@@ -248,12 +216,10 @@ $(function () {
   function renderCart() {
     var $list = $("#cart-list");
     $list.empty();
-    var isCorporate = $("#pos-customer-type").val() === "Corporate";
 
     Object.values(cart).forEach(function (item) {
-      var itemPrice = isCorporate ? 0 : item.price;
       var li = $(
-        '<li class="list-group-item d-flex align-items-center justify-content-between"></li>',
+        '<li class="list-group-item d-flex align-items-center justify-content-between"></li>'
       );
 
       var left = $('<div class="d-flex align-items-center gap-2"></div>');
@@ -261,52 +227,58 @@ $(function () {
         $("<img>")
           .attr("src", item.image)
           .addClass("cart-thumb")
-          .css({ width: "50px", height: "50px", objectFit: "cover" }),
+          .css({ width: "50px", height: "50px", objectFit: "cover" })
       );
 
       var meta = $('<div class="d-flex flex-column"></div>');
       meta.append($('<div class="fw-semibold"></div>').text(item.name));
       meta.append(
         $('<div class="text-muted small"></div>').text(
-          "LKR " + format(itemPrice),
-        ),
+          "LKR " + format(item.price)
+        )
       );
       left.append(meta);
 
       var right = $('<div class="d-flex align-items-center gap-2"></div>');
 
       var qtyGroup = $(
-        '<div class="input-group input-group-sm" style="width:130px;"></div>',
+        '<div class="input-group input-group-sm" style="width:130px;"></div>'
       );
       var minusBtn = $(
-        '<button type="button" class="btn btn-outline-secondary">-</button>',
+        '<button type="button" class="btn btn-outline-secondary">-</button>'
       );
       var qtyInput = $('<input type="number" class="form-control text-center">')
         .attr("min", 1)
         .attr("max", item.stock)
         .val(item.qty);
       var plusBtn = $(
-        '<button type="button" class="btn btn-outline-secondary">+</button>',
+        '<button type="button" class="btn btn-outline-secondary">+</button>'
       );
 
-      minusBtn.off("click").on("click", function () {
-        adjustQuantity(item.key, -1);
-      });
-      plusBtn.off("click").on("click", function () {
-        adjustQuantity(item.key, 1);
-      });
-      qtyInput.off("input change").on("input change", function () {
-        updateQuantity(item.key, $(this).val());
-      });
+      if (item.free) {
+        minusBtn.prop("disabled", true);
+        plusBtn.prop("disabled", true);
+        qtyInput.prop("disabled", true);
+      } else {
+        minusBtn.off("click").on("click", function () {
+          adjustQuantity(item.key, -1);
+        });
+        plusBtn.off("click").on("click", function () {
+          adjustQuantity(item.key, 1);
+        });
+        qtyInput.off("input change").on("input change", function () {
+          updateQuantity(item.key, $(this).val());
+        });
+      }
 
       qtyGroup.append(minusBtn, qtyInput, plusBtn);
 
       var subtotal = $('<div class="fw-semibold"></div>').text(
-        "LKR " + format(itemPrice * item.qty),
+        "LKR " + format(item.price * item.qty)
       );
 
       var removeBtn = $(
-        '<button class="btn btn-outline-danger btn-sm touch-target">Remove</button>',
+        '<button class="btn btn-outline-danger btn-sm touch-target">Remove</button>'
       )
         .off("click")
         .on("click", function () {
@@ -320,7 +292,7 @@ $(function () {
 
     if ($list.children().length === 0) {
       $list.append(
-        '<li class="list-group-item text-center text-muted">No items in cart</li>',
+        '<li class="list-group-item text-center text-muted">No items in cart</li>'
       );
     }
   }
@@ -329,38 +301,26 @@ $(function () {
   function renderSummary() {
     var $wrap = $("#summary-items");
     $wrap.empty();
-    var isCorporate = $("#pos-customer-type").val() === "Corporate";
 
     Object.values(cart).forEach(function (item) {
-      var itemPrice = isCorporate ? 0 : item.price;
       var row = $('<div class="d-flex justify-content-between"></div>');
       row.append($("<div></div>").text(item.name + " × " + item.qty));
-      row.append($("<div></div>").text("LKR " + format(itemPrice * item.qty)));
+      row.append($("<div></div>").text("LKR " + format(item.price * item.qty)));
       $wrap.append(row);
     });
   }
 
+  // Realtime totals
   function renderTotals() {
-    var t = getTotals();
-    $("#subtotal").text("LKR " + format(t.subtotal));
+    var subtotal = Object.values(cart).reduce(function (acc, it) {
+      return acc + it.price * it.qty;
+    }, 0);
+    var tax = subtotal * taxRate;
+    var grand = subtotal + tax;
 
-    var $discountRow = $("#discount-row");
-    var $discountAmt = $("#discount");
-    var $discountLabel = $("#discount-label");
-    if (t.discountRate > 0) {
-      $discountRow.removeClass("d-none");
-      $discountLabel.text(
-        "Discount " + (t.discountRate * 100).toFixed(0) + "%",
-      );
-      $discountAmt.text("- LKR " + format(t.discount));
-    } else {
-      $discountRow.addClass("d-none");
-      $discountLabel.text("Discount");
-      $discountAmt.text("- LKR 0.00");
-    }
-
-    $("#tax").text("LKR " + format(t.tax));
-    $("#grand-total").text("LKR " + format(t.grand));
+    $("#subtotal").text("LKR " + format(subtotal));
+    $("#tax").text("LKR " + format(tax));
+    $("#grand-total").text("LKR " + format(grand));
   }
 
   // Format currency
@@ -393,23 +353,13 @@ $(function () {
   var $custType = $("#pos-customer-type");
   var $staffWrapper = $("#pos-staff-wrapper");
   var $studentWrapper = $("#pos-student-wrapper");
-  var $corporateWrapper = $("#pos-corporate-wrapper");
   var $staffSelect = $("#pos-staff-select");
   var $studentSelect = $("#pos-student-select");
-  var $corporateInput = $("#pos-corporate-input");
 
   if ($.fn.select2) {
     $custType.select2({ width: "100%", minimumResultsForSearch: Infinity });
-    $staffSelect.select2({
-      width: "100%",
-      placeholder: "-- Choose Staff --",
-      allowClear: false,
-    });
-    $studentSelect.select2({
-      width: "100%",
-      placeholder: "-- Choose Active Student --",
-      allowClear: false,
-    });
+    $staffSelect.select2({ width: "100%", placeholder: "-- Choose Staff --", allowClear: false });
+    $studentSelect.select2({ width: "100%", placeholder: "-- Choose Active Student --", allowClear: false });
   }
 
   function syncCustomerTypeUI() {
@@ -417,25 +367,16 @@ $(function () {
     if (type === "Staff") {
       $staffWrapper.show();
       $studentWrapper.hide();
-      $corporateWrapper.hide();
     } else if (type === "Student") {
       $studentWrapper.show();
       $staffWrapper.hide();
-      $corporateWrapper.hide();
-    } else if (type === "Corporate") {
-      $corporateWrapper.show();
-      $staffWrapper.hide();
-      $studentWrapper.hide();
     } else {
       $staffWrapper.hide();
       $studentWrapper.hide();
-      $corporateWrapper.hide();
       // Reset any leftover selection so a stale value can never be sent for Cash
       $staffSelect.val("").trigger("change.select2");
       $studentSelect.val("").trigger("change.select2");
-      $corporateInput.val("");
     }
-    render();
   }
 
   // "change" fires for both native selects and Select2 (Select2 always keeps the
@@ -444,9 +385,18 @@ $(function () {
 
   syncCustomerTypeUI();
 
+  // Just paid items, for checkout
   function getPayload() {
-    var items = Object.values(cart);
-    var t = getTotals();
+    var paidItems = Object.values(cart).filter(function (i) {
+      return !i.free;
+    });
+
+    var subtotal = paidItems.reduce(function (acc, i) {
+      return acc + i.price * i.qty;
+    }, 0);
+
+    var tax = subtotal * taxRate;
+    var grand = subtotal + tax;
 
     var customerType = $("#pos-customer-type").val() || "Cash";
     var customerName = "";
@@ -454,29 +404,23 @@ $(function () {
       customerName = $("#pos-staff-select").val() || "";
     } else if (customerType === "Student") {
       customerName = $("#pos-student-select").val() || "";
-    } else if (customerType === "Corporate") {
-      customerName = $.trim($("#pos-corporate-input").val()) || "";
     }
 
-    var isCorporate = customerType === "Corporate";
     return {
-      pos_mode: posMode,
       customer_type: customerType,
       customer_name: customerName,
-      items: items.map(function (i) {
+      items: paidItems.map(function (i) {
         return {
           id: i.id,
           name: i.name,
-          price: isCorporate ? 0 : i.price,
+          price: i.price,
           qty: i.qty,
         };
       }),
       totals: {
-        subtotal: parseFloat(t.subtotal.toFixed(2)),
-        discount: parseFloat(t.discount.toFixed(2)),
-        discount_rate: t.discountRate,
-        tax: parseFloat(t.tax.toFixed(2)),
-        grand_total: parseFloat(t.grand.toFixed(2)),
+        subtotal: parseFloat(subtotal.toFixed(2)),
+        tax: parseFloat(tax.toFixed(2)),
+        grand_total: parseFloat(grand.toFixed(2)),
       },
     };
   }
@@ -507,10 +451,16 @@ $(function () {
     });
   });
 
+  // Replace the checkout button click handler in cart.js with this improved version
+
   $("#checkout-btn").on("click", function () {
     syncCatalogFromGrid();
 
-    if (Object.keys(cart).length === 0) {
+    var paidItemsCount = Object.values(cart).filter(function (i) {
+      return !i.free;
+    }).length;
+
+    if (paidItemsCount === 0) {
       showTempMessage("Please add items to cart before checkout", "danger");
       $("#checkout-status")
         .removeClass()
@@ -534,14 +484,6 @@ $(function () {
         .removeClass()
         .addClass("text-danger")
         .text("❌ Please select a student");
-      return;
-    }
-    if (customerType === "Corporate" && !$.trim($("#pos-corporate-input").val())) {
-      showTempMessage("Please enter corporate details", "danger");
-      $("#checkout-status")
-        .removeClass()
-        .addClass("text-danger")
-        .text("❌ Please enter corporate details");
       return;
     }
 
@@ -570,7 +512,7 @@ $(function () {
 
           showTempMessage(
             "Order #" + res.order_id + " placed successfully!",
-            "success",
+            "success"
           );
 
           var receiptUrl =
@@ -604,7 +546,7 @@ $(function () {
               } else {
                 // Pop-up blocked
                 alert(
-                  "Please allow pop-ups to view and print the receipt.\n\nYou can view your order history from the menu.",
+                  "Please allow pop-ups to view and print the receipt.\n\nYou can view your order history from the menu."
                 );
                 window.location.href = "pos_store.php";
               }
@@ -613,7 +555,7 @@ $(function () {
               var receiptWindow = window.open(
                 receiptUrl,
                 "receipt",
-                "width=400,height=700,scrollbars=yes,resizable=yes",
+                "width=400,height=700,scrollbars=yes,resizable=yes"
               );
 
               if (receiptWindow) {
@@ -662,7 +604,7 @@ $(function () {
           error,
           "HTTP " + xhr.status,
           "raw response:",
-          xhr.responseText,
+          xhr.responseText
         );
 
         var errorMsg = "";

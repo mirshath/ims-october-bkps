@@ -1,0 +1,260 @@
+<?php
+session_start();
+include("database/connection.php");
+include("pos-includes/bootstrap.php");
+include("includes/header.php");
+
+require_once 'PermissionChecking.php';
+pos_require_admin();
+?>
+<link rel="stylesheet" href="pos-assets/css/pos-theme.css">
+<!-- Page Wrapper -->
+<div id="wrapper">
+    <?php include("nav.php"); ?>
+    <div id="content-wrapper" class="d-flex flex-column">
+        <div id="content">
+            <?php include("includes/topnav.php"); ?>
+            <div class="p-3 pos-scope">
+<?php
+$conn = get_db();
+$orderId = isset($_GET['order_id']) ? intval($_GET['order_id']) : 0;
+?>
+<div class="container-fluid">
+  <div class="pos-page-header">
+    <div class="pos-title-block">
+      <div class="pos-page-icon"><i class="fas fa-chart-pie"></i></div>
+      <div>
+        <h4>Reports</h4>
+        <div class="pos-subtitle"><?= $orderId ? 'Order details' : 'Store-wide inventory & sales overview' ?></div>
+      </div>
+    </div>
+    <div class="pos-header-actions">
+      <a href="pos_detailed_report.php" class="pos-btn pos-btn-ghost-navy"><i class="fas fa-file-lines"></i> Detailed Reports</a>
+      <a href="pos_dashboard.php" class="pos-btn pos-btn-outline"><i class="fas fa-arrow-left"></i> Dashboard</a>
+    </div>
+  </div>
+
+  <?php if ($orderId && $conn): ?>
+    <?php $o = null;
+    $r = mysqli_query($conn, "SELECT id, subtotal, discount, discount_rate, tax, total, customer_type, customer_name, created_at FROM orders WHERE id=" . $orderId);
+    if ($r) {
+      $o = mysqli_fetch_assoc($r);
+    } ?>
+    <?php if ($o): ?>
+      <div class="pos-card">
+        <div class="pos-card-header">
+          <div class="pos-card-title"><span class="pos-mini-icon"><i class="fas fa-receipt"></i></span> Order #<?= $o['id'] ?></div>
+          <span class="text-muted small"><?= htmlspecialchars($o['created_at']) ?></span>
+        </div>
+        <div class="pos-card-body">
+          <?php if (!empty($o['customer_type'])): ?>
+            <div class="d-flex justify-content-between mb-1">
+              <div class="text-muted">Customer</div>
+              <div class="fw-semibold"><?= htmlspecialchars($o['customer_type']) ?><?= !empty($o['customer_name']) ? ' · ' . htmlspecialchars($o['customer_name']) : '' ?></div>
+            </div>
+          <?php endif; ?>
+          <div class="d-flex justify-content-between mb-1">
+            <div class="text-muted">Subtotal</div>
+            <div>LKR <?= number_format((float)$o['subtotal'], 2) ?></div>
+          </div>
+          <?php if (!empty($o['discount']) && (float)$o['discount'] > 0):
+            $pct = !empty($o['discount_rate']) ? number_format((float)$o['discount_rate'] * 100, 0) : '';
+          ?>
+            <div class="d-flex justify-content-between mb-1 text-success">
+              <div class="text-success">Discount<?= $pct ? ' (' . $pct . '%)' : '' ?></div>
+              <div>- LKR <?= number_format((float)$o['discount'], 2) ?></div>
+            </div>
+          <?php endif; ?>
+          <div class="d-flex justify-content-between mb-1">
+            <div class="text-muted">Tax</div>
+            <div>LKR <?= number_format((float)$o['tax'], 2) ?></div>
+          </div>
+          <hr>
+          <div class="d-flex justify-content-between">
+            <div class="fw-bold">Total</div>
+            <div class="fw-bold pos-price-tag">LKR <?= number_format((float)$o['total'], 2) ?></div>
+          </div>
+        </div>
+      </div>
+      <div class="pos-card">
+        <div class="pos-card-header">
+          <div class="pos-card-title"><span class="pos-mini-icon"><i class="fas fa-list"></i></span> Items</div>
+        </div>
+        <div class="pos-card-body-flush">
+          <div class="table-responsive">
+            <table class="table pos-table mb-0">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Qty</th>
+                  <th>Price</th>
+                  <th>Discount</th>
+                  <th>Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php $ri = mysqli_query($conn, "SELECT oi.product_id, p.name, oi.qty, oi.price, oi.discount FROM order_items oi JOIN products p ON p.id=oi.product_id WHERE oi.order_id=" . $orderId); ?>
+                <?php if ($ri) {
+                  while ($it = mysqli_fetch_assoc($ri)):
+                    $lineGross = (float)$it['qty'] * (float)$it['price'];
+                    $lineNet = $lineGross - (float)$it['discount'];
+                ?>
+                    <tr>
+                      <td><?= htmlspecialchars($it['name']) ?></td>
+                      <td><?= (int)$it['qty'] ?></td>
+                      <td>LKR <?= number_format((float)$it['price'], 2) ?></td>
+                      <td class="text-success"><?= (float)$it['discount'] > 0 ? '- LKR ' . number_format((float)$it['discount'], 2) : '—' ?></td>
+                      <td>LKR <?= number_format($lineNet, 2) ?></td>
+                    </tr>
+                <?php endwhile;
+                } ?>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    <?php else: ?>
+      <div class="alert alert-warning">Order not found</div>
+    <?php endif; ?>
+  <?php else: ?>
+    <?php
+    $inv = mysqli_query($conn, "SELECT COALESCE(SUM(stock),0) s FROM products");
+    $sum = $inv ? intval(mysqli_fetch_assoc($inv)['s']) : 0;
+    $oosCountR = mysqli_query($conn, "SELECT COUNT(*) c FROM products WHERE stock=0");
+    $oosCount = $oosCountR ? intval(mysqli_fetch_assoc($oosCountR)['c']) : 0;
+    $or = mysqli_query($conn, "SELECT COUNT(*) c, COALESCE(SUM(subtotal),0) sb, COALESCE(SUM(discount),0) di, COALESCE(SUM(total),0) t FROM orders");
+    $osum = $or ? mysqli_fetch_assoc($or) : ['c' => 0, 'sb' => 0, 'di' => 0, 't' => 0];
+    ?>
+
+    <div class="pos-stat-grid">
+      <div class="pos-stat-card is-blue">
+        <div class="pos-stat-top"><div class="pos-stat-icon"><i class="fas fa-cubes"></i></div></div>
+        <div class="pos-stat-label">Total Stock</div>
+        <div class="pos-stat-value"><?= $sum ?></div>
+        <div class="pos-stat-foot">Units across all products</div>
+      </div>
+      <div class="pos-stat-card is-red">
+        <div class="pos-stat-top"><div class="pos-stat-icon"><i class="fas fa-triangle-exclamation"></i></div></div>
+        <div class="pos-stat-label">Out of Stock</div>
+        <div class="pos-stat-value"><?= $oosCount ?></div>
+        <div class="pos-stat-foot">Products need restocking</div>
+      </div>
+      <div class="pos-stat-card is-navy">
+        <div class="pos-stat-top"><div class="pos-stat-icon"><i class="fas fa-receipt"></i></div></div>
+        <div class="pos-stat-label">Total Orders</div>
+        <div class="pos-stat-value"><?= (int)$osum['c'] ?></div>
+        <div class="pos-stat-foot">All-time</div>
+      </div>
+      <div class="pos-stat-card is-green">
+        <div class="pos-stat-top"><div class="pos-stat-icon"><i class="fas fa-sack-dollar"></i></div></div>
+        <div class="pos-stat-label">Total Revenue</div>
+        <div class="pos-stat-value" style="font-size:1.3rem;">LKR <?= number_format((float)$osum['t'], 2) ?></div>
+        <div class="pos-stat-foot">Net (after discount)</div>
+      </div>
+    </div>
+
+    <?php if (!empty($osum['di']) && (float)$osum['di'] > 0): ?>
+      <div class="pos-stat-grid mt-3">
+        <div class="pos-stat-card is-warning">
+          <div class="pos-stat-top"><div class="pos-stat-icon"><i class="fas fa-percent"></i></div></div>
+          <div class="pos-stat-label">Gross Subtotal</div>
+          <div class="pos-stat-value" style="font-size:1.1rem;">LKR <?= number_format((float)$osum['sb'], 2) ?></div>
+          <div class="pos-stat-foot">Before discounts</div>
+        </div>
+        <div class="pos-stat-card" style="background:#fff3cd;border-color:#ffc107;">
+          <div class="pos-stat-top"><div class="pos-stat-icon" style="color:#664d03;"><i class="fas fa-tags"></i></div></div>
+          <div class="pos-stat-label" style="color:#664d03;">Total Discounts Given</div>
+          <div class="pos-stat-value" style="font-size:1.1rem;color:#664d03;">LKR <?= number_format((float)$osum['di'], 2) ?></div>
+          <div class="pos-stat-foot" style="color:#664d03;">Saved by customers</div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-6"></div>
+      </div>
+    <?php endif; ?>
+
+    <div class="row g-3">
+      <div class="col-12 col-md-6">
+        <div class="pos-card mb-0 h-100">
+          <div class="pos-card-header">
+            <div class="pos-card-title"><span class="pos-mini-icon"><i class="fas fa-box-open"></i></span> Out of Stock</div>
+          </div>
+          <div class="pos-card-body-flush">
+            <ul class="list-group list-group-flush">
+              <?php $os = mysqli_query($conn, "SELECT name FROM products WHERE stock=0 ORDER BY name");
+              if ($os && mysqli_num_rows($os) > 0) {
+                while ($p = mysqli_fetch_assoc($os)) {
+                  echo '<li class="list-group-item border-0 py-2 px-3">' . htmlspecialchars($p['name']) . '</li>';
+                }
+              } else {
+                echo '<li class="list-group-item border-0 py-3 px-3 text-muted text-center">None &mdash; everything is in stock</li>';
+              } ?>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6">
+        <div class="pos-card mb-0 h-100">
+          <div class="pos-card-header">
+            <div class="pos-card-title"><span class="pos-mini-icon"><i class="fas fa-trophy"></i></span> Top Products</div>
+          </div>
+          <div class="pos-card-body-flush">
+            <div class="table-responsive">
+              <table class="table pos-table mb-0">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>Revenue</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php $tp = mysqli_query($conn, "SELECT p.name, SUM(oi.qty) q, SUM(oi.qty*oi.price) r FROM order_items oi JOIN products p ON p.id=oi.product_id GROUP BY p.name ORDER BY q DESC LIMIT 10");
+                  if ($tp && mysqli_num_rows($tp) > 0) {
+                    while ($t = mysqli_fetch_assoc($tp)) {
+                      echo '<tr><td>' . htmlspecialchars($t['name']) . '</td><td>' . (int)$t['q'] . '</td><td>LKR ' . number_format((float)$t['r'], 2) . '</td></tr>';
+                    }
+                  } else {
+                    echo '<tr><td colspan="3" class="text-muted text-center py-3">No sales yet</td></tr>';
+                  } ?>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pos-card">
+      <div class="pos-card-header">
+        <div class="pos-card-title"><span class="pos-mini-icon"><i class="fas fa-clock-rotate-left"></i></span> Recent Orders</div>
+      </div>
+      <div class="pos-card-body-flush">
+        <div class="table-responsive">
+          <table class="table pos-table mb-0">
+            <thead>
+              <tr><th>Order</th><th>Total (LKR)</th><th></th></tr>
+            </thead>
+            <tbody>
+              <?php $ro = mysqli_query($conn, "SELECT id,total,created_at FROM orders ORDER BY id DESC LIMIT 10");
+              if ($ro && mysqli_num_rows($ro) > 0) {
+                while ($o = mysqli_fetch_assoc($ro)) {
+                  echo '<tr><td><span class="pos-code-tag">#' . (int)$o['id'] . '</span> <span class="text-muted small ms-2">' . htmlspecialchars($o['created_at']) . '</span></td>'
+                     . '<td class="fw-semibold">LKR ' . number_format((float)$o['total'], 2) . '</td>'
+                     . '<td class="text-end"><a class="pos-btn pos-btn-ghost-navy pos-btn-sm" href="pos_reports.php?order_id=' . (int)$o['id'] . '">Details</a></td></tr>';
+                }
+              } else {
+                echo '<tr><td colspan="3" class="text-muted text-center py-3">No orders yet</td></tr>';
+              } ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+</div>
+<?php endif; ?>
+
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -112,18 +112,6 @@ $product_id = input_get('product_id', '');
 $created_by = input_get('created_by', '');
 $export = input_get('export', '');
 
-// BMS POS vs Award Ceremony POS filter - applied to every report below so the
-// two sales streams don't collapse into one combined number.
-$posMode = input_get('pos_mode', 'all');
-if (!in_array($posMode, ['all', 'bms', 'award'], true)) {
-    $posMode = 'all';
-}
-$posModeVal = $posMode === 'award' ? 'award' : 'bms';
-// For queries that filter orders in a plain WHERE clause (INNER JOIN orders, or orders itself).
-$posModeWhere = ($posMode !== 'all') ? " AND o.pos_mode = '" . $posModeVal . "' " : '';
-// For queries that LEFT JOIN orders (so products with zero sales still show) - must go in the ON clause, not WHERE.
-$posModeOn = ($posMode !== 'all') ? " AND o.pos_mode = '" . $posModeVal . "' " : '';
-
 if (!validate_ymd($from))
     $from = date('Y-m-01');
 if (!validate_ymd($to))
@@ -155,7 +143,7 @@ switch ($report) {
                    SUM(o.total) AS total,
                    ROUND(AVG(o.total),2) AS avg_order
             FROM orders o
-            WHERE o.created_at BETWEEN ? AND ? $posModeWhere
+            WHERE o.created_at BETWEEN ? AND ?
             GROUP BY DATE(o.created_at)
             ORDER BY DATE(o.created_at) DESC
         ";
@@ -178,7 +166,7 @@ switch ($report) {
                    ROUND(SUM(o.discount_rate) * 100, 2) AS discount_pct,
                    SUM(o.total) AS total
             FROM orders o
-            WHERE o.created_at BETWEEN ? AND ? $posModeWhere
+            WHERE o.created_at BETWEEN ? AND ?
             GROUP BY DATE_FORMAT(o.created_at, '%Y-%m')
             ORDER BY DATE_FORMAT(o.created_at, '%Y-%m') DESC
         ";
@@ -203,7 +191,7 @@ switch ($report) {
                    SUM(o.total) AS total_sales,
                    ROUND(AVG(o.total),2) AS avg_order
             FROM orders o
-            WHERE o.created_at BETWEEN ? AND ? $posModeWhere
+            WHERE o.created_at BETWEEN ? AND ?
             GROUP BY COALESCE(o.customer_type, 'Cash'), COALESCE(o.customer_name, '-')
             ORDER BY customer_type ASC, total_sales DESC
         ";
@@ -225,7 +213,7 @@ switch ($report) {
             FROM orders o
             LEFT JOIN order_items oi ON oi.order_id = o.id
             LEFT JOIN products p ON p.id = oi.product_id
-            WHERE o.created_at BETWEEN ? AND ? $posModeWhere
+            WHERE o.created_at BETWEEN ? AND ?
             GROUP BY o.id
             ORDER BY o.created_at DESC
         ";
@@ -248,7 +236,7 @@ switch ($report) {
             FROM order_items oi
             JOIN products p ON p.id = oi.product_id
             JOIN orders o ON o.id = oi.order_id
-            WHERE o.created_at BETWEEN ? AND ? $posModeWhere
+            WHERE o.created_at BETWEEN ? AND ?
         ";
         if ($product_id_esc !== '') {
             $sql .= " AND p.id = '" . $product_id_esc . "' ";
@@ -270,7 +258,7 @@ switch ($report) {
                        COALESCE(SUM(oi.discount),0) AS discount,
                        ROUND(COALESCE(SUM(oi.discount / NULLIF(oi.qty*oi.price,0)),0) * 100, 2) AS discount_pct,
                        COALESCE(SUM(oi.qty*oi.price - oi.discount),0) AS revenue
-                FROM products p LEFT JOIN order_items oi ON oi.product_id = p.id LEFT JOIN orders o ON o.id = oi.order_id AND o.created_at BETWEEN ? AND ? $posModeOn";
+                FROM products p LEFT JOIN order_items oi ON oi.product_id = p.id LEFT JOIN orders o ON o.id = oi.order_id AND o.created_at BETWEEN ? AND ?";
         if ($product_id_esc !== '') {
             $sql .= " WHERE p.id = '" . $product_id_esc . "' ";
         }
@@ -294,7 +282,7 @@ switch ($report) {
             FROM order_items oi
             JOIN orders o ON o.id = oi.order_id
             JOIN products p ON p.id = oi.product_id
-            WHERE o.created_at BETWEEN ? AND ? $posModeWhere
+            WHERE o.created_at BETWEEN ? AND ?
         ";
         if ($product_id_esc !== '') {
             $sql .= " AND p.id = '" . $product_id_esc . "' ";
@@ -316,7 +304,7 @@ switch ($report) {
                    COALESCE(SUM(oi.qty),0) AS qty_sold
             FROM products p
             LEFT JOIN order_items oi ON oi.product_id = p.id
-            LEFT JOIN orders o ON o.id = oi.order_id AND o.created_at BETWEEN ? AND ? $posModeOn
+            LEFT JOIN orders o ON o.id = oi.order_id AND o.created_at BETWEEN ? AND ?
             GROUP BY p.id
             HAVING qty_sold <= 5
             ORDER BY qty_sold ASC
@@ -332,7 +320,7 @@ switch ($report) {
         break;
 
     case 'current_stock':
-        $sql = "SELECT p.id AS product_id, p.name, p.price, p.stock, p.store_stock, p.image, p.created_at, COALESCE(SUM(oi.qty),0) AS qty_sold FROM products p LEFT JOIN order_items oi ON oi.product_id = p.id LEFT JOIN orders o ON o.id = oi.order_id AND o.created_at BETWEEN ? AND ? $posModeOn WHERE p.active = 1 GROUP BY p.id ORDER BY p.name";
+        $sql = "SELECT p.id AS product_id, p.name, p.price, p.stock, p.store_stock, p.image, p.created_at, COALESCE(SUM(oi.qty),0) AS qty_sold FROM products p LEFT JOIN order_items oi ON oi.product_id = p.id LEFT JOIN orders o ON o.id = oi.order_id AND o.created_at BETWEEN ? AND ? WHERE p.active = 1 GROUP BY p.id ORDER BY p.name";
         $stmt = $mysqli->prepare($sql);
         $stmt->bind_param('ss', $from_ts, $to_ts);
         $stmt->execute();
@@ -374,7 +362,7 @@ switch ($report) {
                    ROUND(SUM(o.discount_rate) * 100, 2) AS discount_pct,
                    SUM(o.total) AS total_sales, ROUND(AVG(o.total),2) AS avg_order
             FROM orders o
-            WHERE o.created_at BETWEEN ? AND ? $posModeWhere
+            WHERE o.created_at BETWEEN ? AND ?
         ";
         if ($created_by_esc !== '') {
             $sql .= " AND o.created_by = '" . $created_by_esc . "' ";
@@ -396,7 +384,7 @@ switch ($report) {
             FROM order_items oi
             JOIN products p ON p.id = oi.product_id
             JOIN orders o ON o.id = oi.order_id
-            WHERE oi.price = 0 AND o.created_at BETWEEN ? AND ? $posModeWhere
+            WHERE oi.price = 0 AND o.created_at BETWEEN ? AND ?
             GROUP BY p.id
             ORDER BY qty_total DESC
         ";
@@ -417,7 +405,7 @@ switch ($report) {
                    COUNT(DISTINCT oi.order_id) AS orders_count
             FROM order_items oi
             JOIN orders o ON o.id = oi.order_id
-            WHERE o.created_at BETWEEN ? AND ? $posModeWhere
+            WHERE o.created_at BETWEEN ? AND ?
         ";
         $stmt = $mysqli->prepare($sql);
         $stmt->bind_param('ss', $from_ts, $to_ts);
@@ -440,7 +428,7 @@ switch ($report) {
                    COUNT(o.id) AS orders_count,
                    SUM(o.total) AS total_sales
             FROM orders o
-            WHERE o.created_at BETWEEN ? AND ? $posModeWhere
+            WHERE o.created_at BETWEEN ? AND ?
             GROUP BY HOUR(o.created_at)
             ORDER BY hour ASC
         ";
@@ -463,7 +451,7 @@ switch ($report) {
 
 // ------------------ CSV Export ------------------
 if ($export === 'csv') {
-    $filename = $report . ($posMode !== 'all' ? '_' . $posMode : '') . '_' . date('Ymd_His') . '.csv';
+    $filename = $report . '_' . date('Ymd_His') . '.csv';
     if ($report === 'inventory_value' && $totalInventoryValue !== null) {
         $rows[] = ['TOTAL', '', '', '', number_format($totalInventoryValue, 2)];
     }
@@ -548,7 +536,7 @@ $reportIcons = [
                                     <div class="list-group">
                                         <?php foreach ($reports as $key => $label): ?>
                                             <a class="list-group-item list-group-item-action d-flex align-items-center gap-2 <?= $report === $key ? 'active' : '' ?>"
-                                                href="?report=<?= urlencode($key) ?>&from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>&pos_mode=<?= urlencode($posMode) ?>">
+                                                href="?report=<?= urlencode($key) ?>&from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>">
                                                 <i class="fas <?= $reportIcons[$key] ?? 'fa-file' ?>"></i>
                                                 <?= esc($label) ?>
                                             </a>
@@ -582,15 +570,6 @@ $reportIcons = [
                                             <label class="form-label small mb-0">To</label>
                                             <input class="form-control form-control-sm" type="date" name="to"
                                                 value="<?= esc($to) ?>">
-                                        </div>
-
-                                        <div class="col-12 col-sm-6 col-md-auto">
-                                            <label class="form-label small mb-0">POS Mode</label>
-                                            <select name="pos_mode" class="form-select form-select-sm">
-                                                <option value="all" <?= $posMode === 'all' ? 'selected' : '' ?>>All Sales</option>
-                                                <option value="bms" <?= $posMode === 'bms' ? 'selected' : '' ?>>BMS POS</option>
-                                                <option value="award" <?= $posMode === 'award' ? 'selected' : '' ?>>Award Ceremony POS</option>
-                                            </select>
                                         </div>
 
                                         <?php if (in_array($report, ['best_selling', 'product_sales'])): ?>
@@ -643,7 +622,7 @@ $reportIcons = [
                                                 <a class="pos-btn pos-btn-outline pos-btn-sm"
                                                     href="pos_detailed_report.php">Reset</a>
                                                 <a class="pos-btn pos-btn-ghost-navy pos-btn-sm"
-                                                    href="?report=<?= esc($report) ?>&from=<?= esc($from) ?>&to=<?= esc($to) ?>&pos_mode=<?= esc($posMode) ?>&export=csv"><i
+                                                    href="?report=<?= esc($report) ?>&from=<?= esc($from) ?>&to=<?= esc($to) ?>&export=csv"><i
                                                         class="fas fa-download"></i> Export CSV</a>
                                             </div>
                                         </div>

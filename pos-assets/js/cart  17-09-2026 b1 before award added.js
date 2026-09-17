@@ -3,82 +3,25 @@ $(function () {
   var catalog = {};
   var taxRate = 0.0;
 
-  // ---- POS Mode (BMS POS vs Graduation POS) ----
-  // Remembered per-device via localStorage so it survives the page reload
-  // that happens after every checkout. Defaults to "bms" for anyone who
-  // has never picked a mode. Sent to pos_checkout.php as pos_mode so the
-  // server (source of truth for money math) applies the matching tiers.
-  var POS_MODE_KEY = "pos_active_mode";
-  var posMode = localStorage.getItem(POS_MODE_KEY) === "award" ? "award" : "bms";
-
-  var $modeBms = $("#pos-mode-bms");
-  var $modeAward = $("#pos-mode-award");
-  var $storeTitle = $("#pos-store-title");
-  var $storeSubtitle = $("#pos-store-subtitle");
-
-  function applyModeUI() {
-    if (posMode === "award") {
-      $modeAward.prop("checked", true);
-      $storeTitle.html('<i class="fas fa-trophy me-2"></i>Graduation POS - Store');
-      $storeSubtitle.text("Graduation discount rules are active for this sale.");
-    } else {
-      $modeBms.prop("checked", true);
-      $storeTitle.html('<i class="fas fa-store me-2"></i>BMS POS - Store');
-      $storeSubtitle.text("Tap a product to add it to the cart, then complete the purchase.");
-    }
-  }
-  applyModeUI();
-
-  $(document).on("change", 'input[name="pos-mode"]', function () {
-    posMode = $modeAward.is(":checked") ? "award" : "bms";
-    localStorage.setItem(POS_MODE_KEY, posMode);
-    applyModeUI();
-    render();
-  });
-
-  function getTieredDiscount(subtotal, customerType) {
+  function getTieredDiscount(subtotal) {
     // Total quantity across ALL products in the cart (not distinct product count)
     var totalQty = Object.values(cart).reduce(function (acc, it) {
       return acc + it.qty;
     }, 0);
     var rate = 0.0;
     var tierLabel = "";
-
-    if (posMode === "award") {
-      // Graduation POS discount rules (kept in sync with pos_checkout.php):  
-      //   Staff              -> 1 item     -> 5%
-      //   Other (non-Staff)  -> 2 items    -> 5%
-      //   Staff or Other     -> above 2    -> 10%
-      var isStaff = customerType === "Staff";
-      if (totalQty > 2) {
-        rate = 0.10;
-        tierLabel = "10% (" + totalQty + " items)";
-      } else if (isStaff && totalQty >= 1) {
-        rate = 0.05;
-        tierLabel = "5% (Staff, " + totalQty + " item" + (totalQty > 1 ? "s" : "") + ")";
-      } else if (!isStaff && totalQty >= 2) {
-        rate = 0.05;
-        tierLabel = "5% (" + totalQty + " items)";
-      } else {
-        rate = 0.0;
-        tierLabel = totalQty > 0 ? "0% (" + totalQty + " item)" : "";
-      }
+    if (totalQty >= 3) {
+      rate = 0.15;
+      tierLabel = "15% (" + totalQty + " items)";
+    } else if (totalQty === 2) {
+      rate = 0.1;
+      tierLabel = "10% (" + totalQty + " items)";
+    } else if (totalQty === 1) {
+      rate = 0.0;
+      tierLabel = "0% (" + totalQty + " item)";
     } else {
-      // BMS POS discount rules (unchanged)
-      if (totalQty >= 3) {
-        rate = 0.15;
-        tierLabel = "15% (" + totalQty + " items)";
-      } else if (totalQty === 2) {
-        rate = 0.1;
-        tierLabel = "10% (" + totalQty + " items)";
-      } else if (totalQty === 1) {
-        rate = 0.0;
-        tierLabel = "0% (" + totalQty + " item)";
-      } else {
-        tierLabel = "";
-      }
+      tierLabel = "";
     }
-
     var amount = subtotal * rate;
     return { rate: rate, amount: amount, label: tierLabel };
   }
@@ -99,7 +42,7 @@ $(function () {
     var subtotal = Object.values(cart).reduce(function (acc, it) {
       return acc + it.price * it.qty;
     }, 0);
-    var disc = getTieredDiscount(subtotal, customerType);
+    var disc = getTieredDiscount(subtotal);
     var afterDiscount = subtotal - disc.amount;
     if (afterDiscount < 0) afterDiscount = 0;
     var tax = afterDiscount * taxRate;
@@ -460,7 +403,6 @@ $(function () {
 
     var isCorporate = customerType === "Corporate";
     return {
-      pos_mode: posMode,
       customer_type: customerType,
       customer_name: customerName,
       items: items.map(function (i) {

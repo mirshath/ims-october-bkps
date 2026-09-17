@@ -1,0 +1,643 @@
+<?php
+session_start();
+include("database/connection.php");
+include("pos-includes/bootstrap.php");
+include("pos-includes/products.php");
+include("includes/header.php");
+
+require_once 'PermissionChecking.php';
+pos_require_admin();
+
+$conn = get_db();
+$msg = '';
+$msg_class = 'info';
+
+/**
+ * Handles an uploaded product image. Returns [$imagePath, $error].
+ * - If no file was chosen, returns the existing path unchanged (no error) —
+ *   this lets "update" keep the current image when the admin doesn't pick a new one.
+ * - Validates type (jpg/png/webp/gif) and size (max 5MB) before saving.
+ * - Saves into pos-product-image/ with a unique filename to avoid collisions.
+ */
+function handle_product_image_upload($fileKey, $existing = '')
+{
+  if (!isset($_FILES[$fileKey]) || $_FILES[$fileKey]['error'] === UPLOAD_ERR_NO_FILE) {
+    return [$existing, null];
+  }
+  if ($_FILES[$fileKey]['error'] !== UPLOAD_ERR_OK) {
+    return [$existing, 'Image upload failed. Please try again.'];
+  }
+
+  $tmpPath = $_FILES[$fileKey]['tmp_name'];
+  $size = $_FILES[$fileKey]['size'];
+  if ($size > 5 * 1024 * 1024) {
+    return [$existing, 'Image must be smaller than 5MB.'];
+  }
+
+  $allowed = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif'];
+  $mime = function_exists('mime_content_type') ? mime_content_type($tmpPath) : $_FILES[$fileKey]['type'];
+  if (!isset($allowed[$mime])) {
+    return [$existing, 'Only JPG, PNG, WEBP or GIF images are allowed.'];
+  }
+
+  $dir = __DIR__ . '/pos-product-image/';
+  if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
+    return [$existing, 'Could not create upload folder on the server.'];
+  }
+
+  $filename = 'prod_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $allowed[$mime];
+  $dest = $dir . $filename;
+  if (!move_uploaded_file($tmpPath, $dest)) {
+    return [$existing, 'Failed to save the uploaded image.'];
+  }
+
+  return ['pos-product-image/' . $filename, null];
+}
+
+if ($conn && $_SERVER['REQUEST_METHOD'] === 'POST') {
+  $token = isset($_POST['csrf_token']) ? $_POST['csrf_token'] : '';
+  if (!csrf_verify($token)) {
+    $msg = 'Invalid request';
+    $msg_class = 'danger';
+  } else {
+    $action = isset($_POST['action']) ? $_POST['action'] : '';
+
+    if ($action === 'add') {
+      $id = trim($_POST['id']);
+      $name = trim($_POST['name']);
+      $price = is_numeric($_POST['price']) ? floatval($_POST['price']) : null;
+      $stock = is_numeric($_POST['stock']) ? intval($_POST['stock']) : null;
+      $store_stock = (isset($_POST['store_stock']) && $_POST['store_stock'] !== '' && is_numeric($_POST['store_stock']))
+        ? intval($_POST['store_stock']) : null;
+      $active = isset($_POST['active']) ? 1 : 0;
+      list($image, $uploadError) = handle_product_image_upload('image_file', '');
+      if ($uploadError) {
+        $msg = $uploadError;
+        $msg_class = 'danger';
+      } elseif ($id !== '' && $name !== '' && $price !== null && $stock !== null && $price >= 0 && $stock >= 0 && ($store_stock === null || $store_stock >= 0)) {
+        $st = mysqli_prepare($conn, "INSERT INTO products(id,name,price,store_stock,stock,image,active) VALUES(?,?,?,?,?,?,?)");
+        mysqli_stmt_bind_param($st, 'ssdiisi', $id, $name, $price, $store_stock, $stock, $image, $active);
+        $exec = mysqli_stmt_execute($st);
+        $errno = mysqli_errno($conn);
+        $ok = $exec && mysqli_stmt_affected_rows($st) > 0;
+        mysqli_stmt_close($st);
+        if ($ok) {
+          $msg = 'Product added';
+          $msg_class = 'success';
+        } else {
+          $msg = ($errno === 1062) ? 'Product ID already exists' : 'Failed to add';
+          $msg_class = 'danger';
+        }
+      } else {
+        $msg = 'Please provide valid ID, name, price and stock';
+        $msg_class = 'warning';
+      }
+    } elseif ($action === 'update') {
+      $id = trim($_POST['id']);
+      $name = trim($_POST['name']);
+      $price = is_numeric($_POST['price']) ? floatval($_POST['price']) : null;
+      $stock = is_numeric($_POST['stock']) ? intval($_POST['stock']) : null;
+      $store_stock = (isset($_POST['store_stock']) && $_POST['store_stock'] !== '' && is_numeric($_POST['store_stock']))
+        ? intval($_POST['store_stock']) : null;
+      $existingImage = isset($_POST['current_image']) ? trim($_POST['current_image']) : '';
+      list($image, $uploadError) = handle_product_image_upload('image_file', $existingImage);
+      if ($uploadError) {
+        $msg = $uploadError;
+        $msg_class = 'danger';
+      } elseif ($id !== '' && $name !== '' && $price !== null && $stock !== null && $price >= 0 && $stock >= 0 && ($store_stock === null || $store_stock >= 0)) {
+        $st = mysqli_prepare($conn, "UPDATE products SET name=?, price=?, store_stock=?, stock=?, image=? WHERE id=?");
+        mysqli_stmt_bind_param($st, 'sdiiss', $name, $price, $store_stock, $stock, $image, $id);
+        $exec = mysqli_stmt_execute($st);
+        $ok = $exec && mysqli_stmt_affected_rows($st) >= 0;
+        mysqli_stmt_close($st);
+        if ($ok) {
+          $msg = 'Product updated';
+          $msg_class = 'success';
+        } else {
+          $msg = 'Failed to update';
+          $msg_class = 'danger';
+        }
+      } else {
+        $msg = 'Please provide valid name, price and stock';
+        $msg_class = 'warning';
+      }
+    } elseif ($action === 'toggle_status') {
+      $id = trim($_POST['id']);
+      $active = isset($_POST['active']) && $_POST['active'] === '1' ? 1 : 0;
+      if ($id !== '') {
+        $st = mysqli_prepare($conn, "UPDATE products SET active=? WHERE id=?");
+        mysqli_stmt_bind_param($st, 'is', $active, $id);
+        $exec = mysqli_stmt_execute($st);
+        mysqli_stmt_close($st);
+        if ($exec) {
+          $msg = $active ? 'Product activated - now visible in the store' : 'Product deactivated - hidden from the store';
+          $msg_class = $active ? 'success' : 'secondary';
+        } else {
+          $msg = 'Failed to update status';
+          $msg_class = 'danger';
+        }
+      }
+    } elseif ($action === 'delete') {
+      $id = trim($_POST['id']);
+      if ($id !== '') {
+        $st = mysqli_prepare($conn, "DELETE FROM products WHERE id=?");
+        mysqli_stmt_bind_param($st, 's', $id);
+        $exec = mysqli_stmt_execute($st);
+        $errno = mysqli_errno($conn);
+        $ok = $exec && mysqli_stmt_affected_rows($st) > 0;
+        mysqli_stmt_close($st);
+        if ($ok) {
+          $msg = 'Product deleted';
+          $msg_class = 'success';
+        } else {
+          if ($errno === 1451) {
+            $msg = 'Cannot delete: product is referenced by orders';
+          } else {
+            $msg = 'Failed to delete';
+          }
+          $msg_class = 'danger';
+        }
+      }
+    }
+  }
+}
+
+$allRows = fetch_products();
+
+// Filter tab (All / Active / Inactive) - simple GET param, no page reload needed
+// beyond a normal link since the list is small enough to render server-side.
+$filter = isset($_GET['filter']) ? $_GET['filter'] : 'active';
+if (!in_array($filter, ['all', 'active', 'inactive'], true))
+  $filter = 'all';
+
+$rows = array_values(array_filter($allRows, function ($r) use ($filter) {
+  if ($filter === 'active')
+    return (int) $r['active'] === 1;
+  if ($filter === 'inactive')
+    return (int) $r['active'] === 0;
+  return true;
+}));
+
+$totalCount = count($allRows);
+$activeCount = count(array_filter($allRows, function ($r) {
+  return (int) $r['active'] === 1;
+}));
+$inactiveCount = $totalCount - $activeCount;
+$oosCount = count(array_filter($allRows, function ($r) {
+  return (int) $r['stock'] <= 0;
+}));
+?>
+<link rel="stylesheet" href="pos-assets/css/pos-theme.css">
+<style>
+  /* Compact product table */
+  #productTable.pos-table-compact> :not(caption)>*>* {
+    padding: .45rem .55rem;
+    font-size: .825rem;
+    vertical-align: middle;
+  }
+
+  #productTable.pos-table-compact .form-control-sm {
+    font-size: .8rem;
+    padding: .25rem .45rem;
+  }
+
+  #productTable .pos-name-input {
+    font-weight: 600;
+    min-width: 170px;
+  }
+
+  /* Avatar-style image upload (small icon, click to change) */
+  .pos-avatar-upload {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 auto;
+  }
+
+  .pos-avatar-upload-img {
+    width: 44px;
+    height: 44px;
+    object-fit: cover;
+    border-radius: 8px;
+    background: #eef0f3;
+    display: block;
+    border: 1px solid rgba(0, 0, 0, .08);
+  }
+
+  .pos-avatar-upload-btn {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--pos-navy, #1c2434);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
+    transition: background-color .15s ease;
+  }
+
+  .pos-avatar-upload-btn:hover {
+    background: var(--pos-red, #d63333);
+  }
+
+  .pos-avatar-upload-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>
+<!-- Page Wrapper -->
+<div id="wrapper">
+  <?php include("nav.php"); ?>
+  <div id="content-wrapper" class="d-flex flex-column">
+    <div id="content">
+      <?php include("includes/topnav.php"); ?>
+      <div class="p-3 pos-scope">
+
+        <div class="container-fluid">
+
+          <div class="pos-page-header">
+            <div class="pos-title-block">
+              <div class="pos-page-icon"><i class="fas fa-boxes-stacked"></i></div>
+              <div>
+                <h4>Manage Products</h4>
+                <div class="pos-subtitle">Add products, edit pricing &amp; stock, and control what's visible in the
+                  store</div>
+              </div>
+            </div>
+            <div class="pos-header-actions">
+              <a href="pos_store.php" class="pos-btn pos-btn-ghost-navy"><i class="fas fa-store"></i> View Store</a>
+              <a href="pos_dashboard.php" class="pos-btn pos-btn-outline"><i class="fas fa-arrow-left"></i>
+                Dashboard</a>
+            </div>
+          </div>
+
+          <?php if ($msg): ?>
+            <div class="alert alert-<?= htmlspecialchars($msg_class) ?> pos-fade-in d-flex align-items-center gap-2"
+              role="alert">
+              <i class="fas fa-circle-info"></i> <?= htmlspecialchars($msg) ?>
+            </div>
+          <?php endif; ?>
+
+          <!-- Stat cards -->
+          <div class="pos-stat-grid">
+            <div class="pos-stat-card is-navy">
+              <div class="pos-stat-top">
+                <div class="pos-stat-icon"><i class="fas fa-box"></i></div>
+              </div>
+              <div class="pos-stat-label">Total Products</div>
+              <div class="pos-stat-value"><?= $totalCount ?></div>
+              <div class="pos-stat-foot">Items in catalog</div>
+            </div>
+            <div class="pos-stat-card is-green">
+              <div class="pos-stat-top">
+                <div class="pos-stat-icon"><i class="fas fa-circle-check"></i></div>
+              </div>
+              <div class="pos-stat-label">Active</div>
+              <div class="pos-stat-value"><?= $activeCount ?></div>
+              <div class="pos-stat-foot">Visible on the storefront</div>
+            </div>
+            <div class="pos-stat-card is-amber">
+              <div class="pos-stat-top">
+                <div class="pos-stat-icon"><i class="fas fa-circle-pause"></i></div>
+              </div>
+              <div class="pos-stat-label">Inactive</div>
+              <div class="pos-stat-value"><?= $inactiveCount ?></div>
+              <div class="pos-stat-foot">Hidden from customers</div>
+            </div>
+            <div class="pos-stat-card is-red">
+              <div class="pos-stat-top">
+                <div class="pos-stat-icon"><i class="fas fa-triangle-exclamation"></i></div>
+              </div>
+              <div class="pos-stat-label">Out of Stock</div>
+              <div class="pos-stat-value"><?= $oosCount ?></div>
+              <div class="pos-stat-foot">Need restocking</div>
+            </div>
+          </div>
+
+          <!-- Add product -->
+          <div class="pos-card">
+            <div class="pos-card-header">
+              <div class="pos-card-title"><span class="pos-mini-icon"><i class="fas fa-plus"></i></span> Add New Product
+              </div>
+            </div>
+            <div class="pos-card-body">
+              <form method="post" enctype="multipart/form-data" class="row g-2 align-items-end">
+                <input type="hidden" name="action" value="add">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token()) ?>">
+                <div class="col-12 col-md-2">
+                  <label class="form-label">Product ID</label>
+                  <input name="id" class="form-control" placeholder="e.g. GC006" required>
+                </div>
+                <div class="col-12 col-md-3">
+                  <label class="form-label">Name</label>
+                  <input name="name" class="form-control" placeholder="Product name" required>
+                </div>
+                <div class="col-6 col-md-2">
+                  <label class="form-label">Price (LKR)</label>
+                  <input name="price" type="number" step="0.01" min="0" class="form-control" placeholder="0.00"
+                    required>
+                </div>
+                <div class="col-6 col-md-2">
+                  <label class="form-label">Stock</label>
+                  <input name="stock" type="number" min="0" class="form-control" placeholder="0" required>
+                </div>
+                <div class="col-6 col-md-2">
+                  <label class="form-label">Store Stock</label>
+                  <input name="store_stock" type="number" min="0" class="form-control" placeholder="0">
+                </div>
+                <div class="col-12 col-md-2">
+                  <label class="form-label">Image</label>
+                  <input name="image_file" type="file" accept="image/png,image/jpeg,image/webp,image/gif"
+                    class="form-control">
+                </div>
+                <div class="col-6 col-md-auto d-flex align-items-center gap-2" style="height:38px;">
+                  <label class="pos-switch mb-0">
+                    <input type="checkbox" name="active" value="1" checked>
+                    <span class="pos-slider"></span>
+                  </label>
+                  <span class="small text-muted">Active</span>
+                </div>
+                <div class="col-6 col-md-auto">
+                  <button class="pos-btn pos-btn-navy w-100"><i class="fas fa-plus"></i> Add</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Product list -->
+          <div class="pos-card">
+            <div class="pos-card-header">
+              <div class="pos-card-title"><span class="pos-mini-icon"><i class="fas fa-list"></i></span> Product Catalog
+              </div>
+              <div class="d-flex flex-wrap gap-2 align-items-center">
+                <div class="pos-search">
+                  <i class="fas fa-search"></i>
+                  <input type="text" id="productSearch" class="form-control form-control-sm"
+                    placeholder="Search products...">
+                </div>
+                <div class="pos-tabbar">
+                  <a href="?filter=active" class="<?= $filter === 'active' ? 'active' : '' ?>">Active
+                    (<?= $activeCount ?>)</a>
+                  <a href="?filter=inactive" class="<?= $filter === 'inactive' ? 'active' : '' ?>">Inactive
+                    (<?= $inactiveCount ?>)</a>
+                  <a href="?filter=all" class="<?= $filter === 'all' ? 'active' : '' ?>">All (<?= $totalCount ?>)</a>
+                </div>
+              </div>
+            </div>
+
+            <div class="pos-card-body-flush">
+              <?php if (count($rows) === 0): ?>
+                <div class="pos-empty">
+                  <i class="fas fa-box-open"></i>
+                  <strong>No products found</strong>
+                  <span>Try a different filter, or add a new product above.</span>
+                </div>
+              <?php else: ?>
+
+                <!-- Desktop table -->
+                <div class="table-responsive d-none d-md-block">
+                  <table class="table pos-table pos-table-compact align-middle mb-0" id="productTable">
+                    <thead>
+                      <tr>
+                        <th>Image</th>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Price (LKR)</th>
+                        <th>Stock</th>
+                        <th>Store Stock</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <?php foreach ($rows as $r):
+                        $isActive = (int) $r['active'] === 1; ?>
+                        <tr data-search="<?= htmlspecialchars(strtolower($r['id'] . ' ' . $r['name'])) ?>"
+                          class="<?= $isActive ? '' : 'pos-row-inactive' ?>">
+                          <td>
+                            <div class="pos-avatar-upload">
+                              <img src="<?= htmlspecialchars($r['image']) ?>" alt=""
+                                class="pos-avatar-upload-img" id="img-preview-<?= htmlspecialchars($r['id']) ?>"
+                                onerror="this.style.visibility='hidden'">
+                              <label class="pos-avatar-upload-btn" title="Change image">
+                                <i class="fas fa-camera"></i>
+                                <input type="file" name="image_file" accept="image/png,image/jpeg,image/webp,image/gif"
+                                  class="pos-avatar-upload-input" form="f-<?= htmlspecialchars($r['id']) ?>"
+                                  onchange="posPreviewImage(this, 'img-preview-<?= htmlspecialchars($r['id']) ?>')">
+                              </label>
+                              <input type="hidden" name="current_image" value="<?= htmlspecialchars($r['image']) ?>"
+                                form="f-<?= htmlspecialchars($r['id']) ?>">
+                            </div>
+                          </td>
+                          <td><span class="pos-code-tag"><?= htmlspecialchars($r['id']) ?></span></td>
+                          <td><input name="name" class="form-control form-control-sm pos-name-input"
+                              value="<?= htmlspecialchars($r['name']) ?>" form="f-<?= htmlspecialchars($r['id']) ?>"></td>
+                          <td><input name="price" type="number" step="0.01" min="0" class="form-control form-control-sm"
+                              value="<?= number_format($r['price'], 2, '.', '') ?>"
+                              form="f-<?= htmlspecialchars($r['id']) ?>" style="width:110px"></td>
+                          <td><input name="stock" type="number" min="0" class="form-control form-control-sm"
+                              value="<?= (int) $r['stock'] ?>" form="f-<?= htmlspecialchars($r['id']) ?>"
+                              style="width:90px"></td>
+                          <td><input name="store_stock" type="number" min="0" class="form-control form-control-sm"
+                              value="<?= isset($r['store_stock']) && $r['store_stock'] !== null ? (int) $r['store_stock'] : '' ?>"
+                              form="f-<?= htmlspecialchars($r['id']) ?>" style="width:90px" placeholder="0"></td>
+                          <td>
+                            <form method="post" class="d-inline toggle-form">
+                              <input type="hidden" name="action" value="toggle_status">
+                              <input type="hidden" name="id" value="<?= htmlspecialchars($r['id']) ?>">
+                              <input type="hidden" name="active" value="<?= $isActive ? '0' : '1' ?>">
+                              <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token()) ?>">
+                              <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent"
+                                title="<?= $isActive ? 'Deactivate' : 'Activate' ?>">
+                                <span class="pos-switch" style="pointer-events:none;">
+                                  <input type="checkbox" <?= $isActive ? 'checked' : '' ?> disabled>
+                                  <span class="pos-slider"></span>
+                                </span>
+                              </button>
+                            </form>
+                            <div class="mt-1">
+                              <?php if ($isActive): ?>
+                                <span class="pos-pill is-active"><span class="pos-pill-dot"></span> Active</span>
+                              <?php else: ?>
+                                <span class="pos-pill is-inactive"><span class="pos-pill-dot"></span> Inactive</span>
+                              <?php endif; ?>
+                            </div>
+                          </td>
+                          <td class="text-end">
+                            <form id="f-<?= htmlspecialchars($r['id']) ?>" method="post" enctype="multipart/form-data"
+                              class="d-inline">
+                              <input type="hidden" name="action" value="update">
+                              <input type="hidden" name="id" value="<?= htmlspecialchars($r['id']) ?>">
+                              <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token()) ?>">
+                              <?php if ($isActive): ?>
+                                <button class="pos-btn pos-btn-ghost-navy pos-btn-sm"><i class="fas fa-save"></i>
+                                  Save</button>
+                              <?php endif; ?>
+                            </form>
+                            <?php if ($isActive): ?>
+                              <form method="post" class="d-inline"
+                                onsubmit="return confirm('Delete product <?= htmlspecialchars($r['id']) ?>?')">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="id" value="<?= htmlspecialchars($r['id']) ?>">
+                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token()) ?>">
+                                <button class="pos-btn pos-btn-danger pos-btn-sm"><i class="fas fa-trash"></i></button>
+                              </form>
+                            <?php endif; ?>
+                          </td>
+                        </tr>
+                      <?php endforeach; ?>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Mobile cards -->
+                <div class="d-md-none p-3">
+                  <div class="row g-3" id="productCards">
+                    <?php foreach ($rows as $r):
+                      $isActive = (int) $r['active'] === 1; ?>
+                      <div class="col-12" data-search="<?= htmlspecialchars(strtolower($r['id'] . ' ' . $r['name'])) ?>">
+                        <div class="border rounded-3 p-3 h-100 <?= $isActive ? '' : 'pos-row-inactive' ?>">
+                          <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="d-flex align-items-center">
+                              <div class="pos-avatar-upload me-3" style="width:56px;height:56px;">
+                                <img src="<?= htmlspecialchars($r['image']) ?>" alt=""
+                                  class="pos-avatar-upload-img" id="img-preview-m-<?= htmlspecialchars($r['id']) ?>"
+                                  style="width:56px;height:56px;" onerror="this.style.visibility='hidden'">
+                                <label class="pos-avatar-upload-btn" title="Change image">
+                                  <i class="fas fa-camera"></i>
+                                  <input type="file" name="image_file" accept="image/png,image/jpeg,image/webp,image/gif"
+                                    class="pos-avatar-upload-input" form="fm-<?= htmlspecialchars($r['id']) ?>"
+                                    onchange="posPreviewImage(this, 'img-preview-m-<?= htmlspecialchars($r['id']) ?>')">
+                                </label>
+                              </div>
+                              <div>
+                                <div class="fw-semibold"><?= htmlspecialchars($r['name']) ?></div>
+                                <span class="pos-code-tag"><?= htmlspecialchars($r['id']) ?></span>
+                              </div>
+                            </div>
+                            <?php if ($isActive): ?>
+                              <span class="pos-pill is-active"><span class="pos-pill-dot"></span> Active</span>
+                            <?php else: ?>
+                              <span class="pos-pill is-inactive"><span class="pos-pill-dot"></span> Inactive</span>
+                            <?php endif; ?>
+                          </div>
+
+                          <form id="fm-<?= htmlspecialchars($r['id']) ?>" method="post" enctype="multipart/form-data"
+                            class="mb-2">
+                            <input type="hidden" name="action" value="update">
+                            <input type="hidden" name="id" value="<?= htmlspecialchars($r['id']) ?>">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token()) ?>">
+                            <input type="hidden" name="current_image" value="<?= htmlspecialchars($r['image']) ?>">
+                            <div class="mb-2">
+                              <label class="form-label small mb-1">Name</label>
+                              <input name="name" class="form-control form-control-sm"
+                                value="<?= htmlspecialchars($r['name']) ?>">
+                            </div>
+                            <div class="row g-2">
+                              <div class="col-6">
+                                <label class="form-label small mb-1">Price</label>
+                                <input name="price" type="number" step="0.01" min="0" class="form-control form-control-sm"
+                                  value="<?= number_format($r['price'], 2, '.', '') ?>">
+                              </div>
+                              <div class="col-6">
+                                <label class="form-label small mb-1">Stock</label>
+                                <input name="stock" type="number" min="0" class="form-control form-control-sm"
+                                  value="<?= (int) $r['stock'] ?>">
+                              </div>
+                            </div>
+                            <div class="row g-2 mt-0">
+                              <div class="col-6">
+                                <label class="form-label small mb-1">Store Stock</label>
+                                <input readonly name="store_stock" type="number" min="0" class="form-control form-control-sm"
+                                  value="<?= isset($r['store_stock']) && $r['store_stock'] !== null ? (int) $r['store_stock'] : '' ?>"
+                                  placeholder="0">
+                              </div>
+                            </div>
+                          </form>
+
+                          <form method="post" class="d-inline">
+                            <input type="hidden" name="action" value="toggle_status">
+                            <input type="hidden" name="id" value="<?= htmlspecialchars($r['id']) ?>">
+                            <input type="hidden" name="active" value="<?= $isActive ? '0' : '1' ?>">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token()) ?>">
+                            <button type="submit"
+                              class="pos-btn <?= $isActive ? 'pos-btn-outline' : 'pos-btn-ghost-navy' ?> pos-btn-sm w-100 mb-2">
+                              <i class="fas <?= $isActive ? 'fa-toggle-off' : 'fa-toggle-on' ?>"></i>
+                              <?= $isActive ? 'Deactivate' : 'Activate' ?>
+                            </button>
+                          </form>
+
+                          <?php if ($isActive): ?>
+                            <div class="d-flex gap-2">
+                              <button type="submit" form="fm-<?= htmlspecialchars($r['id']) ?>"
+                                class="pos-btn pos-btn-navy pos-btn-sm flex-grow-1"><i class="fas fa-save"></i> Save</button>
+                              <button type="button" class="pos-btn pos-btn-danger pos-btn-sm flex-grow-1"
+                                onclick="if(confirm('Delete product <?= htmlspecialchars($r['id']) ?>?')) { document.getElementById('del-<?= htmlspecialchars($r['id']) ?>').submit(); }">
+                                <i class="fas fa-trash"></i> Delete
+                              </button>
+                            </div>
+                            <form id="del-<?= htmlspecialchars($r['id']) ?>" method="post">
+                              <input type="hidden" name="action" value="delete">
+                              <input type="hidden" name="id" value="<?= htmlspecialchars($r['id']) ?>">
+                              <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token()) ?>">
+                            </form>
+                          <?php endif; ?>
+                        </div>
+                      </div>
+                    <?php endforeach; ?>
+                  </div>
+                </div>
+
+              <?php endif; ?>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function posPreviewImage(input, imgId) {
+    if (!input.files || !input.files[0]) return;
+    var img = document.getElementById(imgId);
+    if (!img) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      img.src = e.target.result;
+      img.style.visibility = 'visible';
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+</script>
+<script>
+  (function() {
+    var input = document.getElementById('productSearch');
+    if (!input) return;
+    input.addEventListener('input', function() {
+      var q = this.value.trim().toLowerCase();
+      document.querySelectorAll('#productTable tbody tr[data-search], #productCards > [data-search]').forEach(function(el) {
+        el.style.display = el.getAttribute('data-search').indexOf(q) > -1 ? '' : 'none';
+      });
+    });
+  })();
+</script>
+
+</body>
+
+</html>

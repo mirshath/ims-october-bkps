@@ -376,19 +376,11 @@ if ($from && !validate_ymd($from))
 if ($to && !validate_ymd($to))
     $to = '';
 
-// BMS POS vs Award Ceremony POS filter - so this list (and its CSV/Excel/PDF
-// exports below, which reuse the same query) don't mix the two sales streams.
-$posMode = isset($_GET['pos_mode']) ? trim($_GET['pos_mode']) : 'all';
-if (!in_array($posMode, ['all', 'bms', 'award'], true)) {
-    $posMode = 'all';
-}
-
 // Build query with prepared statement
 $query = "
 SELECT 
     o.id AS order_id,
     o.created_at,
-    o.pos_mode,
     o.subtotal,
     o.discount AS order_discount,
     ROUND(o.discount_rate * 100, 2) AS discount_pct,
@@ -425,11 +417,6 @@ if ($from) {
 if ($to) {
     $conditions[] = "o.created_at <= ?";
     $params[] = $to . ' 23:59:59';
-    $types .= 's';
-}
-if ($posMode !== 'all') {
-    $conditions[] = "o.pos_mode = ?";
-    $params[] = $posMode;
     $types .= 's';
 }
 
@@ -522,13 +509,13 @@ foreach ($orderGroups as $orderId => $orderRows) {
 
 // Handle exports
 if ($export === 'csv') {
-    $filename = 'detailed_sales' . ($posMode !== 'all' ? '_' . $posMode : '') . '_' . date('Ymd_His') . '.csv';
+    $filename = 'detailed_sales_' . date('Ymd_His') . '.csv';
     csv_export_and_exit($filename, $export_headers, $export_rows, $totalSales, $totalOrders, $totalItems, $totalQuantity, $totalDiscount);
 } elseif ($export === 'excel') {
-    $filename = 'detailed_sales' . ($posMode !== 'all' ? '_' . $posMode : '') . '_' . date('Ymd_His') . '.xls';
+    $filename = 'detailed_sales_' . date('Ymd_His') . '.xls';
     excel_export_and_exit($filename, $export_headers, $export_rows, $totalSales, $totalOrders, $totalItems, $totalQuantity, $totalDiscount);
 } elseif ($export === 'pdf') {
-    $filename = 'detailed_sales' . ($posMode !== 'all' ? '_' . $posMode : '') . '_' . date('Ymd_His') . '.html';
+    $filename = 'detailed_sales_' . date('Ymd_His') . '.html';
     pdf_export_and_exit($filename, $export_headers, $export_rows, $from, $to, $orderGroups, $totalSales, $totalOrders, $totalItems, $totalQuantity, $totalDiscount);
 }
 
@@ -574,14 +561,6 @@ include("includes/header.php");
                                     <label class="form-label">Date To</label>
                                     <input type="date" name="to" class="form-control" value="<?php echo esc($to); ?>">
                                 </div>
-                                <div class="col-6 col-md-3">
-                                    <label class="form-label">POS Mode</label>
-                                    <select name="pos_mode" class="form-select">
-                                        <option value="all" <?php echo $posMode === 'all' ? 'selected' : ''; ?>>All Sales</option>
-                                        <option value="bms" <?php echo $posMode === 'bms' ? 'selected' : ''; ?>>BMS POS</option>
-                                        <option value="award" <?php echo $posMode === 'award' ? 'selected' : ''; ?>>Award Ceremony POS</option>
-                                    </select>
-                                </div>
                                 <div class="col-12 col-md-6">
                                     <div class="d-flex flex-wrap gap-2">
                                         <button type="submit" class="pos-btn pos-btn-navy"><i class="fas fa-filter"></i>
@@ -596,19 +575,19 @@ include("includes/header.php");
                                                 <ul class="dropdown-menu">
                                                     <li>
                                                         <a class="dropdown-item"
-                                                            href="?from=<?php echo urlencode($from); ?>&to=<?php echo urlencode($to); ?>&pos_mode=<?php echo urlencode($posMode); ?>&export=csv">
+                                                            href="?from=<?php echo urlencode($from); ?>&to=<?php echo urlencode($to); ?>&export=csv">
                                                             <i class="fas fa-file-csv me-1"></i> Export as CSV
                                                         </a>
                                                     </li>
                                                     <li>
                                                         <a class="dropdown-item"
-                                                            href="?from=<?php echo urlencode($from); ?>&to=<?php echo urlencode($to); ?>&pos_mode=<?php echo urlencode($posMode); ?>&export=excel">
+                                                            href="?from=<?php echo urlencode($from); ?>&to=<?php echo urlencode($to); ?>&export=excel">
                                                             <i class="fas fa-file-excel me-1"></i> Export as Excel
                                                         </a>
                                                     </li>
                                                     <li>
                                                         <a class="dropdown-item"
-                                                            href="?from=<?php echo urlencode($from); ?>&to=<?php echo urlencode($to); ?>&pos_mode=<?php echo urlencode($posMode); ?>&export=pdf"
+                                                            href="?from=<?php echo urlencode($from); ?>&to=<?php echo urlencode($to); ?>&export=pdf"
                                                             target="_blank">
                                                             <i class="fas fa-file-pdf me-1"></i> Export as PDF
                                                         </a>
@@ -732,11 +711,6 @@ include("includes/header.php");
                                                         <?php if ($isFirst): ?>
                                                             <td rowspan="<?php echo $rowCount; ?>" style="vertical-align: middle;">
                                                                 <span class="pos-code-tag">#<?php echo esc($orderId); ?></span>
-                                                                <?php if (($firstRow['pos_mode'] ?? 'bms') === 'award'): ?>
-                                                                    <span class="badge bg-warning text-dark d-block mt-1"><i class="fas fa-trophy"></i> Award</span>
-                                                                <?php else: ?>
-                                                                    <span class="badge bg-secondary d-block mt-1"><i class="fas fa-store"></i> BMS</span>
-                                                                <?php endif; ?>
                                                             </td>
                                                             <td rowspan="<?php echo $rowCount; ?>" style="vertical-align: middle;">
                                                                 <?php echo esc($firstRow['created_at']); ?>

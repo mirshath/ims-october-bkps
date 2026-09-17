@@ -114,9 +114,6 @@ pos_ensure_column($conn, 'orders', 'customer_name',  "VARCHAR(255) DEFAULT NULL"
 pos_ensure_column($conn, 'orders',      'discount',      "DECIMAL(10,2) NOT NULL DEFAULT 0.00");
 pos_ensure_column($conn, 'orders',      'discount_rate', "DECIMAL(5,4)  NOT NULL DEFAULT 0.0000");
 pos_ensure_column($conn, 'order_items', 'discount',      "DECIMAL(10,2) NOT NULL DEFAULT 0.00");
-// Which POS mode (BMS POS vs Award Ceremony POS) was active for this sale - kept for
-// reporting/audit so a discount rate can always be traced back to the ruleset used.
-pos_ensure_column($conn, 'orders',      'pos_mode',      "VARCHAR(20) NOT NULL DEFAULT 'bms'");
 
 $tx = false;
 try {
@@ -159,7 +156,7 @@ try {
     // Who made the sale & Customer info
     $createdBy = $_SESSION['username'] ?? null;
 
-    $allowedCustomerTypes = ['Cash', 'Staff', 'Student', 'Corporate'];
+    $allowedCustomerTypes = ['Cash', 'Staff', 'Student'];
     $customerType = !empty($data['customer_type']) ? trim($data['customer_type']) : 'Cash';
     if (!in_array($customerType, $allowedCustomerTypes, true)) {
         $customerType = 'Cash';
@@ -167,105 +164,67 @@ try {
     $customerName = !empty($data['customer_name']) ? trim($data['customer_name']) : null;
     if ($customerType === 'Cash') {
         $customerName = null;
-    } elseif ($customerName === null || $customerName === '') {
-        // Staff/Student/Corporate selected but no name supplied
+    } elseif ($customerName === null) {
+        // Staff/Student selected but no name supplied
         throw new Exception('customer_name_required');
     }
 
-    // Which discount ruleset to apply. Client sends this, but it only ever selects
-    // WHICH tier table to use - the actual math below is still computed server-side.
-    $posMode = (!empty($data['pos_mode']) && $data['pos_mode'] === 'award') ? 'award' : 'bms';
-
     // Server is the source of truth for money math - never trust client-sent totals.
-    if ($customerType === 'Corporate') {
-        $subtotal = 0.0;
-        $discount = 0.0;
+    // Tiered discount by TOTAL quantity across all items in the cart (not distinct
+    // product rows). Must stay in sync with getTieredDiscount() in pos-assets/js/cart.js:
+    //   total qty 1        -> 0%
+    //   total qty 2        -> 10%
+    //   total qty 3 or more -> 15%
+    $totalQty = 0;
+    foreach ($items as $it) {
+        $totalQty += (int)$it['qty'];
+    }
+    $discountRate = 0.0;
+    if ($totalQty >= 3) {
+        $discountRate = 0.15;
+    } elseif ($totalQty === 2) {
+        $discountRate = 0.10;
+    } elseif ($totalQty === 1) {
         $discountRate = 0.0;
-        $afterDiscount = 0.0;
-        $tax = 0.0;
-        $total = 0.0;
-        foreach ($items as &$it) {
-            $it['price'] = 0.0;
-            $it['discount'] = 0.0;
-            $it['line_sub'] = 0.0;
-        }
-        unset($it);
-    } else {
-        // Tiered discount by TOTAL quantity across all items in the cart (not distinct
-        // product rows). Must stay in sync with getTieredDiscount() in pos-assets/js/cart.js.
-        $totalQty = 0;
-        foreach ($items as $it) {
-            $totalQty += (int)$it['qty'];
-        }
+    }
+    $discount = $subtotal * $discountRate;
+    if ($discount < 0) $discount = 0;
 
-        $discountRate = 0.0;
-        if ($posMode === 'award') {
-            // Award Ceremony POS tiers:
-            //   Staff              -> 1 item     -> 5%
-            //   Other (non-Staff)  -> 2 items    -> 5%
-            //   Staff or Other     -> above 2    -> 10%
-            $isStaff = ($customerType === 'Staff');
-            if ($totalQty > 2) {
-                $discountRate = 0.10;
-            } elseif ($isStaff && $totalQty >= 1) {
-                $discountRate = 0.05;
-            } elseif (!$isStaff && $totalQty >= 2) {
-                $discountRate = 0.05;
+    // Allocate total discount proportionally to each line (penny-safe)
+    // so sum(item.discount) == order.discount exactly.
+    $totalDiscountAllocated = 0.0;
+    $itemCount = count($items);
+    foreach ($items as $idx => &$it) {
+        if ($subtotal > 0 && $discount > 0) {
+            if ($idx < $itemCount - 1) {
+                $share = (float)($it['line_sub'] / $subtotal) * $discount;
+                $share = floor($share * 100) / 100; // 2dp round-down
+                $it['discount'] = $share;
+                $totalDiscountAllocated += $share;
             } else {
-                $discountRate = 0.0;
+                // Last item absorbs the rounding remainder
+                $it['discount'] = $discount - $totalDiscountAllocated;
             }
         } else {
-            // BMS POS tiers (unchanged):
-            //   total qty 1         -> 0%
-            //   total qty 2         -> 10%
-            //   total qty 3 or more -> 15%
-            if ($totalQty >= 3) {
-                $discountRate = 0.15;
-            } elseif ($totalQty === 2) {
-                $discountRate = 0.10;
-            } elseif ($totalQty === 1) {
-                $discountRate = 0.0;
-            }
+            $it['discount'] = 0.0;
         }
-        $discount = $subtotal * $discountRate;
-        if ($discount < 0) $discount = 0;
-
-        // Allocate total discount proportionally to each line (penny-safe)
-        // so sum(item.discount) == order.discount exactly.
-        $totalDiscountAllocated = 0.0;
-        $itemCount = count($items);
-        foreach ($items as $idx => &$it) {
-            if ($subtotal > 0 && $discount > 0) {
-                if ($idx < $itemCount - 1) {
-                    $share = (float)($it['line_sub'] / $subtotal) * $discount;
-                    $share = floor($share * 100) / 100; // 2dp round-down
-                    $it['discount'] = $share;
-                    $totalDiscountAllocated += $share;
-                } else {
-                    // Last item absorbs the rounding remainder
-                    $it['discount'] = $discount - $totalDiscountAllocated;
-                }
-            } else {
-                $it['discount'] = 0.0;
-            }
-        }
-        unset($it);
-
-        $afterDiscount = $subtotal - $discount;
-        if ($afterDiscount < 0) $afterDiscount = 0;
-
-        $taxRate = 0.0; // keep in sync with taxRate in pos-assets/js/cart.js
-        $tax = $afterDiscount * $taxRate;
-        $total = $afterDiscount + $tax;
     }
+    unset($it);
 
-    $st = mysqli_prepare($conn, 'INSERT INTO orders(subtotal,discount,discount_rate,tax,total,customer_type,customer_name,created_by,pos_mode) VALUES(?,?,?,?,?,?,?,?,?)');
+    $afterDiscount = $subtotal - $discount;
+    if ($afterDiscount < 0) $afterDiscount = 0;
+
+    $taxRate = 0.0; // keep in sync with taxRate in pos-assets/js/cart.js
+    $tax = $afterDiscount * $taxRate;
+    $total = $afterDiscount + $tax;
+
+    $st = mysqli_prepare($conn, 'INSERT INTO orders(subtotal,discount,discount_rate,tax,total,customer_type,customer_name,created_by) VALUES(?,?,?,?,?,?,?,?)');
     $subtotalS = number_format($subtotal, 2, '.', '');
     $discountS = number_format($discount, 2, '.', '');
     $discountRateS = number_format($discountRate, 4, '.', '');
     $taxS = number_format($tax, 2, '.', '');
     $totalS = number_format($total, 2, '.', '');
-    mysqli_stmt_bind_param($st, 'sssssssss', $subtotalS, $discountS, $discountRateS, $taxS, $totalS, $customerType, $customerName, $createdBy, $posMode);
+    mysqli_stmt_bind_param($st, 'ssssssss', $subtotalS, $discountS, $discountRateS, $taxS, $totalS, $customerType, $customerName, $createdBy);
     mysqli_stmt_execute($st);
     mysqli_stmt_close($st);
     $order_id = (int)mysqli_insert_id($conn);

@@ -114,9 +114,6 @@ pos_ensure_column($conn, 'orders', 'customer_name',  "VARCHAR(255) DEFAULT NULL"
 pos_ensure_column($conn, 'orders',      'discount',      "DECIMAL(10,2) NOT NULL DEFAULT 0.00");
 pos_ensure_column($conn, 'orders',      'discount_rate', "DECIMAL(5,4)  NOT NULL DEFAULT 0.0000");
 pos_ensure_column($conn, 'order_items', 'discount',      "DECIMAL(10,2) NOT NULL DEFAULT 0.00");
-// Which POS mode (BMS POS vs Award Ceremony POS) was active for this sale - kept for
-// reporting/audit so a discount rate can always be traced back to the ruleset used.
-pos_ensure_column($conn, 'orders',      'pos_mode',      "VARCHAR(20) NOT NULL DEFAULT 'bms'");
 
 $tx = false;
 try {
@@ -172,10 +169,6 @@ try {
         throw new Exception('customer_name_required');
     }
 
-    // Which discount ruleset to apply. Client sends this, but it only ever selects
-    // WHICH tier table to use - the actual math below is still computed server-side.
-    $posMode = (!empty($data['pos_mode']) && $data['pos_mode'] === 'award') ? 'award' : 'bms';
-
     // Server is the source of truth for money math - never trust client-sent totals.
     if ($customerType === 'Corporate') {
         $subtotal = 0.0;
@@ -192,40 +185,21 @@ try {
         unset($it);
     } else {
         // Tiered discount by TOTAL quantity across all items in the cart (not distinct
-        // product rows). Must stay in sync with getTieredDiscount() in pos-assets/js/cart.js.
+        // product rows). Must stay in sync with getTieredDiscount() in pos-assets/js/cart.js:
+        //   total qty 1        -> 0%
+        //   total qty 2        -> 10%
+        //   total qty 3 or more -> 15%
         $totalQty = 0;
         foreach ($items as $it) {
             $totalQty += (int)$it['qty'];
         }
-
         $discountRate = 0.0;
-        if ($posMode === 'award') {
-            // Award Ceremony POS tiers:
-            //   Staff              -> 1 item     -> 5%
-            //   Other (non-Staff)  -> 2 items    -> 5%
-            //   Staff or Other     -> above 2    -> 10%
-            $isStaff = ($customerType === 'Staff');
-            if ($totalQty > 2) {
-                $discountRate = 0.10;
-            } elseif ($isStaff && $totalQty >= 1) {
-                $discountRate = 0.05;
-            } elseif (!$isStaff && $totalQty >= 2) {
-                $discountRate = 0.05;
-            } else {
-                $discountRate = 0.0;
-            }
-        } else {
-            // BMS POS tiers (unchanged):
-            //   total qty 1         -> 0%
-            //   total qty 2         -> 10%
-            //   total qty 3 or more -> 15%
-            if ($totalQty >= 3) {
-                $discountRate = 0.15;
-            } elseif ($totalQty === 2) {
-                $discountRate = 0.10;
-            } elseif ($totalQty === 1) {
-                $discountRate = 0.0;
-            }
+        if ($totalQty >= 3) {
+            $discountRate = 0.15;
+        } elseif ($totalQty === 2) {
+            $discountRate = 0.10;
+        } elseif ($totalQty === 1) {
+            $discountRate = 0.0;
         }
         $discount = $subtotal * $discountRate;
         if ($discount < 0) $discount = 0;
@@ -259,13 +233,13 @@ try {
         $total = $afterDiscount + $tax;
     }
 
-    $st = mysqli_prepare($conn, 'INSERT INTO orders(subtotal,discount,discount_rate,tax,total,customer_type,customer_name,created_by,pos_mode) VALUES(?,?,?,?,?,?,?,?,?)');
+    $st = mysqli_prepare($conn, 'INSERT INTO orders(subtotal,discount,discount_rate,tax,total,customer_type,customer_name,created_by) VALUES(?,?,?,?,?,?,?,?)');
     $subtotalS = number_format($subtotal, 2, '.', '');
     $discountS = number_format($discount, 2, '.', '');
     $discountRateS = number_format($discountRate, 4, '.', '');
     $taxS = number_format($tax, 2, '.', '');
     $totalS = number_format($total, 2, '.', '');
-    mysqli_stmt_bind_param($st, 'sssssssss', $subtotalS, $discountS, $discountRateS, $taxS, $totalS, $customerType, $customerName, $createdBy, $posMode);
+    mysqli_stmt_bind_param($st, 'ssssssss', $subtotalS, $discountS, $discountRateS, $taxS, $totalS, $customerType, $customerName, $createdBy);
     mysqli_stmt_execute($st);
     mysqli_stmt_close($st);
     $order_id = (int)mysqli_insert_id($conn);
