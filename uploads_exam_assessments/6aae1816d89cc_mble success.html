@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>Request Submitted - Scholar Glass</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap"
+    rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+    rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+    rel="stylesheet">
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-container-lowest": "#ffffff",
+            "surface-container-high": "#e6e8ea",
+            "tertiary-fixed-dim": "#66dd8b",
+            "secondary-fixed-dim": "#2ddbde",
+            "on-primary-fixed": "#001b3c",
+            "inverse-primary": "#a7c8ff",
+            "error-container": "#ffdad6",
+            "on-secondary-fixed-variant": "#004f51",
+            "on-primary-fixed-variant": "#1f477b",
+            "surface-dim": "#d8dadc",
+            "secondary-container": "#56f5f8",
+            "outline-variant": "#c3c6d5",
+            "on-surface": "#191c1e",
+            "on-tertiary-fixed-variant": "#005227",
+            "inverse-on-surface": "#eff1f3",
+            "on-error": "#ffffff",
+            "error": "#ba1a1a",
+            "surface-variant": "#e0e3e5",
+            "background": "#f7f9fb",
+            "primary-fixed-dim": "#a7c8ff",
+            "on-tertiary-container": "#5ed584",
+            "secondary": "#00696b",
+            "on-tertiary-fixed": "#00210c",
+            "on-secondary": "#ffffff",
+            "surface-tint": "#3a5f94",
+            "on-surface-variant": "#434653",
+            "surface-container": "#eceef0",
+            "tertiary-fixed": "#83fba5",
+            "secondary-fixed": "#5af8fb",
+            "outline": "#737784",
+            "on-error-container": "#93000a",
+            "surface-container-highest": "#e0e3e5",
+            "surface-container-low": "#f2f4f6",
+            "on-background": "#191c1e",
+            "on-tertiary": "#ffffff",
+            "tertiary-container": "#005a2b",
+            "on-primary-container": "#9cc0fb",
+            "tertiary": "#00401d",
+            "primary": "#063669",
+            "on-secondary-container": "#006e70",
+            "inverse-surface": "#2d3133",
+            "primary-fixed": "#d5e3ff",
+            "primary-container": "#274e82",
+            "on-primary": "#ffffff",
+            "surface-bright": "#f7f9fb",
+            "surface": "#f7f9fb",
+            "on-secondary-fixed": "#002020"
+          },
+          fontFamily: {
+            "headline": ["Manrope"],
+            "body": ["Inter"],
+            "label": ["Inter"]
+          },
+          borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+        },
+      },
+    }
+  </script>
+  <style>
+    .glass-card {
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .ghost-border {
+      border: 1px solid rgba(195, 198, 213, 0.15);
+    }
+
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+  </style>
+  <style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+
+<body class="bg-surface font-body text-on-surface min-h-screen flex flex-col items-center justify-center p-6">
+  <!-- Success Confirmation Shell -->
+  <main class="w-full max-w-md flex flex-col items-center space-y-12">
+    <!-- Logo Section -->
+    <div class="flex flex-col items-center space-y-4">
+      <div
+        class="w-20 h-20 rounded-xl overflow-hidden shadow-sm flex items-center justify-center bg-surface-container-lowest ghost-border">
+        <img alt="BMS Portal Logo" class="w-16 h-16 object-contain"
+          data-alt="Official logo for the School of Science portal, featuring a technical blue crest with scientific motifs on a white background"
+          src="https://202.124.164.112:8140/img/logo4.png" style="">
+      </div>
+      <span class="font-headline font-black text-primary tracking-tight text-xl" style="">BMS CAMPUS</span>
+    </div>
+    <!-- Confirmation Content Card -->
+    <div
+      class="w-full glass-card rounded-xl p-8 flex flex-col items-center text-center space-y-8 shadow-sm ghost-border relative overflow-hidden">
+      <!-- Decorative Background Accent -->
+      <div class="absolute -top-12 -right-12 w-32 h-32 bg-secondary/5 rounded-full blur-3xl"></div>
+      <!-- Success Icon -->
+      <div class="w-20 h-20 bg-tertiary rounded-full flex items-center justify-center shadow-lg shadow-tertiary/20">
+        <span class="material-symbols-outlined text-white text-4xl" data-icon="check_circle"
+          style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span>
+      </div>
+      <div class="space-y-3">
+        <h1 class="font-headline font-extrabold text-3xl text-primary tracking-tight" style="">Success!</h1>
+        <p class="text-on-surface-variant font-body leading-relaxed" style="">Your Exam Admission Request has been
+          successfully submitted.</p>
+      </div>
+      <!-- Confirmation ID Block -->
+      <!-- Detail Summary (Editorial Style) -->
+    </div>
+    <!-- Action Section -->
+    <div class="w-full flex flex-col space-y-4">
+      <button
+        class="w-full py-4 px-6 bg-gradient-to-r from-primary to-primary-container text-white font-headline font-bold rounded-full shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform active:scale-95 flex items-center justify-center gap-2"
+        style="">
+        <span class="" style="">Done</span>
+      </button>
+      <button
+        class="w-full py-4 px-6 bg-transparent text-secondary font-headline font-semibold rounded-full border border-secondary/20 hover:bg-secondary/5 transition-colors flex items-center justify-center gap-2"
+        style="">
+        <span class="material-symbols-outlined text-lg" data-icon="download" style="">download</span>
+        <span class="" style="">Download Receipts</span>
+      </button>
+    </div>
+    <!-- Helper Footer -->
+    <p class="text-xs text-on-surface-variant text-center max-w-[280px]" style="">
+      A confirmation email has been sent to your academic inbox. Need help?
+      <a class="text-secondary font-bold underline decoration-secondary/30" href="#" style="">Contact Support</a>
+    </p>
+  </main>
+  <!-- Progress Indicator (Minimalist Science Guide) -->
+  <div class="fixed top-0 left-0 w-full h-1 bg-surface-container">
+    <div class="h-full w-full bg-gradient-to-r from-secondary to-tertiary-fixed-dim"></div>
+  </div>
+</body>
+
+</html>

@@ -1,5 +1,5 @@
 <?php
-//session_start();
+session_start();
 $Session_username = $_SESSION['username'] ?? null;
 include("database/connection.php");
 include("includes/header.php");

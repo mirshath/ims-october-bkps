@@ -48,30 +48,13 @@ if (!$result) {
     die("Query failed: " . mysqli_error($conn));
 }
 
-// Buffer all rows first so we can detect duplicate NICs across the whole result set
-$rows = [];
-$nicCounts = [];
-while ($row = mysqli_fetch_assoc($result)) {
-    $rows[] = $row;
-    $nic = trim($row['nic']);
-    if ($nic !== '') {
-        $nicCounts[$nic] = ($nicCounts[$nic] ?? 0) + 1;
-    }
-}
-
 // Generate table rows
 $output = "";
-foreach ($rows as $row) {
-    $nic = trim($row['nic']);
-    $nicIsDuplicate = ($nic !== '' && $nicCounts[$nic] > 1);
-    $nicCellHtml = $nicIsDuplicate
-        ? "<span style='color:#dc3545; font-weight:600;' title='Duplicate NIC'>" . htmlspecialchars($row['nic']) . "</span>"
-        : htmlspecialchars($row['nic']);
-
+while ($row = mysqli_fetch_assoc($result)) {
     $output .= "<tr>";
     $output .= "<td>" . htmlspecialchars($row['new_student_registration_id']) . "</td>";
     $output .= "<td>" . htmlspecialchars($row['student_registration_id']) . "</td>";
-    $output .= "<td>" . $nicCellHtml . "</td>";
+    $output .= "<td>" . htmlspecialchars($row['nic']) . "</td>";
     $output .= "<td>" . htmlspecialchars($row['title']) . "</td>";
     $output .= "<td>" . htmlspecialchars($row['student_name']) . "</td>";
     $output .= "<td>" . htmlspecialchars($row['certificate_name']) . "</td>";
@@ -90,7 +73,7 @@ foreach ($rows as $row) {
     $output .= "</tr>";
 }
 
-if (count($rows) == 0) {
+if (mysqli_num_rows($result) == 0) {
     $output = "<tr><td colspan='18' class='text-center'>No results found</td></tr>";
 }
 

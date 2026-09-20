@@ -107,7 +107,7 @@ if ($isEdit) {
                 <div class="p-3" style="font-size: 14px;">
                     <div class="d-sm-flex align-items-center justify-content-between mb-4">
                         <h4 class="h4 mb-0 text-gray-800">
-                            <?php echo $isEdit ? 'Edit Assesment Document Send' : 'Assesment Document Send'; ?>
+                            <?php echo $isEdit ? 'Edit Assesment Document Send (Additional Document ONLY)' : 'Assesment Document Send (Additional Document ONLY)'; ?>
                         </h4>
                     </div>
 
@@ -348,7 +348,7 @@ if ($isEdit) {
 
                 <div class="card shadow mb-4">
                     <div class="card-header py-3">
-                        <h6 class="m-0 font-weight-bold text-primary">Current Academic Assessments</h6>
+                        <h6 class="m-0 font-weight-bold text-primary">Current Academic Assessments (Additional Document ONLY)</h6>
                     </div>
 
                     <div class="card-body">

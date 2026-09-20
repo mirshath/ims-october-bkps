@@ -221,6 +221,7 @@ require_once 'PermissionChecking.php';
             <!-- Topbar -->
             <?php include("includes/topnav.php"); ?>
 
+
             <!-- Begin Page Content -->
             <div class="p-3">
                 <div class="d-sm-flex align-items-center justify-content-between mb-4">
@@ -265,16 +266,7 @@ require_once 'PermissionChecking.php';
                             </label>
                         </div>
                         <div class="col-md-8">
-                            <!--<select id="statusDropdown" class="form-select select2">-->
-                            <!--    <option value="">Select Status</option>-->
-                            <!--    <option value="active" selected>Active</option>-->
-                            <!--    <option value="drop">Dropped</option>-->
-                            <!--    <option value="transferred">Transferred</option>-->
-                            <!--    <option value="completed">Completed</option>-->
-                            <!--</select>-->
-
                             <select id="statusDropdown" class="form-select select2">
-
                                 <option value="active" selected>Active</option>
                                 <option value="transferred">Transferred</option>
                                 <option value="completed">Completed</option>
@@ -302,7 +294,7 @@ require_once 'PermissionChecking.php';
                                         <circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"></circle>
                                     </svg>
                                     <span>Advanced Filter</span>
-                                    <span class="col-filter-count" id="colFilterCount">8</span>
+                                    <span class="col-filter-count" id="colFilterCount">7</span>
                                     <svg class="col-filter-caret" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                         <polyline points="6 9 12 15 18 9"></polyline>
                                     </svg>
@@ -312,7 +304,7 @@ require_once 'PermissionChecking.php';
                                     <div class="col-filter-header">
                                         <div>
                                             <div class="col-filter-title">Select Columns</div>
-                                            <div class="col-filter-subtitle" id="colFilterSubtitle">8 of 18 selected</div>
+                                            <div class="col-filter-subtitle" id="colFilterSubtitle">7 of 18 selected</div>
                                         </div>
                                         <button type="button" class="col-filter-close" id="colFilterClose" aria-label="Close">&times;</button>
                                     </div>
@@ -337,6 +329,7 @@ require_once 'PermissionChecking.php';
                             <tr>
                                 <th>BMS Registration ID (AG)</th>
                                 <th>Program Registration ID</th>
+                                <th>Student Code (System)</th>
                                 <th>NIC</th>
                                 <th>Title</th>
                                 <th>Full Name</th>
@@ -352,7 +345,6 @@ require_once 'PermissionChecking.php';
                                 <th>Occupation</th>
                                 <th>Status</th>
                                 <th>Entered By</th>
-                                <th>Student Code (System)</th>
                             </tr>
                         </thead>
                         <tbody id="resultsBody">
@@ -375,16 +367,14 @@ require_once 'PermissionChecking.php';
             // ---------------------------------------------------------------
             // Must match the <th> order in the table exactly (index 0 - 17)
             const columnLabels = [
-                'BMS Registration ID (AG)', 'Program Registration ID', 'NIC', 'Title',
-                'Full Name', 'Name to be appeared', 'DOB', 'Nationality',
+                'BMS Registration ID (AG)', 'Program Registration ID', 'Student Code (System)',
+                'NIC', 'Title', 'Full Name', 'Name to be appeared', 'DOB', 'Nationality',
                 'Permanent Address', 'Current Address', 'Mobile', 'Telephone',
-                'Personal Email', 'BMS Email', 'Occupation', 'Status', 'Entered By',
-                'Student Code (System)'
+                'Personal Email', 'BMS Email', 'Occupation', 'Status', 'Entered By'
             ];
 
             // Columns visible by default (indexes into columnLabels)
-            // BMS Reg ID, Program Reg ID, NIC, Title, Full Name, Personal Email, BMS Email, Entered By
-            const defaultVisible = [0, 1, 2, 3, 4, 12, 13, 16];
+            const defaultVisible = [0, 1, 4, 5, 13, 14, 17];
 
             const $colMenu = $('#columnFilterMenu');
             const $colList = $('#colFilterList');
@@ -509,24 +499,6 @@ require_once 'PermissionChecking.php';
             // Initialize Select2
             $('.select2').select2();
 
-            // Directly load all programs (no university dropdown change needed)
-            // const universityId = 1;
-            // if (universityId) {
-            //     $.ajax({
-            //         // url: 'reports/AllStudents/fetch_programs_without_uni.php',
-            //         url: 'Batch_transer/fetch_programs_without_uni.php',
-            //         type: 'POST',
-            //         data: {
-            //             university_id: universityId
-            //         },
-            //         success: function (data) {
-            //             $('#programDropdown').html(data).trigger('change');
-            //         }
-            //     });
-            // } else {
-            //     $('#programDropdown').html('<option value="">Select Program</option>').trigger('change');
-            // }
-
             // Directly load all programs
             $.ajax({
                 url: 'Batch_transer/fetch_programs_without_uni.php',
@@ -581,7 +553,7 @@ require_once 'PermissionChecking.php';
                 }
 
                 // Show loading indicator in table
-                $('#resultsBody').html('<tr><td colspan="18" class="text-center">Loading...</td></tr>');
+                $('#resultsBody').html('<tr><td colspan="17" class="text-center">Loading...</td></tr>');
                 $('#resultsSection').show();
 
                 // Fetch filtered results
@@ -656,7 +628,7 @@ require_once 'PermissionChecking.php';
                     },
                     error: function(xhr, status, error) {
                         console.error('Error:', error);
-                        $('#resultsBody').html('<tr><td colspan="18" class="text-center text-danger">Error loading data: ' + error + '</td></tr>');
+                        $('#resultsBody').html('<tr><td colspan="17" class="text-center text-danger">Error loading data: ' + error + '</td></tr>');
                     },
                     complete: function() {
                         // Re-enable button

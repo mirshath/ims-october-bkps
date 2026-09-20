@@ -299,7 +299,7 @@ require_once 'PermissionChecking.php';
             // Payment Plan
             var plan = data.add_payment_plan_table;
             var planHtml = '<div class="table-responsive"><table class="table table-hover table-sm">';
-            planHtml += '<thead class="thead-light"><tr><th>Prog-Batch</th><th>Reg Fee (LKR)</th><th>Course (LKR)</th><th>Uni (LKR)</th><th>Uni (GBP)</th><th>Uni (USD)</th><th>By</th></tr></thead><tbody>';
+            planHtml += '<thead class="thead-light"><tr><th>Prog-Batch</th><th>Reg Fee (LKR)</th><th>Course (LKR)</th><th>Uni (LKR)</th><th>Uni (GBP)</th><th>Uni (USD)</th><th>By</th><th>Created At</th><th></tr></thead><tbody>';
             if (plan && plan.length > 0) {
                 plan.forEach(function(item) {
                     planHtml += '<tr>';
@@ -310,6 +310,7 @@ require_once 'PermissionChecking.php';
                     planHtml += '<td class="text-rights">' + parseFloat(item.university_fee_GBP || 0).toLocaleString() + '</td>';
                     planHtml += '<td class="text-rights">' + parseFloat(item.university_fee_USD || 0).toLocaleString() + '</td>';
                     planHtml += '<td>' + (item.entered_by || '-') + '</td>';
+                    planHtml += '<td>' + (item.created_at || '-') + '</td>';
                     planHtml += '</tr>';
                 });
             } else {

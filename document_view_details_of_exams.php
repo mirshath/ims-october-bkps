@@ -15,57 +15,57 @@ if (!isset($_SESSION['username'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Assessment Document Send Details</title>
-    
+    <title>Assessment Document Send (Additional Document ONLY)</title>
+
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+
     <!-- DataTables CSS -->
     <link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
-    
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 
 <body>
 
-<!-- Page Wrapper -->
-<div id="wrapper">
-    <!-- Sidebar -->
-    <?php include("nav.php"); ?>
-    <!-- Content Wrapper -->
-    <div id="content-wrapper" class="d-flex flex-column">
-        <!-- Main Content -->
-        <div id="content">
-            <!-- Topbar -->
-            <?php include("includes/topnav.php"); ?>
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+        <!-- Sidebar -->
+        <?php include("nav.php"); ?>
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+            <!-- Main Content -->
+            <div id="content">
+                <!-- Topbar -->
+                <?php include("includes/topnav.php"); ?>
 
-            <!-- Begin Page Content -->
-            <div class="p-3">
-                <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                    <h4 class="h4 mb-0 text-gray-800">Assessment Document Send Details</h4>
-                </div>
+                <!-- Begin Page Content -->
+                <div class="p-3">
+                    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                        <h4 class="h4 mb-0 text-gray-800">Assessment Document Send (Additional Document ONLY)</h4>
+                    </div>
 
-                <!-- Filter Form -->
-                <div class="row mb-5">
-                    <div class="col-md-12">
-                        <div class="card">
-                            <div class="card-header d-flex align-items-center" style="height: 60px;">
-                                <span class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
-                                    <i class="fas fa-plus-circle"></i>
-                                </span> &nbsp;&nbsp;&nbsp;&nbsp;
-                                <h6 class="mb-0 me-2">Assessment Document Send Details</h6>
-                            </div>
-                            <div class="card-body">
-                                <?php
-                                if (isset($_GET['id'])) {
-                                    $id = $_GET['id'];
+                    <!-- Filter Form -->
+                    <div class="row mb-5">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header d-flex align-items-center" style="height: 60px;">
+                                    <span class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                        <i class="fas fa-plus-circle"></i>
+                                    </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                                    <h6 class="mb-0 me-2">Assessment Document Send (Additional Document ONLY)</h6>
+                                </div>
+                                <div class="card-body">
+                                    <?php
+                                    if (isset($_GET['id'])) {
+                                        $id = $_GET['id'];
 
-                                    // Updated query with LEFT JOINs to handle potential NULL values
-                                    $query = "
+                                        // Updated query with LEFT JOINs to handle potential NULL values
+                                        $query = "
                                         SELECT a.*, 
                                             p.program_name, 
                                             b.batch_name, 
@@ -80,153 +80,153 @@ if (!isset($_SESSION['username'])) {
                                         LEFT JOIN sub_assign_components sc ON a.sub_component_id = sc.id 
                                         WHERE a.id = ?";
 
-                                    $stmt = $conn->prepare($query);
-                                    $stmt->bind_param("i", $id);
-                                    $stmt->execute();
-                                    $result = $stmt->get_result();
-                                    $assessment = $result->fetch_assoc();
+                                        $stmt = $conn->prepare($query);
+                                        $stmt->bind_param("i", $id);
+                                        $stmt->execute();
+                                        $result = $stmt->get_result();
+                                        $assessment = $result->fetch_assoc();
 
-                                    if ($assessment) {
-                                        // Display assessment details in a table
-                                ?>
+                                        if ($assessment) {
+                                            // Display assessment details in a table
+                                    ?>
 
-                                        <div class="table-responsive">
-                                            <div class="mb-3">
-                                                <button id="sendAllEmails" class="btn btn-primary" onclick="sendAllEmails(<?php echo $assessment['id']; ?>)">
-                                                    <i class="fas fa-envelope"></i> Send All Emails
-                                                    <span id="spinner" class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span>
-                                                </button>
-                                                <button class="btn btn-secondary" onclick="toggleEmailSummary()">
-                                                    <i class="fas fa-chart-bar"></i> Email Summary
-                                                </button>
-                                            </div>
-
-                                            <!-- Email Summary Card (Initially Hidden) -->
-                                            <div id="emailSummaryCard" class="card mb-3" style="display: none;">
-                                                <div class="card-header">
-                                                    <h6 class="mb-0">Email Sending Summary</h6>
+                                            <div class="table-responsive">
+                                                <div class="mb-3">
+                                                    <button id="sendAllEmails" class="btn btn-primary" onclick="sendAllEmails(<?php echo $assessment['id']; ?>)">
+                                                        <i class="fas fa-envelope"></i> Send All Emails
+                                                        <span id="spinner" class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span>
+                                                    </button>
+                                                    <button class="btn btn-secondary" onclick="toggleEmailSummary()">
+                                                        <i class="fas fa-chart-bar"></i> Email Summary
+                                                    </button>
                                                 </div>
-                                                <div class="card-body">
-                                                    <div class="row">
-                                                        <div class="col-md-3">
-                                                            <div class="text-center">
-                                                                <h5 class="text-success" id="sentCount">0</h5>
-                                                                <small>Sent</small>
+
+                                                <!-- Email Summary Card (Initially Hidden) -->
+                                                <div id="emailSummaryCard" class="card mb-3" style="display: none;">
+                                                    <div class="card-header">
+                                                        <h6 class="mb-0">Email Sending Summary</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div class="row">
+                                                            <div class="col-md-3">
+                                                                <div class="text-center">
+                                                                    <h5 class="text-success" id="sentCount">0</h5>
+                                                                    <small>Sent</small>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                        <div class="col-md-3">
-                                                            <div class="text-center">
-                                                                <h5 class="text-danger" id="failedCount">0</h5>
-                                                                <small>Failed</small>
+                                                            <div class="col-md-3">
+                                                                <div class="text-center">
+                                                                    <h5 class="text-danger" id="failedCount">0</h5>
+                                                                    <small>Failed</small>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                        <div class="col-md-3">
-                                                            <div class="text-center">
-                                                                <h5 class="text-warning" id="notSentCount">0</h5>
-                                                                <small>Not Sent</small>
+                                                            <div class="col-md-3">
+                                                                <div class="text-center">
+                                                                    <h5 class="text-warning" id="notSentCount">0</h5>
+                                                                    <small>Not Sent</small>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                        <div class="col-md-3">
-                                                            <div class="text-center">
-                                                                <h5 class="text-info" id="totalCount">0</h5>
-                                                                <small>Total</small>
+                                                            <div class="col-md-3">
+                                                                <div class="text-center">
+                                                                    <h5 class="text-info" id="totalCount">0</h5>
+                                                                    <small>Total</small>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                            <table class="table table-striped table-hover" style="width: 80%; font-size: 11px;">
-                                                <tr>
-                                                    <td class="bg-secondary text-white" style="width: 40%;">ID</td>
-                                                    <td><?php echo htmlspecialchars($assessment['id']); ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="bg-secondary text-white">Programme Name</td>
-                                                    <td><?php echo htmlspecialchars($assessment['program_name']); ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="bg-secondary text-white">Batch Name</td>
-                                                    <td><?php echo htmlspecialchars($assessment['batch_name']); ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="bg-secondary text-white">Module Name</td>
-                                                    <td><?php echo htmlspecialchars($assessment['module_name']); ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="bg-secondary text-white">Main Component Name</td>
-                                                    <td><?php echo htmlspecialchars($assessment['as_main_component_name']); ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="bg-secondary text-white">Sub Component Name</td>
-                                                    <td><?php echo htmlspecialchars($assessment['sub_component_name'] ?? 'N/A'); ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="bg-secondary text-white">Year</td>
-                                                    <td><?php echo htmlspecialchars($assessment['year_id']); ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="bg-secondary text-white">Semester</td>
-                                                    <td><?php echo htmlspecialchars($assessment['semester_id']); ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="bg-secondary text-white">Subject of Body</td>
-                                                    <td><?php echo htmlspecialchars($assessment['subject_body'] ?? 'N/A'); ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="bg-secondary text-white">Description</td>
-                                                    <td>
-                                                        <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
-                                                            <?php echo $assessment['description']; ?>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                <?php for ($i = 1; $i <= 4; $i++): ?>
+                                                <table class="table table-striped table-hover" style="width: 80%; font-size: 11px;">
                                                     <tr>
-                                                        <td class="bg-secondary text-white">Attachment <?php echo $i; ?></td>
+                                                        <td class="bg-secondary text-white" style="width: 40%;">ID</td>
+                                                        <td><?php echo htmlspecialchars($assessment['id']); ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="bg-secondary text-white">Programme Name</td>
+                                                        <td><?php echo htmlspecialchars($assessment['program_name']); ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="bg-secondary text-white">Batch Name</td>
+                                                        <td><?php echo htmlspecialchars($assessment['batch_name']); ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="bg-secondary text-white">Module Name</td>
+                                                        <td><?php echo htmlspecialchars($assessment['module_name']); ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="bg-secondary text-white">Main Component Name</td>
+                                                        <td><?php echo htmlspecialchars($assessment['as_main_component_name']); ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="bg-secondary text-white">Sub Component Name</td>
+                                                        <td><?php echo htmlspecialchars($assessment['sub_component_name'] ?? 'N/A'); ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="bg-secondary text-white">Year</td>
+                                                        <td><?php echo htmlspecialchars($assessment['year_id']); ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="bg-secondary text-white">Semester</td>
+                                                        <td><?php echo htmlspecialchars($assessment['semester_id']); ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="bg-secondary text-white">Subject of Body</td>
+                                                        <td><?php echo htmlspecialchars($assessment['subject_body'] ?? 'N/A'); ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="bg-secondary text-white">Description</td>
                                                         <td>
-                                                            <?php if (!empty($assessment["attachment_$i"])): ?>
-                                                                <a href="uploads_exam_assessments/<?php echo htmlspecialchars($assessment["attachment_$i"]); ?>" target="_blank" class="text-primary">
-                                                                    <?php echo htmlspecialchars(basename($assessment["attachment_$i"])); ?>
-                                                                </a>
-                                                            <?php else: ?>
-                                                                <span class="text-muted">No attachment</span>
-                                                            <?php endif; ?>
+                                                            <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
+                                                                <?php echo $assessment['description']; ?>
+                                                            </div>
                                                         </td>
                                                     </tr>
-                                                <?php endfor; ?>
-                                                <tr>
-                                                    <td class="bg-secondary text-white">Created At</td>
-                                                    <td><?php echo date('Y-m-d H:i:s', strtotime($assessment['created_at'])); ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="bg-secondary text-white">Entered By</td>
-                                                    <td><?php echo htmlspecialchars($assessment['entered_by'] ?? 'N/A'); ?></td>
-                                                </tr>
-                                            </table>
-                                        </div>
-
-                                        <!-- Separate Card for Allocated Students -->
-                                        <div class="card mt-4">
-                                            <div class="card-header d-flex align-items-center justify-content-between" style="height: 60px;">
-                                                <h6 class="mb-0 me-2">Allocated Students</h6>
-                                                <div>
-                                                    <button class="btn btn-sm btn-outline-primary" onclick="selectAllStudents()">
-                                                        <i class="fas fa-check-square"></i> Select All
-                                                    </button>
-                                                    <button class="btn btn-sm btn-outline-secondary" onclick="deselectAllStudents()">
-                                                        <i class="fas fa-square"></i> Deselect All
-                                                    </button>
-                                                </div>
+                                                    <?php for ($i = 1; $i <= 4; $i++): ?>
+                                                        <tr>
+                                                            <td class="bg-secondary text-white">Attachment <?php echo $i; ?></td>
+                                                            <td>
+                                                                <?php if (!empty($assessment["attachment_$i"])): ?>
+                                                                    <a href="uploads_exam_assessments/<?php echo htmlspecialchars($assessment["attachment_$i"]); ?>" target="_blank" class="text-primary">
+                                                                        <?php echo htmlspecialchars(basename($assessment["attachment_$i"])); ?>
+                                                                    </a>
+                                                                <?php else: ?>
+                                                                    <span class="text-muted">No attachment</span>
+                                                                <?php endif; ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endfor; ?>
+                                                    <tr>
+                                                        <td class="bg-secondary text-white">Created At</td>
+                                                        <td><?php echo date('Y-m-d H:i:s', strtotime($assessment['created_at'])); ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="bg-secondary text-white">Entered By</td>
+                                                        <td><?php echo htmlspecialchars($assessment['entered_by'] ?? 'N/A'); ?></td>
+                                                    </tr>
+                                                </table>
                                             </div>
-                                            <div class="card-body">
-                                                <?php
-                                                $programme_id = $assessment['programme_id'];
-                                                $batch_id = $assessment['batch_id'];
-                                                $assessment_id = $assessment['id'];
 
-                                                // Updated query to use the new email log table
-                                                $students_query = "
+                                            <!-- Separate Card for Allocated Students -->
+                                            <div class="card mt-4">
+                                                <div class="card-header d-flex align-items-center justify-content-between" style="height: 60px;">
+                                                    <h6 class="mb-0 me-2">Allocated Students</h6>
+                                                    <div>
+                                                        <button class="btn btn-sm btn-outline-primary" onclick="selectAllStudents()">
+                                                            <i class="fas fa-check-square"></i> Select All
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-secondary" onclick="deselectAllStudents()">
+                                                            <i class="fas fa-square"></i> Deselect All
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div class="card-body">
+                                                    <?php
+                                                    $programme_id = $assessment['programme_id'];
+                                                    $batch_id = $assessment['batch_id'];
+                                                    $assessment_id = $assessment['id'];
+
+                                                    // Updated query to use the new email log table
+                                                    $students_query = "
                                                 SELECT s.*, 
                                                     ap.student_registration_id,
                                                     (SELECT status FROM assesment_document_send_email_log 
@@ -246,21 +246,21 @@ if (!isset($_SESSION['username'])) {
                                                 WHERE ap.programme_code = ? AND ap.batch_id = ? AND ap.status = 'active'
                                                 ORDER BY s.first_name, s.last_name";
 
-                                                $students_stmt = $conn->prepare($students_query);
-                                                $students_stmt->bind_param("iiiiii", $assessment_id, $assessment_id, $assessment_id, $assessment_id, $programme_id, $batch_id);
-                                                $students_stmt->execute();
-                                                $students_result = $students_stmt->get_result();
-                                                $students = $students_result->fetch_all(MYSQLI_ASSOC);
+                                                    $students_stmt = $conn->prepare($students_query);
+                                                    $students_stmt->bind_param("iiiiii", $assessment_id, $assessment_id, $assessment_id, $assessment_id, $programme_id, $batch_id);
+                                                    $students_stmt->execute();
+                                                    $students_result = $students_stmt->get_result();
+                                                    $students = $students_result->fetch_all(MYSQLI_ASSOC);
 
-                                                // Count email statuses for summary
-                                                $sentCount = 0;
-                                                $failedCount = 0;
-                                                $notSentCount = 0;
+                                                    // Count email statuses for summary
+                                                    $sentCount = 0;
+                                                    $failedCount = 0;
+                                                    $notSentCount = 0;
 
-                                                // Display students in a DataTable with index
-                                                if ($students) {
-                                                    echo "<div class='table-responsive'>";
-                                                    echo "<table id='studentsTable' class='table table-striped table-hover' style='font-size: 12px;'>
+                                                    // Display students in a DataTable with index
+                                                    if ($students) {
+                                                        echo "<div class='table-responsive'>";
+                                                        echo "<table id='studentsTable' class='table table-striped table-hover' style='font-size: 12px;'>
                                                         <thead>
                                                             <tr>
                                                                 <th>#</th>
@@ -275,48 +275,48 @@ if (!isset($_SESSION['username'])) {
                                                         </thead>
                                                         <tbody>";
 
-                                                    // Initialize index counter
-                                                    $index = 1;
+                                                        // Initialize index counter
+                                                        $index = 1;
 
-                                                    foreach ($students as $student) {
-                                                        // Count statuses for summary
-                                                        if (empty($student['email_status'])) {
-                                                            $notSentCount++;
-                                                        } elseif ($student['email_status'] == 'sent') {
-                                                            $sentCount++;
-                                                        } else {
-                                                            $failedCount++;
-                                                        }
-
-                                                        // Format email status for display
-                                                        $emailStatusHtml = '';
-                                                        if (empty($student['email_status'])) {
-                                                            $emailStatusHtml = '<span class="badge bg-warning text-dark">Not Sent</span>';
-                                                        } else {
-                                                            $statusClass = ($student['email_status'] == 'sent') ? 'bg-success' : 'bg-danger';
-                                                            $statusText = ($student['email_status'] == 'sent') ? 'Sent' : 'Failed';
-                                                            $sentDate = !empty($student['email_sent_date']) ? date('M d, H:i', strtotime($student['email_sent_date'])) : '';
-                                                            $emailStatusHtml = "<span class='badge {$statusClass}'>{$statusText}</span>";
-                                                            if (!empty($sentDate)) {
-                                                                $emailStatusHtml .= "<br><small class='text-muted'>{$sentDate}</small>";
+                                                        foreach ($students as $student) {
+                                                            // Count statuses for summary
+                                                            if (empty($student['email_status'])) {
+                                                                $notSentCount++;
+                                                            } elseif ($student['email_status'] == 'sent') {
+                                                                $sentCount++;
+                                                            } else {
+                                                                $failedCount++;
                                                             }
-                                                            if ($student['email_status'] == 'failed' && !empty($student['error_message'])) {
-                                                                $emailStatusHtml .= "<br><small class='text-danger' title='" . htmlspecialchars($student['error_message']) . "'><i class='fas fa-exclamation-triangle'></i> Error</small>";
+
+                                                            // Format email status for display
+                                                            $emailStatusHtml = '';
+                                                            if (empty($student['email_status'])) {
+                                                                $emailStatusHtml = '<span class="badge bg-warning text-dark">Not Sent</span>';
+                                                            } else {
+                                                                $statusClass = ($student['email_status'] == 'sent') ? 'bg-success' : 'bg-danger';
+                                                                $statusText = ($student['email_status'] == 'sent') ? 'Sent' : 'Failed';
+                                                                $sentDate = !empty($student['email_sent_date']) ? date('M d, H:i', strtotime($student['email_sent_date'])) : '';
+                                                                $emailStatusHtml = "<span class='badge {$statusClass}'>{$statusText}</span>";
+                                                                if (!empty($sentDate)) {
+                                                                    $emailStatusHtml .= "<br><small class='text-muted'>{$sentDate}</small>";
+                                                                }
+                                                                if ($student['email_status'] == 'failed' && !empty($student['error_message'])) {
+                                                                    $emailStatusHtml .= "<br><small class='text-danger' title='" . htmlspecialchars($student['error_message']) . "'><i class='fas fa-exclamation-triangle'></i> Error</small>";
+                                                                }
                                                             }
-                                                        }
 
-                                                        // Button text based on status
-                                                        $buttonText = 'Send Email';
-                                                        $buttonClass = 'btn-primary';
-                                                        if ($student['email_status'] == 'sent') {
-                                                            $buttonText = 'Resend Email';
-                                                            $buttonClass = 'btn-info';
-                                                        } elseif ($student['email_status'] == 'failed') {
-                                                            $buttonText = 'Retry Send';
-                                                            $buttonClass = 'btn-warning';
-                                                        }
+                                                            // Button text based on status
+                                                            $buttonText = 'Send Email';
+                                                            $buttonClass = 'btn-primary';
+                                                            if ($student['email_status'] == 'sent') {
+                                                                $buttonText = 'Resend Email';
+                                                                $buttonClass = 'btn-info';
+                                                            } elseif ($student['email_status'] == 'failed') {
+                                                                $buttonText = 'Retry Send';
+                                                                $buttonClass = 'btn-warning';
+                                                            }
 
-                                                        $buttonHtml = "
+                                                            $buttonHtml = "
                                                             <form class='email-form' data-student-email='" . htmlspecialchars($student['bms_email']) . "'>
                                                                 <input type='hidden' name='email' value='" . htmlspecialchars($student['bms_email']) . "'>
                                                                 <input type='hidden' name='student_name' value='" . htmlspecialchars($student['first_name']) . " " . htmlspecialchars($student['last_name']) . "'>
@@ -331,7 +331,7 @@ if (!isset($_SESSION['username'])) {
                                                                 </button>
                                                             </form>";
 
-                                                        echo "<tr>
+                                                            echo "<tr>
                                                             <td>" . $index++ . "</td>
                                                             <td>" . htmlspecialchars($student['student_registration_id'] ?? 'N/A') . "</td>
                                                             <td>" . htmlspecialchars($student['first_name']) . " " . htmlspecialchars($student['last_name']) . "</td>
@@ -343,13 +343,13 @@ if (!isset($_SESSION['username'])) {
                                                                 <input type='checkbox' class='remove-student' value='" . htmlspecialchars($student['bms_email']) . "'>
                                                             </td>
                                                         </tr>";
-                                                    }
+                                                        }
 
-                                                    echo "</tbody></table>";
-                                                    echo "</div>";
+                                                        echo "</tbody></table>";
+                                                        echo "</div>";
 
-                                                    // Add summary counts to JavaScript
-                                                    echo "<script>
+                                                        // Add summary counts to JavaScript
+                                                        echo "<script>
                                                         document.addEventListener('DOMContentLoaded', function() {
                                                             document.getElementById('sentCount').textContent = '{$sentCount}';
                                                             document.getElementById('failedCount').textContent = '{$failedCount}';
@@ -357,31 +357,32 @@ if (!isset($_SESSION['username'])) {
                                                             document.getElementById('totalCount').textContent = '" . count($students) . "';
                                                         });
                                                     </script>";
-                                                } else {
-                                                    echo "<div class='alert alert-info'>";
-                                                    echo "<i class='fas fa-info-circle'></i> No students allocated for this program and batch.";
-                                                    echo "</div>";
-                                                }
-                                                ?>
+                                                    } else {
+                                                        echo "<div class='alert alert-info'>";
+                                                        echo "<i class='fas fa-info-circle'></i> No students allocated for this program and batch.";
+                                                        echo "</div>";
+                                                    }
+                                                    ?>
+                                                </div>
                                             </div>
-                                        </div>
-                                <?php
+                                    <?php
+                                        } else {
+                                            echo "<div class='alert alert-warning'>";
+                                            echo "<i class='fas fa-exclamation-triangle'></i> ";
+                                            echo "<strong>Assessment Not Found!</strong><br>";
+                                            echo "No assessment found with ID: " . htmlspecialchars($id) . "<br>";
+                                            echo "Please verify the assessment ID and try again.";
+                                            echo "</div>";
+                                        }
                                     } else {
                                         echo "<div class='alert alert-warning'>";
                                         echo "<i class='fas fa-exclamation-triangle'></i> ";
-                                        echo "<strong>Assessment Not Found!</strong><br>";
-                                        echo "No assessment found with ID: " . htmlspecialchars($id) . "<br>";
-                                        echo "Please verify the assessment ID and try again.";
+                                        echo "<strong>No ID Provided!</strong><br>";
+                                        echo "Please access this page through the proper assessment link.";
                                         echo "</div>";
                                     }
-                                } else {
-                                    echo "<div class='alert alert-warning'>";
-                                    echo "<i class='fas fa-exclamation-triangle'></i> ";
-                                    echo "<strong>No ID Provided!</strong><br>";
-                                    echo "Please access this page through the proper assessment link.";
-                                    echo "</div>";
-                                }
-                                ?>
+                                    ?>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -389,591 +390,591 @@ if (!isset($_SESSION['username'])) {
             </div>
         </div>
     </div>
-</div>
 
-<!-- Email Sending Modal -->
-<div class="custom-modal" id="emailSendingModal" data-backdrop="static" data-keyboard="false">
-    <div class="custom-modal-dialog custom-modal-dialog-centered">
-        <div class="custom-modal-content">
-            <div class="custom-modal-header bg-primary text-white">
-                <h5 class="custom-modal-title">
-                    <i class="fas fa-envelope"></i> Sending Emails
-                </h5>
-            </div>
-            <div class="custom-modal-body text-center">
-                <div class="mb-3">
-                    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
-                        <span class="sr-only">Loading...</span>
+    <!-- Email Sending Modal -->
+    <div class="custom-modal" id="emailSendingModal" data-backdrop="static" data-keyboard="false">
+        <div class="custom-modal-dialog custom-modal-dialog-centered">
+            <div class="custom-modal-content">
+                <div class="custom-modal-header bg-primary text-white">
+                    <h5 class="custom-modal-title">
+                        <i class="fas fa-envelope"></i> Sending Emails
+                    </h5>
+                </div>
+                <div class="custom-modal-body text-center">
+                    <div class="mb-3">
+                        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                    </div>
+                    <h5 class="mb-3">Please Wait</h5>
+                    <p class="mb-2"><strong>Mail Sending in Progress...</strong></p>
+                    <p class="text-muted">
+                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                        Please don't refresh or close this page
+                    </p>
+                    <div class="progress mt-3">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                            role="progressbar" style="width: 100%"></div>
+                    </div>
+                    <div id="emailProgress" class="mt-3">
+                        <small class="text-muted">Preparing to send emails...</small>
                     </div>
                 </div>
-                <h5 class="mb-3">Please Wait</h5>
-                <p class="mb-2"><strong>Mail Sending in Progress...</strong></p>
-                <p class="text-muted">
-                    <i class="fas fa-exclamation-triangle text-warning"></i>
-                    Please don't refresh or close this page
-                </p>
-                <div class="progress mt-3">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
-                        role="progressbar" style="width: 100%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="custom-modal" id="emailSuccessModal">
+        <div class="custom-modal-dialog custom-modal-dialog-centered">
+            <div class="custom-modal-content">
+                <div class="custom-modal-header bg-success text-white">
+                    <h5 class="custom-modal-title">
+                        <i class="fas fa-check-circle"></i> Email Sending Complete
+                    </h5>
                 </div>
-                <div id="emailProgress" class="mt-3">
-                    <small class="text-muted">Preparing to send emails...</small>
+                <div class="custom-modal-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="text-success">Success!</h5>
+                    <p id="successMessage">Emails have been sent successfully.</p>
+                    <p class="text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        Page will refresh automatically in <span id="countdown">3</span> seconds...
+                    </p>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Success Modal -->
-<div class="custom-modal" id="emailSuccessModal">
-    <div class="custom-modal-dialog custom-modal-dialog-centered">
-        <div class="custom-modal-content">
-            <div class="custom-modal-header bg-success text-white">
-                <h5 class="custom-modal-title">
-                    <i class="fas fa-check-circle"></i> Email Sending Complete
-                </h5>
-            </div>
-            <div class="custom-modal-body text-center">
-                <div class="mb-3">
-                    <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+    <!-- Error Modal -->
+    <div class="custom-modal" id="emailErrorModal">
+        <div class="custom-modal-dialog custom-modal-dialog-centered">
+            <div class="custom-modal-content">
+                <div class="custom-modal-header bg-danger text-white">
+                    <h5 class="custom-modal-title">
+                        <i class="fas fa-exclamation-circle"></i> Email Sending Failed
+                    </h5>
+                    <button type="button" class="custom-close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
-                <h5 class="text-success">Success!</h5>
-                <p id="successMessage">Emails have been sent successfully.</p>
-                <p class="text-muted">
-                    <i class="fas fa-info-circle"></i>
-                    Page will refresh automatically in <span id="countdown">3</span> seconds...
-                </p>
+                <div class="custom-modal-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-exclamation-circle text-danger" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="text-danger">Error!</h5>
+                    <p id="errorMessage">An error occurred while sending emails.</p>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Error Modal -->
-<div class="custom-modal" id="emailErrorModal">
-    <div class="custom-modal-dialog custom-modal-dialog-centered">
-        <div class="custom-modal-content">
-            <div class="custom-modal-header bg-danger text-white">
-                <h5 class="custom-modal-title">
-                    <i class="fas fa-exclamation-circle"></i> Email Sending Failed
-                </h5>
-                <button type="button" class="custom-close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="custom-modal-body text-center">
-                <div class="mb-3">
-                    <i class="fas fa-exclamation-circle text-danger" style="font-size: 3rem;"></i>
-                </div>
-                <h5 class="text-danger">Error!</h5>
-                <p id="errorMessage">An error occurred while sending emails.</p>
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
+    <!-- DataTables JavaScript -->
+    <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap4.min.js"></script>
 
-<!-- DataTables JavaScript -->
-<script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap4.min.js"></script>
-
-<style>
-    /* Custom Modal Styles - Prevent backdrop click closing */
-    .custom-modal {
-        display: none;
-        position: fixed;
-        z-index: 1050;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        background-color: rgba(0, 0, 0, 0.5);
-    }
-
-    .custom-modal.show {
-        display: flex !important;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .custom-modal-dialog {
-        position: relative;
-        width: auto;
-        margin: 0.5rem;
-        pointer-events: none;
-        max-width: 500px;
-    }
-
-    .custom-modal-dialog-centered {
-        min-height: calc(100% - 1rem);
-        display: flex;
-        align-items: center;
-    }
-
-    .custom-modal-content {
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        width: 100%;
-        pointer-events: auto;
-        background-color: #fff;
-        background-clip: padding-box;
-        border: 1px solid rgba(0, 0, 0, 0.2);
-        border-radius: 10px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    }
-
-    .custom-modal-header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        padding: 1rem 1rem;
-        border-bottom: 1px solid #dee2e6;
-        border-top-left-radius: 9px;
-        border-top-right-radius: 9px;
-    }
-
-    .custom-modal-body {
-        position: relative;
-        flex: 1 1 auto;
-        padding: 1rem;
-    }
-
-    .custom-modal-title {
-        margin-bottom: 0;
-        line-height: 1.5;
-        font-size: 1.25rem;
-        font-weight: 500;
-    }
-
-    .custom-close {
-        padding: 1rem 1rem;
-        margin: -1rem -1rem -1rem auto;
-        background-color: transparent;
-        border: 0;
-        font-size: 1.5rem;
-        font-weight: 700;
-        line-height: 1;
-        color: #fff;
-        text-shadow: 0 1px 0 #fff;
-        opacity: 0.8;
-        cursor: pointer;
-    }
-
-    .custom-close:hover {
-        opacity: 1;
-    }
-
-    /* Animation for modal */
-    .custom-modal.fade {
-        transition: opacity 0.15s linear;
-    }
-
-    .custom-modal.fade .custom-modal-dialog {
-        transition: transform 0.3s ease-out;
-        transform: translate(0, -50px);
-    }
-
-    .custom-modal.show .custom-modal-dialog {
-        transform: none;
-    }
-
-    /* Progress bar animation */
-    .progress-bar-animated {
-        animation: progress-bar-stripes 1s linear infinite;
-    }
-
-    @keyframes progress-bar-stripes {
-        0% {
-            background-position: 1rem 0;
+    <style>
+        /* Custom Modal Styles - Prevent backdrop click closing */
+        .custom-modal {
+            display: none;
+            position: fixed;
+            z-index: 1050;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: rgba(0, 0, 0, 0.5);
         }
-        100% {
-            background-position: 0 0;
+
+        .custom-modal.show {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
         }
-    }
 
-    /* Spinner animation */
-    .spinner-border {
-        animation: spinner-border 0.75s linear infinite;
-    }
-
-    @keyframes spinner-border {
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    .btn-disabled-sending {
-        opacity: 0.6;
-        pointer-events: none;
-    }
-
-    /* Responsive modal */
-    @media (min-width: 576px) {
         .custom-modal-dialog {
+            position: relative;
+            width: auto;
+            margin: 0.5rem;
+            pointer-events: none;
             max-width: 500px;
-            margin: 1.75rem auto;
         }
-    }
 
-    @media (min-width: 992px) {
         .custom-modal-dialog-centered {
-            min-height: calc(100% - 3.5rem);
+            min-height: calc(100% - 1rem);
+            display: flex;
+            align-items: center;
         }
-    }
 
-    /* Prevent text selection on modal backdrop */
-    .custom-modal {
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
-    }
-
-    .custom-modal-content {
-        -webkit-user-select: text;
-        -moz-user-select: text;
-        -ms-user-select: text;
-        user-select: text;
-    }
-
-    /* Fix for dropdown menus */
-    .dropdown-menu {
-        z-index: 1050;
-    }
-
-    .navbar-nav .dropdown-menu {
-        position: absolute;
-    }
-</style>
-
-<script>
-    // Custom Modal JavaScript - Replace Bootstrap modal functionality
-    class CustomModal {
-        constructor(element) {
-            this.element = element;
-            this.isShown = false;
-            this.backdrop = null;
-            
-            // Bind events
-            this.bindEvents();
+        .custom-modal-content {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            pointer-events: auto;
+            background-color: #fff;
+            background-clip: padding-box;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
-        
-        bindEvents() {
-            // Close button functionality
-            const closeButtons = this.element.querySelectorAll('[data-dismiss="modal"], .custom-close');
-            closeButtons.forEach(button => {
-                button.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    this.hide();
+
+        .custom-modal-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            padding: 1rem 1rem;
+            border-bottom: 1px solid #dee2e6;
+            border-top-left-radius: 9px;
+            border-top-right-radius: 9px;
+        }
+
+        .custom-modal-body {
+            position: relative;
+            flex: 1 1 auto;
+            padding: 1rem;
+        }
+
+        .custom-modal-title {
+            margin-bottom: 0;
+            line-height: 1.5;
+            font-size: 1.25rem;
+            font-weight: 500;
+        }
+
+        .custom-close {
+            padding: 1rem 1rem;
+            margin: -1rem -1rem -1rem auto;
+            background-color: transparent;
+            border: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1;
+            color: #fff;
+            text-shadow: 0 1px 0 #fff;
+            opacity: 0.8;
+            cursor: pointer;
+        }
+
+        .custom-close:hover {
+            opacity: 1;
+        }
+
+        /* Animation for modal */
+        .custom-modal.fade {
+            transition: opacity 0.15s linear;
+        }
+
+        .custom-modal.fade .custom-modal-dialog {
+            transition: transform 0.3s ease-out;
+            transform: translate(0, -50px);
+        }
+
+        .custom-modal.show .custom-modal-dialog {
+            transform: none;
+        }
+
+        /* Progress bar animation */
+        .progress-bar-animated {
+            animation: progress-bar-stripes 1s linear infinite;
+        }
+
+        @keyframes progress-bar-stripes {
+            0% {
+                background-position: 1rem 0;
+            }
+
+            100% {
+                background-position: 0 0;
+            }
+        }
+
+        /* Spinner animation */
+        .spinner-border {
+            animation: spinner-border 0.75s linear infinite;
+        }
+
+        @keyframes spinner-border {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .btn-disabled-sending {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* Responsive modal */
+        @media (min-width: 576px) {
+            .custom-modal-dialog {
+                max-width: 500px;
+                margin: 1.75rem auto;
+            }
+        }
+
+        @media (min-width: 992px) {
+            .custom-modal-dialog-centered {
+                min-height: calc(100% - 3.5rem);
+            }
+        }
+
+        /* Prevent text selection on modal backdrop */
+        .custom-modal {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        .custom-modal-content {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+        }
+
+        /* Fix for dropdown menus */
+        .dropdown-menu {
+            z-index: 1050;
+        }
+
+        .navbar-nav .dropdown-menu {
+            position: absolute;
+        }
+    </style>
+
+    <script>
+        // Custom Modal JavaScript - Replace Bootstrap modal functionality
+        class CustomModal {
+            constructor(element) {
+                this.element = element;
+                this.isShown = false;
+                this.backdrop = null;
+
+                // Bind events
+                this.bindEvents();
+            }
+
+            bindEvents() {
+                // Close button functionality
+                const closeButtons = this.element.querySelectorAll('[data-dismiss="modal"], .custom-close');
+                closeButtons.forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.hide();
+                    });
                 });
-            });
-            
-            // Prevent modal from closing when clicking on modal content
-            const modalContent = this.element.querySelector('.custom-modal-content');
-            if (modalContent) {
-                modalContent.addEventListener('click', (e) => {
-                    e.stopPropagation();
+
+                // Prevent modal from closing when clicking on modal content
+                const modalContent = this.element.querySelector('.custom-modal-content');
+                if (modalContent) {
+                    modalContent.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                    });
+                }
+
+                // Handle backdrop click - only close if not static
+                this.element.addEventListener('click', (e) => {
+                    if (e.target === this.element) {
+                        const isStatic = this.element.getAttribute('data-backdrop') === 'static';
+                        if (!isStatic) {
+                            this.hide();
+                        }
+                    }
+                });
+
+                // Handle ESC key - only close if keyboard is not disabled
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && this.isShown) {
+                        const keyboardDisabled = this.element.getAttribute('data-keyboard') === 'false';
+                        if (!keyboardDisabled) {
+                            this.hide();
+                        }
+                    }
                 });
             }
-            
-            // Handle backdrop click - only close if not static
-            this.element.addEventListener('click', (e) => {
-                if (e.target === this.element) {
-                    const isStatic = this.element.getAttribute('data-backdrop') === 'static';
-                    if (!isStatic) {
-                        this.hide();
-                    }
-                }
-            });
-            
-            // Handle ESC key - only close if keyboard is not disabled
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && this.isShown) {
-                    const keyboardDisabled = this.element.getAttribute('data-keyboard') === 'false';
-                    if (!keyboardDisabled) {
-                        this.hide();
-                    }
-                }
-            });
-        }
-        
-        show() {
-            if (this.isShown) return;
-            
-            this.isShown = true;
-            document.body.style.overflow = 'hidden';
-            
-            // Show modal
-            this.element.style.display = 'block';
-            this.element.classList.add('show');
-            
-            // Focus management
-            this.element.setAttribute('aria-hidden', 'false');
-            this.element.focus();
-            
-            // Trigger shown event
-            const event = new CustomEvent('shown.bs.modal');
-            this.element.dispatchEvent(event);
-        }
-        
-        hide() {
-            if (!this.isShown) return;
-            
-            this.isShown = false;
-            document.body.style.overflow = '';
-            
-            // Hide modal
-            this.element.classList.remove('show');
-            
-            // Hide after transition
-            setTimeout(() => {
-                this.element.style.display = 'none';
-                this.element.setAttribute('aria-hidden', 'true');
-                
-                // Trigger hidden event
-                const event = new CustomEvent('hidden.bs.modal');
+
+            show() {
+                if (this.isShown) return;
+
+                this.isShown = true;
+                document.body.style.overflow = 'hidden';
+
+                // Show modal
+                this.element.style.display = 'block';
+                this.element.classList.add('show');
+
+                // Focus management
+                this.element.setAttribute('aria-hidden', 'false');
+                this.element.focus();
+
+                // Trigger shown event
+                const event = new CustomEvent('shown.bs.modal');
                 this.element.dispatchEvent(event);
-            }, 150);
+            }
+
+            hide() {
+                if (!this.isShown) return;
+
+                this.isShown = false;
+                document.body.style.overflow = '';
+
+                // Hide modal
+                this.element.classList.remove('show');
+
+                // Hide after transition
+                setTimeout(() => {
+                    this.element.style.display = 'none';
+                    this.element.setAttribute('aria-hidden', 'true');
+
+                    // Trigger hidden event
+                    const event = new CustomEvent('hidden.bs.modal');
+                    this.element.dispatchEvent(event);
+                }, 150);
+            }
         }
-    }
 
-    // Initialize modals when DOM is ready
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize all modals
-        const modals = {};
-        document.querySelectorAll('.custom-modal').forEach(modalElement => {
-            const modalId = modalElement.id;
-            modals[modalId] = new CustomModal(modalElement);
-        });
-        
-        // Global modal functions for backward compatibility
-        window.showModal = function(modalId) {
-            if (modals[modalId]) {
-                modals[modalId].show();
-            }
-        };
-        
-        window.hideModal = function(modalId) {
-            if (modals[modalId]) {
-                modals[modalId].hide();
-            }
-        };
-    });
+        // Initialize modals when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize all modals
+            const modals = {};
+            document.querySelectorAll('.custom-modal').forEach(modalElement => {
+                const modalId = modalElement.id;
+                modals[modalId] = new CustomModal(modalElement);
+            });
 
-    // Wait for document to be ready
-    $(document).ready(function() {
-        // Initialize DataTable
-        $('#studentsTable').DataTable({
-            "paging": true,
-            "searching": true,
-            "lengthChange": true,
-            "pageLength": 100,
-            "responsive": true,
-            "autoWidth": false,
-            "order": [
-                [1, "asc"]
-            ],
-            "columnDefs": [{
-                "orderable": false,
-                "targets": [6, 7]
-            }]
+            // Global modal functions for backward compatibility
+            window.showModal = function(modalId) {
+                if (modals[modalId]) {
+                    modals[modalId].show();
+                }
+            };
+
+            window.hideModal = function(modalId) {
+                if (modals[modalId]) {
+                    modals[modalId].hide();
+                }
+            };
         });
 
-        // Individual email sending functionality
-        $(document).on('submit', '.email-form', function(event) {
-            event.preventDefault();
+        // Wait for document to be ready
+        $(document).ready(function() {
+            // Initialize DataTable
+            $('#studentsTable').DataTable({
+                "paging": true,
+                "searching": true,
+                "lengthChange": true,
+                "pageLength": 100,
+                "responsive": true,
+                "autoWidth": false,
+                "order": [
+                    [1, "asc"]
+                ],
+                "columnDefs": [{
+                    "orderable": false,
+                    "targets": [6, 7]
+                }]
+            });
 
-            const form = $(this);
-            const button = form.find('.sendEmailButton');
-            const spinner = button.find('.spinner-border');
-            const originalText = button.html();
+            // Individual email sending functionality
+            $(document).on('submit', '.email-form', function(event) {
+                event.preventDefault();
 
-            button.prop('disabled', true);
-            spinner.show();
-            button.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...');
+                const form = $(this);
+                const button = form.find('.sendEmailButton');
+                const spinner = button.find('.spinner-border');
+                const originalText = button.html();
 
-            const formData = form.serialize();
+                button.prop('disabled', true);
+                spinner.show();
+                button.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...');
 
-            $.ajax({
-                url: 'transection_exams/send_email_assi_document.php',
-                type: 'POST',
-                data: formData,
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        button.removeClass('btn-primary btn-warning').addClass('btn-success');
-                        button.html('<i class="fas fa-check"></i> Sent Successfully');
+                const formData = form.serialize();
 
-                        setTimeout(function() {
-                            location.reload();
-                        }, 1500);
-                    } else {
+                $.ajax({
+                    url: 'transection_exams/send_email_assi_document.php',
+                    type: 'POST',
+                    data: formData,
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            button.removeClass('btn-primary btn-warning').addClass('btn-success');
+                            button.html('<i class="fas fa-check"></i> Sent Successfully');
+
+                            setTimeout(function() {
+                                location.reload();
+                            }, 1500);
+                        } else {
+                            button.removeClass('btn-primary btn-info btn-warning').addClass('btn-danger');
+                            button.html('<i class="fas fa-times"></i> Failed');
+                            alert('Failed to send email: ' + response.message);
+
+                            setTimeout(function() {
+                                button.prop('disabled', false);
+                                button.removeClass('btn-danger').addClass('btn-warning');
+                                button.html('<i class="fas fa-redo"></i> Retry Send');
+                            }, 2000);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error: ' + error);
                         button.removeClass('btn-primary btn-info btn-warning').addClass('btn-danger');
-                        button.html('<i class="fas fa-times"></i> Failed');
-                        alert('Failed to send email: ' + response.message);
+                        button.html('<i class="fas fa-times"></i> Error');
+                        alert('An error occurred while sending the email.');
 
                         setTimeout(function() {
                             button.prop('disabled', false);
                             button.removeClass('btn-danger').addClass('btn-warning');
-                            button.html('<i class="fas fa-redo"></i> Retry Send');
+                            button.html('<i class="fas fa-redo"></i> Try Again');
                         }, 2000);
+                    }
+                });
+            });
+        });
+
+        function toggleEmailSummary() {
+            const summaryCard = document.getElementById('emailSummaryCard');
+            if (summaryCard.style.display === 'none') {
+                summaryCard.style.display = 'block';
+            } else {
+                summaryCard.style.display = 'none';
+            }
+        }
+
+        function selectAllStudents() {
+            document.querySelectorAll('.remove-student').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+        }
+
+        function deselectAllStudents() {
+            document.querySelectorAll('.remove-student').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+        }
+
+        // Enhanced sendAllEmails function with custom modal
+        function sendAllEmails(assessmentId) {
+            const removedEmails = Array.from(document.querySelectorAll('.remove-student:checked')).map(checkbox => checkbox.value);
+
+            if (removedEmails.length > 0) {
+                const confirmMessage = `You have selected ${removedEmails.length} student(s) to exclude from the email list. Continue sending emails to the remaining students?`;
+                if (!confirm(confirmMessage)) {
+                    return;
+                }
+            }
+
+            // Show the loading modal using custom modal
+            showModal('emailSendingModal');
+
+            // Disable the send button
+            const button = document.getElementById('sendAllEmails');
+            button.disabled = true;
+            button.classList.add('btn-disabled-sending');
+
+            // Update progress message
+            document.getElementById('emailProgress').innerHTML = '<small class="text-info">Sending emails to students...</small>';
+
+            // Set flag to prevent page refresh
+            window.emailSendingInProgress = true;
+
+            $.ajax({
+                url: 'transection_exams/check_allocate_assi_document.php',
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    id: assessmentId,
+                    removed_emails: removedEmails
+                },
+                success: function(response) {
+                    console.log('Response from server: ', response);
+
+                    // Hide the loading modal
+                    hideModal('emailSendingModal');
+
+                    // Reset flag
+                    window.emailSendingInProgress = false;
+
+                    let message = response.message;
+                    if (response.failedEmails && response.failedEmails.length > 0) {
+                        message += "\n\nFailed emails:\n";
+                        response.failedEmails.forEach(emailObj => {
+                            message += `• ${emailObj.email}: ${emailObj.error}\n`;
+                        });
+                    }
+
+                    if (response.success) {
+                        // Show success modal
+                        document.getElementById('successMessage').textContent = message;
+                        showModal('emailSuccessModal');
+
+                        // Update button appearance
+                        button.innerHTML = '<i class="fas fa-check"></i> Emails Sent Successfully';
+                        button.classList.remove('btn-primary');
+                        button.classList.add('btn-success');
+
+                        // Start countdown and auto-refresh
+                        let countdown = 3;
+                        const countdownElement = document.getElementById('countdown');
+
+                        const countdownInterval = setInterval(function() {
+                            countdown--;
+                            countdownElement.textContent = countdown;
+
+                            if (countdown <= 0) {
+                                clearInterval(countdownInterval);
+                                hideModal('emailSuccessModal');
+                                location.reload();
+                            }
+                        }, 1000);
+
+                    } else {
+                        // Show error modal
+                        document.getElementById('errorMessage').textContent = message;
+                        showModal('emailErrorModal');
+
+                        // Re-enable button
+                        button.disabled = false;
+                        button.classList.remove('btn-disabled-sending');
                     }
                 },
                 error: function(xhr, status, error) {
                     console.error('Error: ' + error);
-                    button.removeClass('btn-primary btn-info btn-warning').addClass('btn-danger');
-                    button.html('<i class="fas fa-times"></i> Error');
-                    alert('An error occurred while sending the email.');
 
-                    setTimeout(function() {
-                        button.prop('disabled', false);
-                        button.removeClass('btn-danger').addClass('btn-warning');
-                        button.html('<i class="fas fa-redo"></i> Try Again');
-                    }, 2000);
-                }
-            });
-        });
-    });
+                    // Hide the loading modal
+                    hideModal('emailSendingModal');
 
-    function toggleEmailSummary() {
-        const summaryCard = document.getElementById('emailSummaryCard');
-        if (summaryCard.style.display === 'none') {
-            summaryCard.style.display = 'block';
-        } else {
-            summaryCard.style.display = 'none';
-        }
-    }
+                    // Reset flag
+                    window.emailSendingInProgress = false;
 
-    function selectAllStudents() {
-        document.querySelectorAll('.remove-student').forEach(checkbox => {
-            checkbox.checked = true;
-        });
-    }
-
-    function deselectAllStudents() {
-        document.querySelectorAll('.remove-student').forEach(checkbox => {
-            checkbox.checked = false;
-        });
-    }
-
-    // Enhanced sendAllEmails function with custom modal
-    function sendAllEmails(assessmentId) {
-        const removedEmails = Array.from(document.querySelectorAll('.remove-student:checked')).map(checkbox => checkbox.value);
-
-        if (removedEmails.length > 0) {
-            const confirmMessage = `You have selected ${removedEmails.length} student(s) to exclude from the email list. Continue sending emails to the remaining students?`;
-            if (!confirm(confirmMessage)) {
-                return;
-            }
-        }
-
-        // Show the loading modal using custom modal
-        showModal('emailSendingModal');
-
-        // Disable the send button
-        const button = document.getElementById('sendAllEmails');
-        button.disabled = true;
-        button.classList.add('btn-disabled-sending');
-
-        // Update progress message
-        document.getElementById('emailProgress').innerHTML = '<small class="text-info">Sending emails to students...</small>';
-
-        // Set flag to prevent page refresh
-        window.emailSendingInProgress = true;
-
-        $.ajax({
-            url: 'transection_exams/check_allocate_assi_document.php',
-            type: 'POST',
-            dataType: 'json',
-            data: {
-                id: assessmentId,
-                removed_emails: removedEmails
-            },
-            success: function(response) {
-                console.log('Response from server: ', response);
-
-                // Hide the loading modal
-                hideModal('emailSendingModal');
-
-                // Reset flag
-                window.emailSendingInProgress = false;
-
-                let message = response.message;
-                if (response.failedEmails && response.failedEmails.length > 0) {
-                    message += "\n\nFailed emails:\n";
-                    response.failedEmails.forEach(emailObj => {
-                        message += `• ${emailObj.email}: ${emailObj.error}\n`;
-                    });
-                }
-
-                if (response.success) {
-                    // Show success modal
-                    document.getElementById('successMessage').textContent = message;
-                    showModal('emailSuccessModal');
-
-                    // Update button appearance
-                    button.innerHTML = '<i class="fas fa-check"></i> Emails Sent Successfully';
-                    button.classList.remove('btn-primary');
-                    button.classList.add('btn-success');
-
-                    // Start countdown and auto-refresh
-                    let countdown = 3;
-                    const countdownElement = document.getElementById('countdown');
-
-                    const countdownInterval = setInterval(function() {
-                        countdown--;
-                        countdownElement.textContent = countdown;
-
-                        if (countdown <= 0) {
-                            clearInterval(countdownInterval);
-                            hideModal('emailSuccessModal');
-                            location.reload();
-                        }
-                    }, 1000);
-
-                } else {
                     // Show error modal
-                    document.getElementById('errorMessage').textContent = message;
+                    document.getElementById('errorMessage').textContent = 'An error occurred while sending the emails. Please try again.';
                     showModal('emailErrorModal');
 
                     // Re-enable button
                     button.disabled = false;
                     button.classList.remove('btn-disabled-sending');
                 }
-            },
-            error: function(xhr, status, error) {
-                console.error('Error: ' + error);
+            });
+        }
 
-                // Hide the loading modal
-                hideModal('emailSendingModal');
-
-                // Reset flag
-                window.emailSendingInProgress = false;
-
-                // Show error modal
-                document.getElementById('errorMessage').textContent = 'An error occurred while sending the emails. Please try again.';
-                showModal('emailErrorModal');
-
-                // Re-enable button
-                button.disabled = false;
-                button.classList.remove('btn-disabled-sending');
+        // Prevent page refresh/close during email sending
+        window.addEventListener('beforeunload', function(e) {
+            if (window.emailSendingInProgress) {
+                const confirmationMessage = 'Email sending is in progress. Are you sure you want to leave?';
+                e.returnValue = confirmationMessage;
+                return confirmationMessage;
             }
         });
-    }
 
-    // Prevent page refresh/close during email sending
-    window.addEventListener('beforeunload', function(e) {
-        if (window.emailSendingInProgress) {
-            const confirmationMessage = 'Email sending is in progress. Are you sure you want to leave?';
-            e.returnValue = confirmationMessage;
-            return confirmationMessage;
-        }
-    });
-
-    // Initialize flag
-    window.emailSendingInProgress = false;
-</script>
+        // Initialize flag
+        window.emailSendingInProgress = false;
+    </script>
 
 </body>
 

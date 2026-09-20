@@ -191,9 +191,9 @@ foreach ($students as $student) {
                     <div class='assessment-details'>
                     <div>" . $assessment['description'] . "</div>
                     </div>";
-        }
-
-        $emailBody .= "
+                }
+                
+                $emailBody .= "
                 
                 <p>Best regards,<br>
                 <strong>BMS Campus Academic Team</strong></p>
@@ -206,17 +206,17 @@ foreach ($students as $student) {
                 </div>
                 </body>
                 </html>";
-
-        // <h3 style='color: #007bff; margin-top: 0;'>Description</h3>
-        $mail->Body = $emailBody;
-        $mail->AltBody = strip_tags(str_replace(['<br>', '</p>', '</div>'], ["\n", "\n\n", "\n"], $emailBody));
-
-        // Attach files if they exist
-        $attachments = [];
-        for ($i = 1; $i <= 4; $i++) {
-            $attachmentField = "attachment_$i";
-            if (!empty($assessment[$attachmentField])) {
-                $attachmentPath = "../uploads_exam_assessments/" . $assessment[$attachmentField];
+                
+                // <h3 style='color: #007bff; margin-top: 0;'>Description</h3>
+                $mail->Body = $emailBody;
+                $mail->AltBody = strip_tags(str_replace(['<br>', '</p>', '</div>'], ["\n", "\n\n", "\n"], $emailBody));
+                
+                // Attach files if they exist
+                $attachments = [];
+                for ($i = 1; $i <= 4; $i++) {
+                    $attachmentField = "attachment_$i";
+                    if (!empty($assessment[$attachmentField])) {
+                        $attachmentPath = "../uploads_exam_assessments/" . $assessment[$attachmentField];
                 if (file_exists($attachmentPath)) {
                     $attachments[] = $attachmentPath;
                 }

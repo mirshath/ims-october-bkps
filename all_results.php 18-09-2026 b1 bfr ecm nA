@@ -2534,94 +2534,6 @@ if (isset($_POST['send_to_all']) && !empty($programmeId) && !empty($batchId) && 
             }
 
             // -------------
-            // if ($programName == 'Executive Certificate in Management') {
-
-            //     // Determine grade based on final result
-            //     if (is_numeric($finalResult)) {
-            //         $gradeStatus = ($finalResult >= 70) ? 'Distinction' : (($finalResult >= 60) ? 'Merit' : (($finalResult >= 50) ? 'Pass' : 'Resit'));
-            //     } else {
-            //         $gradeStatus = $finalResult;
-            //     }
-
-            //     // Apply payment status
-            //     $gradeStatus = ($paymentStatus == 'withheld' || empty($paymentStatus)) ? 'Withheld' : $gradeStatus;
-
-            //     // Check if grade is Pending
-            //     if (strcasecmp(trim($gradeStatus), 'Pending') === 0) {
-
-            //         // Fetch main component grades for this module
-            //         $componentsQuery = "
-            //             SELECT ac.as_main_component_name AS component_name,
-            //                    COALESCE(sr.ecm_r4_converted_marks_grade,
-            //                             sr.ecm_r3_converted_marks_grade,
-            //                             sr.ecm_r2_converted_marks_grade,
-            //                             sr.ecm_r1_converted_marks_grade,
-            //                             sr.converted_marks_grade) AS component_grade
-            //             FROM student_results sr
-            //             LEFT JOIN assignment_components ac ON sr.main_component_id = ac.id
-            //             WHERE sr.student_id = '{$row['student_code']}'
-            //               AND sr.program_id = '{$row['program_id']}'
-            //               AND sr.batch_id = '{$row['batch_id']}'
-            //               AND sr.module_id = '$moduleId'
-            //             ORDER BY ac.id
-            //         ";
-
-            //         $componentsResult = $conn->query($componentsQuery);
-
-            //         // Show Pending as the final grade
-            //         $mail->Body .= '
-            //             <tr>
-            //                 <td><strong style="font-size: 17px; font-weight: bolder;">Final Grade:</strong></td>
-            //                 <td><strong style="font-size: 17px; font-weight: bolder;">Pending</strong></td>
-            //             </tr>';
-
-            //         if ($componentsResult && $componentsResult->num_rows > 0) {
-            //             $mail->Body .= '<tr><td colspan="2"><strong>Main Component Grades:</strong></td></tr>';
-
-            //             while ($compRow = $componentsResult->fetch_assoc()) {
-            //                 $componentName = !empty($compRow['component_name']) ? htmlspecialchars($compRow['component_name']) : 'Component';
-            //                 $componentGrade = !empty($compRow['component_grade']) ? htmlspecialchars($compRow['component_grade']) : 'N/A';
-
-            //                 $mail->Body .= '
-            //                     <tr>
-            //                         <td>' . $componentName . '</td>
-            //                         <td>' . ucfirst($componentGrade) . '</td>
-            //                     </tr>';
-            //             }
-            //         } else {
-            //             $mail->Body .= '
-            //                 <tr>
-            //                     <td colspan="2">No component results available.</td>
-            //                 </tr>';
-            //         }
-            //     } else {
-            //         // Normal flow when not Pending
-            //         $mail->Body .= '
-            //             <tr>
-            //                 <td><strong style="font-size: 17px; font-weight: bolder;">Final Grade:</strong></td>
-            //                 <td><strong style="font-size: 17px; font-weight: bolder;">' . ucfirst($gradeStatus) . '</strong></td>
-            //             </tr>';
-            //         if (strtolower($gradeStatus) == 'withheld') {
-            //             $mail->Body .= '
-            //             <br><br>
-            //                 <tr>
-            //                     <th>Note :</th>
-            //                     <td>You are kindly Requested to Contact BMS Campus <br> Finance Department <br> 0704001092</td>
-            //                 </tr>';
-            //         }
-            //     }
-            // }
-
-            // FIX (Gmail vs Outlook rendering): every branch below appends <tr> rows
-            // directly to $mail->Body with NO enclosing <table>. Browsers (Gmail) silently
-            // auto-repair broken table markup, but Outlook's Word rendering engine does not -
-            // it just flows the orphaned <tr>/<td> content as plain inline text on one line.
-            // Opening the table here (it is closed later at the single '</table>' line) fixes
-            // this for every branch, including the GDM branch which nests its own inner table.
-            $mail->Body .= '
-                    <table style="width:100%; border-collapse:collapse; margin-top:10px; margin-bottom:20px;">';
-
-            // breadown here continue
             if ($programName == 'Executive Certificate in Management') {
 
                 // Determine grade based on final result
@@ -2638,23 +2550,19 @@ if (isset($_POST['send_to_all']) && !empty($programmeId) && !empty($batchId) && 
                 if (strcasecmp(trim($gradeStatus), 'Pending') === 0) {
 
                     // Fetch main component grades for this module
-                    // FIX: use NULLIF(..., '') so empty-string columns don't block COALESCE
-                    // from reaching the real value (e.g. 'Resit') in converted_marks_grade
                     $componentsQuery = "
                         SELECT ac.as_main_component_name AS component_name,
-                            COALESCE(
-                                NULLIF(TRIM(sr.ecm_r4_converted_marks_grade), ''),
-                                NULLIF(TRIM(sr.ecm_r3_converted_marks_grade), ''),
-                                NULLIF(TRIM(sr.ecm_r2_converted_marks_grade), ''),
-                                NULLIF(TRIM(sr.ecm_r1_converted_marks_grade), ''),
-                                NULLIF(TRIM(sr.converted_marks_grade), '')
-                            ) AS component_grade
+                               COALESCE(sr.ecm_r4_converted_marks_grade,
+                                        sr.ecm_r3_converted_marks_grade,
+                                        sr.ecm_r2_converted_marks_grade,
+                                        sr.ecm_r1_converted_marks_grade,
+                                        sr.converted_marks_grade) AS component_grade
                         FROM student_results sr
                         LEFT JOIN assignment_components ac ON sr.main_component_id = ac.id
                         WHERE sr.student_id = '{$row['student_code']}'
-                        AND sr.program_id = '{$row['program_id']}'
-                        AND sr.batch_id = '{$row['batch_id']}'
-                        AND sr.module_id = '$moduleId'
+                          AND sr.program_id = '{$row['program_id']}'
+                          AND sr.batch_id = '{$row['batch_id']}'
+                          AND sr.module_id = '$moduleId'
                         ORDER BY ac.id
                     ";
 
@@ -2662,10 +2570,10 @@ if (isset($_POST['send_to_all']) && !empty($programmeId) && !empty($batchId) && 
 
                     // Show Pending as the final grade
                     $mail->Body .= '
-                <tr>
-                    <td><strong style="font-size: 17px; font-weight: bolder;">Final Grade:</strong></td>
-                    <td><strong style="font-size: 17px; font-weight: bolder;">Pending</strong></td>
-                </tr>';
+                        <tr>
+                            <td><strong style="font-size: 17px; font-weight: bolder;">Final Grade:</strong></td>
+                            <td><strong style="font-size: 17px; font-weight: bolder;">Pending</strong></td>
+                        </tr>';
 
                     if ($componentsResult && $componentsResult->num_rows > 0) {
                         $mail->Body .= '<tr><td colspan="2"><strong>Main Component Grades:</strong></td></tr>';
@@ -2675,31 +2583,31 @@ if (isset($_POST['send_to_all']) && !empty($programmeId) && !empty($batchId) && 
                             $componentGrade = !empty($compRow['component_grade']) ? htmlspecialchars($compRow['component_grade']) : 'N/A';
 
                             $mail->Body .= '
-                    <tr>
-                        <td>' . $componentName . '</td>
-                        <td>' . ucfirst($componentGrade) . '</td>
-                    </tr>';
+                                <tr>
+                                    <td>' . $componentName . '</td>
+                                    <td>' . ucfirst($componentGrade) . '</td>
+                                </tr>';
                         }
                     } else {
                         $mail->Body .= '
-                <tr>
-                    <td colspan="2">No component results available.</td>
-                </tr>';
+                            <tr>
+                                <td colspan="2">No component results available.</td>
+                            </tr>';
                     }
                 } else {
                     // Normal flow when not Pending
                     $mail->Body .= '
-                <tr>
-                <td><strong style="font-size: 17px; font-weight: bolder;">Final Grade:</strong></td>
-                <td><strong style="font-size: 17px; font-weight: bolder;">' . ucfirst($gradeStatus) . '</strong></td>
-             </tr>';
+                        <tr>
+                            <td><strong style="font-size: 17px; font-weight: bolder;">Final Grade:</strong></td>
+                            <td><strong style="font-size: 17px; font-weight: bolder;">' . ucfirst($gradeStatus) . '</strong></td>
+                        </tr>';
                     if (strtolower($gradeStatus) == 'withheld') {
                         $mail->Body .= '
-                <br><br>
-                <tr>
-                    <th>Note :</th>
-                    <td>You are kindly Requested to Contact BMS Campus <br> Finance Department <br> 0704001092</td>
-                </tr>';
+                        <br><br>
+                            <tr>
+                                <th>Note :</th>
+                                <td>You are kindly Requested to Contact BMS Campus <br> Finance Department <br> 0704001092</td>
+                            </tr>';
                     }
                 }
             }
@@ -2727,6 +2635,7 @@ if (isset($_POST['send_to_all']) && !empty($programmeId) && !empty($batchId) && 
                         </tr>';
                 }
             } else if (
+                // $programName == 'Graduate Diploma in Management (Level 6)' ||
                 $programName == 'International Foundation Diploma (Business) - ATHE Level 3' ||
                 $programName == 'International Foundation Diploma (Applied Science) - ATHE Level 3' ||
                 $programName == 'BTEC Higher National Diploma in Business'
@@ -3019,6 +2928,158 @@ function getHDGradeFromMarks($finalMark)
     return 'Unknown';
 }
 
+
+// ================================
+// 2️⃣ Function: Calculate Final HD Grade from Components
+// ================================
+
+
+// function calculateFinalHDGrade($componentGrades, $componentMarks, $componentCount)
+// {
+//     $finalHDGrade = 'N/A';
+//     $count = $componentCount;
+//     $norm = function ($x) {
+//         $x = strtolower(trim((string)$x));
+//         $x = str_replace(['-', '_'], ' ', $x);
+//         $x = preg_replace('/\s+/', ' ', $x);
+//         if ($x === 'resit' || $x === 're sit') $x = 're-sit';
+//         if ($x === 'not submitted') $x = 'not submitted';
+//         return $x;
+//     };
+
+//     if ($count == 2) {
+//         if (count($componentGrades) >= 2) {
+//             $g1 = $norm($componentGrades[0]);
+//             $g2 = $norm($componentGrades[1]);
+
+//             // Distinguish between only 'absent' and only 'not submitted'
+//             if ($g1 === 're-sit' && $g2 === 're-sit') {
+//                 $finalHDGrade = 'Re-sit';
+//             } elseif ($g1 === 'pending' && $g2 === 'pending') {
+//                 $finalHDGrade = 'Re-sit';
+//             } elseif (($g1 === 're-sit' && $g2 === 'pending') || ($g2 === 're-sit' && $g1 === 'pending')) {
+//                 $finalHDGrade = 'Re-sit';
+//             } elseif (($g1 === 're-sit' && in_array($g2, ['pass', 'merit', 'distinction'])) || ($g2 === 're-sit' && in_array($g1, ['pass', 'merit', 'distinction']))) {
+//                 $finalHDGrade = 'Pending';
+//             } elseif (
+//                 ($g1 === 're-sit' && in_array($g2, ['absent', 'not submitted'])) ||
+//                 ($g2 === 're-sit' && in_array($g1, ['absent', 'not submitted']))
+//             ) {
+//                 $finalHDGrade = 'Re-sit';
+//             } elseif (($g1 === 'pending' && in_array($g2, ['pass', 'merit', 'distinction'])) || ($g2 === 'pending' && in_array($g1, ['pass', 'merit', 'distinction']))) {
+//                 $finalHDGrade = getHDGradeFromMarks(array_sum($componentMarks));
+//             } elseif (
+//                 ($g1 === 'pending' && in_array($g2, ['absent', 'not submitted'])) ||
+//                 ($g2 === 'pending' && in_array($g1, ['absent', 'not submitted']))
+//             ) {
+//                 $finalHDGrade = 'Pending';
+//             } elseif (in_array($g1, ['pass', 'merit', 'distinction']) && in_array($g2, ['pass', 'merit', 'distinction'])) {
+//                 $finalHDGrade = getHDGradeFromMarks(array_sum($componentMarks));
+//             } elseif (
+//                 ($g1 === 'not submitted' && $g2 === 'not submitted')
+//             ) {
+//                 // Both are not submitted
+//                 $finalHDGrade = 'Not Submitted';
+//             } elseif (
+//                 ($g1 === 'absent' && $g2 === 'absent')
+//             ) {
+//                 // Both are absent
+//                 $finalHDGrade = 'Absent';
+//             } elseif (
+//                 ($g1 === 'not submitted' && in_array($g2, ['pass', 'merit', 'distinction'])) ||
+//                 ($g2 === 'not submitted' && in_array($g1, ['pass', 'merit', 'distinction']))
+//             ) {
+//                 $finalHDGrade = 'Pending';
+//             } elseif (
+//                 ($g1 === 'absent' && in_array($g2, ['pass', 'merit', 'distinction'])) ||
+//                 ($g2 === 'absent' && in_array($g1, ['pass', 'merit', 'distinction']))
+//             ) {
+//                 $finalHDGrade = 'Pending';
+//             } elseif (
+//                 ($g1 === 'absent' && $g2 === 'not submitted') ||
+//                 ($g1 === 'not submitted' && $g2 === 'absent')
+//             ) {
+//                 $finalHDGrade = 'Not Submitted';
+//             } else {
+//                 $finalHDGrade = 'Pending';
+//             }
+//         } elseif (isset($componentGrades[0])) {
+//             $g = $norm($componentGrades[0]);
+//             // This covers single not submitted and absent cases for rare 1-component case
+//             if ($g === 'not submitted') {
+//                 $finalHDGrade = 'Not Submitted';
+//             } elseif ($g === 'absent') {
+//                 $finalHDGrade = 'Absent';
+//             } elseif ($g === 'pending') {
+//                 $finalHDGrade = getHDGradeFromMarks(array_sum($componentMarks));
+//             } else {
+//                 $finalHDGrade = $componentGrades[0];
+//             }
+//         }
+//     } elseif ($count == 3) {
+//         if (count($componentGrades) >= 3) {
+//             $resitCount = $pendingCount = $absentCount = $notSubmittedCount = $validGrades = $sumMarks = 0;
+
+//             for ($i = 0; $i < 3; $i++) {
+//                 $g = $norm($componentGrades[$i]);
+//                 $m = floatval($componentMarks[$i] ?? 0);
+
+//                 if (in_array($g, ['pass', 'merit', 'distinction'])) {
+//                     $validGrades++;
+//                     $sumMarks += $m;
+//                 } elseif ($g === 're-sit') {
+//                     $resitCount++;
+//                     $sumMarks += $m;
+//                 } elseif ($g === 'pending') {
+//                     $pendingCount++;
+//                     $sumMarks += $m;
+//                 } elseif ($g === 'absent') {
+//                     $absentCount++;
+//                 } elseif ($g === 'not submitted') {
+//                     $notSubmittedCount++;
+//                 }
+//             }
+
+//             // Apply rules
+//             if ($resitCount === 3)
+//                 $finalHDGrade = 'Re-sit';
+//             elseif ($pendingCount === 3)
+//                 $finalHDGrade = ($sumMarks < 50) ? 'Re-sit' : getHDGradeFromMarks($sumMarks);
+//             elseif (($absentCount + $notSubmittedCount) === 3)
+//                 $finalHDGrade = ($notSubmittedCount === 3) ? 'Not Submitted' : (($absentCount === 3) ? 'Absent' : 'Not Submitted');
+//             elseif ($resitCount === 2 && $pendingCount === 1)
+//                 $finalHDGrade = 'Re-sit';
+//             elseif ($resitCount === 2 && $validGrades === 1)
+//                 $finalHDGrade = 'Pending';
+//             elseif ($pendingCount === 2 && $validGrades === 1)
+//                 $finalHDGrade = ($sumMarks < 50) ? 'Pending' : getHDGradeFromMarks($sumMarks);
+//             elseif ($resitCount === 1 && $pendingCount === 1 && $validGrades === 1)
+//                 $finalHDGrade = 'Pending';
+//             elseif ($resitCount === 1 && $validGrades === 2)
+//                 $finalHDGrade = 'Pending';
+//             elseif ($pendingCount === 1 && $validGrades === 2)
+//                 $finalHDGrade = getHDGradeFromMarks($sumMarks);
+//             elseif ($validGrades === 3)
+//                 $finalHDGrade = getHDGradeFromMarks($sumMarks);
+//             elseif (($absentCount + $notSubmittedCount) === 2 && $pendingCount === 1)
+//                 $finalHDGrade = 'Re-sit';
+//             elseif (($absentCount + $notSubmittedCount) === 2 && $resitCount === 1)
+//                 $finalHDGrade = 'Re-sit';
+//             elseif ($pendingCount === 2 && $resitCount === 1)
+//                 $finalHDGrade = ($sumMarks < 50) ? 'Re-sit' : getHDGradeFromMarks($sumMarks);
+//             else
+//                 $finalHDGrade = 'Pending';
+//         } elseif (isset($componentGrades[0])) {
+//             $g = $norm($componentGrades[0]);
+//             $finalHDGrade = $g === 'pending' ? getHDGradeFromMarks(array_sum($componentMarks)) : $componentGrades[0];
+//         }
+//     } else {
+//         $finalHDGrade = 'Error: No grades found for component';
+//     }
+
+//     return $finalHDGrade;
+// }
+
 function calculateFinalHDGrade($componentGrades, $componentMarks, $componentCount)
 {
     $finalHDGrade = 'N/A';
@@ -3185,6 +3246,9 @@ function calculateFinalHDGrade($componentGrades, $componentMarks, $componentCoun
 
     return $finalHDGrade;
 }
+
+
+
 
 
 ?>

@@ -10,7 +10,12 @@ if (isset($_POST['program_id'])) {
     if ($role === 'super_admin') {
         $query = "SELECT * FROM batch_table WHERE programme  = '$programId'";
     } else {
-        $query = "SELECT * FROM batch_table WHERE programme  = '$programId' AND batch_hide_active = 'active'";
+        // $query = "SELECT * FROM batch_table WHERE programme  = '$programId' AND batch_hide_active = 'active'";
+        // $query = "SELECT * FROM batch_table 
+        //   WHERE programme = '$programId' 
+        //   AND (batch_hide_active = 'active' OR batch_hide_active = 'inactive')";
+
+        $query = "SELECT * FROM batch_table WHERE programme = '$programId'";
     }
     $result = mysqli_query($conn, $query);
 
@@ -22,4 +27,3 @@ if (isset($_POST['program_id'])) {
         echo "<option value=''>No batches available</option>";
     }
 }
-?>
