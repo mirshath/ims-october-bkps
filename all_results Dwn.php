@@ -34,21 +34,15 @@ if (!in_array($studentStatus, $allowedStudentStatuses, true)) {
 // Helper SQL fragments used by all queries that join allocate_programme:
 //   $apStatusWhere        -> for queries using WHERE ap.status = ...
 //   $apStatusJoinClause   -> for queries using ON(... AND ap.status ...)
-//   Uses LOWER(TRIM(ap.status)) comparison so DB values like 'Completed', 'COMPLETED', 'completed ' all match.
-//   "Completed Students" also includes students whose status is 'progressionTo'.
+//   Uses LOWER(ap.status) comparison so DB values like 'Completed', 'COMPLETED', 'completed ' all match.
 if ($studentStatus === '') {
     $apStatusJoinClause = '';
     $apStatusWhere = '';
     $statusLabel = 'All Students';
 } else {
-    // $studentStatus is already whitelisted above ('active' or 'completed'), so it's safe to
-    // interpolate here, but we build the IN(...) list from a fixed, known-safe value set.
-    $statusValues = $studentStatus === 'completed' ? ['completed', 'progressionto'] : ['active'];
-    $quotedStatusValues = implode(',', array_map(function ($v) {
-        return "'" . $v . "'";
-    }, $statusValues));
-    $apStatusJoinClause = " AND LOWER(TRIM(ap.status)) IN ($quotedStatusValues)";
-    $apStatusWhere      = " AND LOWER(TRIM(ap.status)) IN ($quotedStatusValues)";
+    $sLower = strtolower($studentStatus);
+    $apStatusJoinClause = " AND LOWER(TRIM(ap.status)) = '" . $sLower . "'";
+    $apStatusWhere      = " AND LOWER(TRIM(ap.status)) = '" . $sLower . "'";
     $statusLabel = $studentStatus === 'active' ? 'Active Students' : 'Completed Students';
 }
 
@@ -2627,7 +2621,6 @@ if (isset($_POST['send_to_all']) && !empty($programmeId) && !empty($batchId) && 
             $mail->Body .= '
                     <table style="width:100%; border-collapse:collapse; margin-top:10px; margin-bottom:20px;">';
 
-            // breadown here continue
             if ($programName == 'Executive Certificate in Management') {
 
                 // Determine grade based on final result
@@ -2733,6 +2726,7 @@ if (isset($_POST['send_to_all']) && !empty($programmeId) && !empty($batchId) && 
                         </tr>';
                 }
             } else if (
+                // $programName == 'Graduate Diploma in Management (Level 6)' ||
                 $programName == 'International Foundation Diploma (Business) - ATHE Level 3' ||
                 $programName == 'International Foundation Diploma (Applied Science) - ATHE Level 3' ||
                 $programName == 'BTEC Higher National Diploma in Business'

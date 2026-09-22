@@ -183,7 +183,7 @@ $assessment = null;
                 </div>
 
 
-
+                
             </div>
         </div>
     </div>
@@ -323,7 +323,6 @@ $assessment = null;
                 const mainComponentId = $('#mainComponent').val();
                 const subComponentId = $('#subComponent').val();
                 const studentStatus = $('#studentStatus').val();
-                console.log('Selected Status Here:',  studentStatus);
 
                 // Only proceed if all required fields are selected
                 if (programmeId && batchId && moduleId) {

@@ -330,7 +330,7 @@ unset($group);
                                     <div class="card shadow-sm border-0">
                                         <div class="card-body text-center py-5">
                                             <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                                            <h6 class="text-muted">No email dispatch records found within the past 10 days.</h6>
+                                            <h6 class="text-muted">No email dispatch records found within the past 01 days.</h6>
                                         </div>
                                     </div>
                                 </div>
@@ -452,7 +452,7 @@ unset($group);
                                     <div class="card shadow-sm border-0">
                                         <div class="card-body text-center py-5">
                                             <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
-                                            <h6 class="text-muted">No assessment dispatch records found within the past 10 days.</h6>
+                                            <h6 class="text-muted">No assessment dispatch records found within the past 01 days.</h6>
                                         </div>
                                     </div>
                                 </div>
@@ -565,7 +565,7 @@ unset($group);
                                     <div class="card shadow-sm border-0">
                                         <div class="card-body text-center py-5">
                                             <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
-                                            <h6 class="text-muted">No assessment document dispatch records found within the past 10 days.</h6>
+                                            <h6 class="text-muted">No assessment document dispatch records found within the past 01 days.</h6>
                                         </div>
                                     </div>
                                 </div>

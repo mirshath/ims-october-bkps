@@ -22,24 +22,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sub_component_id = isset($_POST['sub_component_id']) ? $_POST['sub_component_id'] : null;
         $student_status = isset($_POST['student_status']) ? $_POST['student_status'] : '';
 
-        // Map the UI's simplified status choice to the actual value(s) stored in
-        // allocate_programme.status. Comparisons are done case-insensitively (LOWER/TRIM)
-        // to match how all_results.php already treats this column.
-        //   - '' (no filter posted) / 'active' -> Active students only (preserves original default)
-        //   - 'completed'                      -> Completed students, which ALSO includes
-        //                                          students whose status is 'progressionTo'
-        switch (strtolower(trim($student_status))) {
-            case 'completed':
-                $statusValues = ['completed', 'progressionto'];
-                break;
-            case 'active':
-            default:
-                $statusValues = ['active'];
-                break;
-        }
-        $statusPlaceholders = implode(',', array_fill(0, count($statusValues), '?'));
-        $statusSql = " AND LOWER(TRIM(ap.status)) IN ($statusPlaceholders) ";
-
         // Validate inputs
         if (!$programme_id || !$batch_id || !$module_id) {
             throw new Exception("Missing required parameters");
@@ -142,14 +124,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $studentsQuery = "SELECT s.student_code, s.first_name, s.last_name, ap.student_registration_id, ap.compulsory_sub, ap.elective_subs 
                               FROM students s 
                               JOIN allocate_programme ap ON s.student_code = ap.student_code 
-                              WHERE ap.programme_code = ? AND ap.batch_id = ? " . $statusSql;
+                              WHERE ap.programme_code = ? AND ap.batch_id = ? AND LOWER(ap.status) = 'active' ";
 
             $bbmStudentTypes = '';
             $bbmStudentParams = [$programme_id, $batch_id];
             $bbmStudentParamTypes = 'ii';
 
-            foreach ($statusValues as $sv) {
-                $bbmStudentParams[] = $sv;
+            if (!empty($student_status)) {
+                $studentsQuery .= " AND ap.status = ? ";
+                $bbmStudentParams[] = $student_status;
                 $bbmStudentParamTypes .= 's';
             }
 
@@ -465,13 +448,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // First get all students with their compulsory_sub and elective_subs
             $studentsQuery = "SELECT ap.student_code, ap.compulsory_sub, ap.elective_subs 
                               FROM allocate_programme ap
-                              WHERE ap.programme_code = ? AND ap.batch_id = ? " . $statusSql;
+                              WHERE ap.programme_code = ? AND ap.batch_id = ? AND LOWER(ap.status) = 'active' ";
 
             $allowedParams = [$programme_id, $batch_id];
             $allowedTypes = 'ii';
 
-            foreach ($statusValues as $sv) {
-                $allowedParams[] = $sv;
+            if (!empty($student_status)) {
+                $studentsQuery .= " AND ap.status = ? ";
+                $allowedParams[] = $student_status;
                 $allowedTypes .= 's';
             }
 
@@ -566,8 +550,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             LEFT JOIN assignment_components mc ON sr.main_component_id = mc.id
             WHERE ap.programme_code = ? 
                 AND ap.batch_id = ? 
-                $statusSql
+                AND LOWER(ap.status) = 'active'
             ";
+
+            if (!empty($student_status)) {
+                $query .= " AND ap.status = ? ";
+            }
 
             $query .= " AND ap.student_code IN ($allowed_ids_placeholders)
             ";
@@ -605,9 +593,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $params[] = $batch_id;
             $types .= 'i';
 
-            // Student status filter (matches the $statusSql IN (...) fragment above)
-            foreach ($statusValues as $sv) {
-                $params[] = $sv;
+            // Optional: student status filter
+            if (!empty($student_status)) {
+                $params[] = $student_status;
                 $types .= 's';
             }
 

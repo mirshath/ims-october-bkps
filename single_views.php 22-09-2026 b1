@@ -25,25 +25,6 @@ $moduleId = $_GET['module_id'] ?? null;
 $programId = $_GET['program_id'] ?? null;
 $mainComponentId = $_GET['main_component_id'] ?? null;
 $subComponentId = $_GET['sub_component_id'] ?? null;
-$studentStatus = $_GET['student_status'] ?? '';
-
-// Map the UI's simplified status choice to the actual value(s) stored in
-// allocate_programme.status (same mapping used in exam_result_folder/fetch_results.php
-// and all_results.php). Whitelisted so it's safe to build directly into SQL.
-//   - '' (no filter posted) / 'active' -> Active students only (preserves original default)
-//   - 'completed'                      -> Completed students, which ALSO includes
-//                                          students whose status is 'progressionTo'
-switch (strtolower(trim($studentStatus))) {
-    case 'completed':
-        $statusValues = ['completed', 'progressionto'];
-        break;
-    case 'active':
-    default:
-        $statusValues = ['active'];
-        break;
-}
-$statusPlaceholders = implode(',', array_fill(0, count($statusValues), '?'));
-$statusSql = " AND LOWER(TRIM(ap.status)) IN ($statusPlaceholders) ";
 
 // Determine if it's a final result
 $isFinalResult = !empty($finalResultId) && !empty($studentId) && !empty($programName) && !empty($programId) && !empty($batchId) && !empty($moduleId);
@@ -115,16 +96,14 @@ $isFinalResult = !empty($finalResultId) && !empty($studentId) && !empty($program
                                     LEFT JOIN assignment_components amc ON ac.main_component_id = amc.id
                                     LEFT JOIN sub_assign_components sac ON ac.sub_component_id = sac.id
                                      LEFT JOIN payment_withheld_table pw ON s.student_code = pw.student_code
-                                    WHERE sr.student_id = ?  $statusSql
+                                    WHERE sr.student_id = ?  AND ap.status = 'active'
                                   AND sr.program_id = ? 
                                   AND sr.batch_id = ? 
                                   AND sr.module_id = ? 
                                   AND (sr.main_component_id = ? OR sr.sub_component_id = ?)";
 
                                 $stmt = $conn->prepare($query);
-                                $bindTypes = "i" . str_repeat("s", count($statusValues)) . "iiiii";
-                                $bindParams = array_merge([$studentId], $statusValues, [$programId, $batchId, $moduleId, $mainComponentId, $subComponentId]);
-                                $stmt->bind_param($bindTypes, ...$bindParams);
+                                $stmt->bind_param("iiiiii", $studentId, $programId, $batchId, $moduleId, $mainComponentId, $subComponentId);
                                 $stmt->execute();
                                 $result = $stmt->get_result();
 
@@ -192,14 +171,12 @@ $isFinalResult = !empty($finalResultId) && !empty($studentId) && !empty($program
                             ?>
                                     <!-- ------------ 30.06 2025 ------------ -->
 
-                                    <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'super_admin'): ?>
-                                        <tr>
-                                            <th>payment status manually change</th>
-                                            <td>
-                                                <input type="checkbox" name="payment_status" value="paid" class="payment-status-checkbox" data-student-id="<?= htmlspecialchars($row['student_code']) ?>" data-program-id="<?= htmlspecialchars($row['program_id']) ?>" <?= ($row['payment_status'] == 'active') ? 'checked' : '' ?>>
-                                            </td>
-                                        </tr>
-                                    <?php endif; ?>
+                                    <tr>
+                                        <th>payment status manually change</th>
+                                        <td>
+                                            <input type="checkbox" name="payment_status" value="paid" class="payment-status-checkbox" data-student-id="<?= htmlspecialchars($row['student_code']) ?>" data-program-id="<?= htmlspecialchars($row['program_id']) ?>" <?= ($row['payment_status'] == 'active') ? 'checked' : '' ?>>
+                                        </td>
+                                    </tr>
 
                                     <script>
                                         $(document).ready(function() {
@@ -342,12 +319,10 @@ $isFinalResult = !empty($finalResultId) && !empty($studentId) && !empty($program
                                 LEFT JOIN payment_withheld_table pw ON s.student_code = pw.student_code
                                 LEFT JOIN student_results sr ON sr.student_id = fsr.student_id 
                                     AND sr.module_id = fsr.module_id
-                                WHERE fsr.id = ? $statusSql";
+                                WHERE fsr.id = ? AND ap.status = 'active'";
 
                                 $stmt = $conn->prepare($query);
-                                $bindTypes = "i" . str_repeat("s", count($statusValues));
-                                $bindParams = array_merge([$finalResultId], $statusValues);
-                                $stmt->bind_param($bindTypes, ...$bindParams);
+                                $stmt->bind_param("i", $finalResultId);
                                 $stmt->execute();
                                 $result = $stmt->get_result();
 
@@ -429,15 +404,14 @@ $isFinalResult = !empty($finalResultId) && !empty($studentId) && !empty($program
                                                     </tr>
 
                                                     <!-- ------------ 30.06 2025 ------------ -->
-                                                    <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'super_admin'): ?>
-                                                        <tr>
-                                                            <th>payment status manually change</th>
-                                                            <td>
 
-                                                                <input type="checkbox" name="payment_status" value="paid" class="payment-status-checkbox" data-student-id="<?= htmlspecialchars($row['student_code']) ?>" data-program-id="<?= htmlspecialchars($row['program_id']) ?>" <?= ($row['payment_status'] == 'active') ? 'checked' : '' ?>>
-                                                            </td>
-                                                        </tr>
-                                                    <?php endif; ?>
+                                                    <tr>
+                                                        <th>payment status manually change</th>
+                                                        <td>
+
+                                                            <input type="checkbox" name="payment_status" value="paid" class="payment-status-checkbox" data-student-id="<?= htmlspecialchars($row['student_code']) ?>" data-program-id="<?= htmlspecialchars($row['program_id']) ?>" <?= ($row['payment_status'] == 'active') ? 'checked' : '' ?>>
+                                                        </td>
+                                                    </tr>
 
                                                     <script>
                                                         $(document).ready(function() {
