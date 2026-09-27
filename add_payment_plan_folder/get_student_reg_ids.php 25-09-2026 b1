@@ -17,16 +17,29 @@ if (isset($_POST['program_code'], $_POST['batch_id'])) {
     $program_code = $_POST['program_code'];
     $batch_id = $_POST['batch_id'];
 
-    
+    // ------------------------------
+    // Optional: the exact pieces that make up THIS program's own
+    // Registration ID prefix (Program Code + Batch NO + Intake NO + Year,
+    // e.g. IFDS + 05 + 05 + 26 -> "IFDS050526"). When supplied, the
+    // range/missing-ID check below only considers IDs that literally start
+    // with this prefix. This matters because a student who was batch
+    // transferred into this program/batch keeps the Registration ID they
+    // were originally issued - which was built from a DIFFERENT program
+    // code / batch / intake / year - so it must not be mixed into this
+    // program's own numbering sequence.
+    //
+    // IMPORTANT: $year_no here is the BATCH's own configured year
+    // (e.g. a batch set up in 2025 stays "25" forever, even if new
+    // students are still being processed into it in 2026). This is
+    // ONLY used for the OLD student_registration_id prefix below.
+    // It must NEVER be used to generate/check the NEW numeric
+    // registration ID (see Part 2), which is tied to the REAL
+    // calendar year the ID is issued in, not the batch's year.
     // ------------------------------
     $prog_code = isset($_POST['prog_code']) ? trim($_POST['prog_code']) : '';
     $batch_no  = isset($_POST['batch_no']) ? trim($_POST['batch_no']) : '';
     $intake_no = isset($_POST['intake_no']) ? trim($_POST['intake_no']) : '';
     $year_no   = isset($_POST['year_no']) ? trim($_POST['year_no']) : '';
-
-    if ($year_no !== '') {
-        $year_no = substr($year_no, -2);
-    }
 
     $expected_prefix = null;
     if ($prog_code !== '' && $batch_no !== '' && $intake_no !== '' && $year_no !== '') {
@@ -55,6 +68,22 @@ if (isset($_POST['program_code'], $_POST['batch_id'])) {
     }
 
     // ------------------------------
+    // 1b. Check for a missing number in the student_registration_id
+    //     (Program Registration ID) sequence (min -> max) for THIS
+    //     program_code + batch_id combination.
+    //     These IDs are auto-generated as: prog_code + batch_no + intake_no
+    //     + year + 2-digit running suffix (e.g. IFDS05052601 -> suffix 01).
+    //
+    //     If $expected_prefix was supplied, only IDs that literally start
+    //     with it are treated as belonging to this program's sequence.
+    //     Anything else (e.g. a Registration ID carried over from a
+    //     batch-transferred student, built with a different program code /
+    //     batch / intake / year) is set aside in $transferred_reg_ids
+    //     instead of corrupting the range/missing-ID check.
+    //
+    //     If $expected_prefix wasn't supplied (older caller), fall back to
+    //     the previous behaviour of treating the last 2 chars as the suffix.
+    // ------------------------------
     $missing_reg_id = null;
     $reg_id_range_min = null;
     $reg_id_range_max = null;
@@ -67,20 +96,18 @@ if (isset($_POST['program_code'], $_POST['batch_id'])) {
 
         if ($expected_prefix !== null) {
             if (strpos($rid, $expected_prefix) !== 0) {
+                // Doesn't match this program's exact prefix - most likely
+                // a transferred-in student's original Registration ID.
                 $transferred_reg_ids[] = $rid;
                 continue;
             }
             $suffix = substr($rid, strlen($expected_prefix));
         } else {
-            if (strlen($rid) < 3) continue;
-            if (preg_match('/(\d+)$/', $rid, $matches)) {
-                $suffix = $matches[1];
-            } else {
-                continue;
-            }
+            if (strlen($rid) < 3) continue; // need at least a prefix + 2-digit suffix
+            $suffix = substr($rid, -2);
         }
 
-        if ($suffix === '' || !ctype_digit($suffix)) continue;
+        if ($suffix === '' || !ctype_digit($suffix)) continue; // skip non-numeric-suffix (manual) IDs
 
         $suffixInt = intval($suffix);
         $reg_suffixes[$suffixInt] = $rid;
@@ -89,23 +116,29 @@ if (isset($_POST['program_code'], $_POST['batch_id'])) {
     if (!empty($reg_suffixes)) {
         $maxReg = max(array_keys($reg_suffixes));
 
+        // Prefix + zero-padding width used to rebuild an id.
         if ($expected_prefix !== null) {
             $reg_prefix = $expected_prefix;
+            $suffix_width = max(2, strlen($reg_suffixes[$maxReg]) - strlen($expected_prefix));
         } else {
-            $reg_prefix = preg_replace('/\d+$/', '', $reg_suffixes[$maxReg]);
+            // Fallback: assume every id in this batch shares the max entry's prefix.
+            $reg_prefix = substr($reg_suffixes[$maxReg], 0, -2);
+            $suffix_width = 2;
         }
 
-        $formatRegSuffix = function ($n) {
-            return $n < 100 ? str_pad($n, 2, '0', STR_PAD_LEFT) : strval($n);
-        };
-
-        $reg_id_range_min = $reg_prefix . $formatRegSuffix(1);
+        // Range always starts at the theoretical "01" for this program's
+        // prefix - not just the lowest id that happens to exist - and ends
+        // at the actual highest id found.
+        $reg_id_range_min = $reg_prefix . str_pad(1, $suffix_width, '0', STR_PAD_LEFT);
         $reg_id_range_max = $reg_suffixes[$maxReg];
 
+        // Scan the full 01 -> max range for gaps, so a missing id at the
+        // very start of the sequence (e.g. 01 or 02 never used) is caught
+        // too, not just gaps between the lowest and highest ids found.
         for ($i = 1; $i <= $maxReg; $i++) {
             if (!isset($reg_suffixes[$i])) {
-                $missing_reg_id = $reg_prefix . $formatRegSuffix($i);
-                break;
+                $missing_reg_id = $reg_prefix . str_pad($i, $suffix_width, '0', STR_PAD_LEFT);
+                break; // smallest missing number in the range
             }
         }
     }
@@ -136,6 +169,8 @@ if (isset($_POST['program_code'], $_POST['batch_id'])) {
         $matched_new_id = $id;
         $new_reg_ids[] = $id;
     }
+
+
 
     $missing_new_id = null;
 
@@ -178,14 +213,25 @@ if (isset($_POST['program_code'], $_POST['batch_id'])) {
         if ($maxRunning >= $minRunning) {
             for ($i = $minRunning; $i <= $maxRunning; $i++) {
                 if (!isset($running_numbers[$i])) {
+                    // Always use the FORM's year ($target_year_prefix), not
+                    // whatever year the surrounding ids in the database had.
                     $missing_new_id = $target_year_prefix . str_pad($i, $running_width, '0', STR_PAD_LEFT);
-                    break;
+                    break; // smallest missing running number in the pooled range
                 }
             }
         }
     }
 
     // ------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
 
     // ------------------------------
     // 3. Handle empty results
@@ -199,12 +245,7 @@ if (isset($_POST['program_code'], $_POST['batch_id'])) {
     // ------------------------------
     // 4. Prepare response
     // ------------------------------
-    if (!empty($reg_suffixes)) {
-        $maxRegSuffix = max(array_keys($reg_suffixes));
-        $response['last_entered_id'] = $reg_suffixes[$maxRegSuffix];
-    } else {
-        $response['last_entered_id'] = $reg_ids[0] ?? null;
-    }
+    $response['last_entered_id'] = $reg_ids[0] ?? null;          // latest old ID
     $response['last_new_entered_id'] = $matched_new_id;          // latest valid continuous ID
     $response['student_reg_ids'] = array_reverse($reg_ids);
     $response['new_student_reg_ids'] = array_reverse($new_reg_ids);
