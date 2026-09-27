@@ -449,7 +449,7 @@ $assessment = null;
                 const mainComponentId = $('#mainComponent').val();
                 const subComponentId = $('#subComponent').val();
                 const studentStatus = $('#studentStatus').val();
-                console.log('Selected Status Here:', studentStatus);
+                console.log('Selected Status Here:',  studentStatus);
 
                 // Only proceed if all required fields are selected
                 if (programmeId && batchId && moduleId) {
@@ -758,14 +758,12 @@ $assessment = null;
                                     headerHtml += `<th colspan="${colCount}">${component.as_main_component_name}</th>`;
                                 });
 
-                                // Module-level result/grade only when viewing the full module
-                                // (hide these after a Main Component is selected)
-                                if (!mainComponentId) {
-                                    headerHtml += `<th rowspan="2">Final Result (Modules)</th>`;
+                                // Add Final Result column for both IFD and ECM
+                                headerHtml += `<th rowspan="2">Final Result (Modules)</th>`;
 
-                                    if (data.programme_type === 'ECM') {
-                                        headerHtml += `<th rowspan="2">Modules Grades</th>`;
-                                    }
+                                // Add Grades of Modules column only for ECM
+                                if (data.programme_type === 'ECM') {
+                                    headerHtml += `<th rowspan="2">Modules Grades</th>`;
                                 }
 
                                 // Add Status and Email columns only for IFD
@@ -1092,53 +1090,51 @@ $assessment = null;
                                 // });
 
 
-                                if (!mainComponentId) {
-                                    columns.push({
-                                        data: 'final_result',
-                                        defaultContent: '-',
-                                        title: 'Final Result (Module)',
-                                        render: function(value, type, row) {
+                                columns.push({
+                                    data: 'final_result',
+                                    defaultContent: '-',
+                                    title: 'Final Result (Module)',
+                                    render: function(value, type, row) {
 
-                                            if (value === null || value === undefined || value === '') return '-';
+                                        if (value === null || value === undefined || value === '') return '-';
 
-                                            // me done on 27.02.2026 (here inlcuded the Not Submitted and absent students)
-                                            if (data.programme_type === 'HD') {
-                                                const markInfo = getHDMarkInfo(value);
-                                                const finalHDGrade = calculateHDGradeFromComponents(row, data.components, value) || markInfo.grade;
+                                        // me done on 27.02.2026 (here inlcuded the Not Submitted and absent students)
+                                        if (data.programme_type === 'HD') {
+                                            const markInfo = getHDMarkInfo(value);
+                                            const finalHDGrade = calculateHDGradeFromComponents(row, data.components, value) || markInfo.grade;
 
-                                                if (finalHDGrade === 'Not Submitted' || finalHDGrade === 'Absent') {
-                                                    return finalHDGrade;
-                                                }
+                                            if (finalHDGrade === 'Not Submitted' || finalHDGrade === 'Absent') {
+                                                return finalHDGrade;
+                                            }
 
-                                                if (markInfo.mark === null || typeof markInfo.mark !== 'number') {
-                                                    return finalHDGrade || value;
-                                                }
+                                            if (markInfo.mark === null || typeof markInfo.mark !== 'number') {
+                                                return finalHDGrade || value;
+                                            }
 
-                                                let output = `${markInfo.mark} - ${finalHDGrade}`;
+                                            let output = `${markInfo.mark} - ${finalHDGrade}`;
 
-                                                if (markInfo.ruleApplied) {
-                                                    return `
+                                            if (markInfo.ruleApplied) {
+                                                return `
                                                     ${output}
                                                     <br>
                                                     <small style="color:green;font-weight:600;">
                                                         (2.6 Rule Applied)
                                                     </small>`;
-                                                }
-
-                                                return output;
                                             }
 
-                                            let mark = parseFloat(value);
-                                            if (isNaN(mark)) return value;
-
-                                            // Other programmes unchanged
-                                            return value;
+                                            return output;
                                         }
-                                    });
-                                }
 
-                                // Add Grades of Modules column only for ECM, and only at module level
-                                if (!mainComponentId && data.programme_type === 'ECM') {
+                                        let mark = parseFloat(value);
+                                        if (isNaN(mark)) return value;
+
+                                        // Other programmes unchanged
+                                        return value;
+                                    }
+                                });
+
+                                // Add Grades of Modules column only for ECM ✅✅✅✅
+                                if (data.programme_type === 'ECM') {
 
                                     columns.push({
                                         data: 'final_result',
@@ -1170,9 +1166,7 @@ $assessment = null;
                                             return grade;
                                         }
                                     });
-                                }
 
-                                if (data.programme_type === 'ECM') {
                                     columns.push({
                                         data: null,
                                         title: 'Email',

@@ -192,136 +192,10 @@ $assessment = null;
     <script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.10.24/js/dataTables.bootstrap4.min.js"></script>
     <link href="https://cdn.datatables.net/1.10.24/css/dataTables.bootstrap4.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 
     <script>
         $(document).ready(function() {
             $('.select2').select2();
-
-            $(document).on('click', '#exportPdfResults', function() {
-                const tableEl = document.getElementById('resultsTable');
-                if (!tableEl || !$.fn.DataTable.isDataTable('#resultsTable')) {
-                    alert('No results to export. Please select the filters above and load results first.');
-                    return;
-                }
-
-                const dt = $('#resultsTable').DataTable();
-                if (!dt.data().count()) {
-                    alert('No results to export. Please select the filters above and load results first.');
-                    return;
-                }
-
-                const programmeName = ($('#programme option:selected').text() || 'Results').trim();
-                const batchName = ($('#batch option:selected').text() || '').trim();
-                const moduleName = ($('#module option:selected').text() || '').trim();
-                const studentStatus = ($('#studentStatus option:selected').text() || '').trim();
-
-                const fileName = ['Exam_Results', programmeName, batchName, moduleName]
-                    .filter(Boolean)
-                    .join('_')
-                    .replace(/[^a-z0-9_]+/gi, '_')
-                    .replace(/_+/g, '_') + '.pdf';
-
-                const previousLen = dt.page.len();
-                dt.page.len(-1).draw(false);
-
-                const $wrapper = $('#resultsTable').closest('.dataTables_wrapper');
-                const $headSource = $wrapper.find('.dataTables_scrollHead table thead');
-                const $thead = ($headSource.length ? $headSource : $('#resultsTable thead')).clone();
-                const $tbody = $('#resultsTable tbody').clone();
-
-                $thead.find('th').each(function() {
-                    if ($(this).text().trim().toLowerCase() === 'email') {
-                        $(this).remove();
-                    }
-                });
-                $tbody.find('tr').each(function() {
-                    const $emailCell = $(this).find('td').filter(function() {
-                        return $(this).find('.send-email').length > 0;
-                    });
-                    if ($emailCell.length) {
-                        $emailCell.remove();
-                    } else {
-                        $(this).find('td:last').each(function() {
-                            if ($(this).find('button').length) {
-                                $(this).remove();
-                            }
-                        });
-                    }
-                });
-                $thead.find('.sorting, .sorting_asc, .sorting_desc').removeClass('sorting sorting_asc sorting_desc');
-
-                const clone = document.createElement('table');
-                clone.id = 'resultsTablePdfExport';
-                clone.appendChild($thead[0]);
-                clone.appendChild($tbody[0]);
-
-                const holder = document.createElement('div');
-                holder.style.position = 'fixed';
-                holder.style.left = '-10000px';
-                holder.style.top = '0';
-                holder.appendChild(clone);
-                document.body.appendChild(holder);
-
-                const colCount = $(clone).find('thead tr:last th').length || $(clone).find('tbody tr:first td').length || 8;
-                const pageFormat = colCount > 14 ? 'a3' : 'a4';
-                const {
-                    jsPDF
-                } = window.jspdf;
-                const doc = new jsPDF({
-                    orientation: 'landscape',
-                    unit: 'mm',
-                    format: pageFormat
-                });
-
-                doc.setFontSize(13);
-                doc.text('Exam Results', 14, 12);
-                doc.setFontSize(9);
-                const metaParts = [
-                    programmeName ? 'Programme: ' + programmeName : '',
-                    batchName ? 'Batch: ' + batchName : '',
-                    moduleName ? 'Module: ' + moduleName : '',
-                    studentStatus ? 'Status: ' + studentStatus : ''
-                ].filter(Boolean);
-                doc.text(metaParts.join('  |  '), 14, 18);
-
-                doc.autoTable({
-                    html: '#resultsTablePdfExport',
-                    startY: 22,
-                    theme: 'grid',
-                    styles: {
-                        fontSize: colCount > 12 ? 6 : 8,
-                        cellPadding: 1.2,
-                        overflow: 'linebreak',
-                        valign: 'middle',
-                        halign: 'center'
-                    },
-                    headStyles: {
-                        fillColor: [78, 115, 223],
-                        textColor: 255,
-                        fontStyle: 'bold',
-                        halign: 'center'
-                    },
-                    columnStyles: {
-                        0: {
-                            halign: 'left'
-                        },
-                        1: {
-                            halign: 'left'
-                        }
-                    },
-                    didParseCell: function(data) {
-                        if (data.cell.raw && data.cell.raw.textContent) {
-                            data.cell.text = [data.cell.raw.textContent.replace(/\s+/g, ' ').trim()];
-                        }
-                    }
-                });
-
-                holder.remove();
-                dt.page.len(previousLen).draw(false);
-                doc.save(fileName);
-            });
 
             // Fetch Programmes
             $.ajax({
@@ -449,7 +323,7 @@ $assessment = null;
                 const mainComponentId = $('#mainComponent').val();
                 const subComponentId = $('#subComponent').val();
                 const studentStatus = $('#studentStatus').val();
-                console.log('Selected Status Here:', studentStatus);
+                console.log('Selected Status Here:',  studentStatus);
 
                 // Only proceed if all required fields are selected
                 if (programmeId && batchId && moduleId) {
@@ -471,19 +345,11 @@ $assessment = null;
                             // Clear previous results
                             $('#resultsTable').DataTable().clear().destroy();
 
-                            // Remove any existing action buttons before adding them again
-                            $('#resultsTableActions').remove();
+                            // Remove any existing "Send to All" button before adding a new one
                             $('#sendToAll').remove();
-                            $('#exportPdfResults').remove();
 
-                            // Add "Send to All" and "Export PDF" above the results table
-                            $('#resultsTable').parent().before(
-                                '<div id="resultsTableActions" class="mb-3 d-flex align-items-center">' +
-                                '<button id="sendToAll" type="button" class="btn btn-success">Send to All</button>' +
-                                '<button id="exportPdfResults" type="button" class="btn btn-danger ml-2">' +
-                                '<i class="fas fa-file-pdf"></i> Export PDF</button>' +
-                                '</div>'
-                            );
+                            // Add "Send to All" button above the results table
+                            $('#resultsTable').parent().before('<button id="sendToAll" class="btn btn-success mb-3">Send to All</button>');
 
                             // Handle BBM program type
                             if (data.programme_type === 'BBM') {
@@ -758,14 +624,12 @@ $assessment = null;
                                     headerHtml += `<th colspan="${colCount}">${component.as_main_component_name}</th>`;
                                 });
 
-                                // Module-level result/grade only when viewing the full module
-                                // (hide these after a Main Component is selected)
-                                if (!mainComponentId) {
-                                    headerHtml += `<th rowspan="2">Final Result (Modules)</th>`;
+                                // Add Final Result column for both IFD and ECM
+                                headerHtml += `<th rowspan="2">Final Result (Modules)</th>`;
 
-                                    if (data.programme_type === 'ECM') {
-                                        headerHtml += `<th rowspan="2">Modules Grades</th>`;
-                                    }
+                                // Add Grades of Modules column only for ECM
+                                if (data.programme_type === 'ECM') {
+                                    headerHtml += `<th rowspan="2">Modules Grades</th>`;
                                 }
 
                                 // Add Status and Email columns only for IFD
@@ -1092,53 +956,51 @@ $assessment = null;
                                 // });
 
 
-                                if (!mainComponentId) {
-                                    columns.push({
-                                        data: 'final_result',
-                                        defaultContent: '-',
-                                        title: 'Final Result (Module)',
-                                        render: function(value, type, row) {
+                                columns.push({
+                                    data: 'final_result',
+                                    defaultContent: '-',
+                                    title: 'Final Result (Module)',
+                                    render: function(value, type, row) {
 
-                                            if (value === null || value === undefined || value === '') return '-';
+                                        if (value === null || value === undefined || value === '') return '-';
 
-                                            // me done on 27.02.2026 (here inlcuded the Not Submitted and absent students)
-                                            if (data.programme_type === 'HD') {
-                                                const markInfo = getHDMarkInfo(value);
-                                                const finalHDGrade = calculateHDGradeFromComponents(row, data.components, value) || markInfo.grade;
+                                        // me done on 27.02.2026 (here inlcuded the Not Submitted and absent students)
+                                        if (data.programme_type === 'HD') {
+                                            const markInfo = getHDMarkInfo(value);
+                                            const finalHDGrade = calculateHDGradeFromComponents(row, data.components, value) || markInfo.grade;
 
-                                                if (finalHDGrade === 'Not Submitted' || finalHDGrade === 'Absent') {
-                                                    return finalHDGrade;
-                                                }
+                                            if (finalHDGrade === 'Not Submitted' || finalHDGrade === 'Absent') {
+                                                return finalHDGrade;
+                                            }
 
-                                                if (markInfo.mark === null || typeof markInfo.mark !== 'number') {
-                                                    return finalHDGrade || value;
-                                                }
+                                            if (markInfo.mark === null || typeof markInfo.mark !== 'number') {
+                                                return finalHDGrade || value;
+                                            }
 
-                                                let output = `${markInfo.mark} - ${finalHDGrade}`;
+                                            let output = `${markInfo.mark} - ${finalHDGrade}`;
 
-                                                if (markInfo.ruleApplied) {
-                                                    return `
+                                            if (markInfo.ruleApplied) {
+                                                return `
                                                     ${output}
                                                     <br>
                                                     <small style="color:green;font-weight:600;">
                                                         (2.6 Rule Applied)
                                                     </small>`;
-                                                }
-
-                                                return output;
                                             }
 
-                                            let mark = parseFloat(value);
-                                            if (isNaN(mark)) return value;
-
-                                            // Other programmes unchanged
-                                            return value;
+                                            return output;
                                         }
-                                    });
-                                }
 
-                                // Add Grades of Modules column only for ECM, and only at module level
-                                if (!mainComponentId && data.programme_type === 'ECM') {
+                                        let mark = parseFloat(value);
+                                        if (isNaN(mark)) return value;
+
+                                        // Other programmes unchanged
+                                        return value;
+                                    }
+                                });
+
+                                // Add Grades of Modules column only for ECM ✅✅✅✅
+                                if (data.programme_type === 'ECM') {
 
                                     columns.push({
                                         data: 'final_result',
@@ -1170,9 +1032,7 @@ $assessment = null;
                                             return grade;
                                         }
                                     });
-                                }
 
-                                if (data.programme_type === 'ECM') {
                                     columns.push({
                                         data: null,
                                         title: 'Email',
