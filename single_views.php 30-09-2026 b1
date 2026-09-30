@@ -27,6 +27,11 @@ $mainComponentId = $_GET['main_component_id'] ?? null;
 $subComponentId = $_GET['sub_component_id'] ?? null;
 $studentStatus = $_GET['student_status'] ?? '';
 
+// Map the UI's simplified status choice to the actual value(s) stored in
+// allocate_programme.status (same mapping used in exam_result_folder/fetch_results.php
+// and all_results.php). Whitelisted so it's safe to build directly into SQL.
+//   - '' (no filter posted) / 'active' -> Active students only (preserves original default)
+//   - 'completed'                      -> Completed students, which ALSO includes
 //                                          students whose status is 'progressionTo'
 switch (strtolower(trim($studentStatus))) {
     case 'completed':
@@ -1204,37 +1209,6 @@ if (isset($_POST['send_result_email'])) {
 
     // Corrected code for paymentStatus
     $status = '';
-    // if (empty($paymentStatus) || strtolower($paymentStatus) === 'withheld') {
-    //     $status = 'Withheld'; // Set status to 'Withheld' if payment status is withheld
-
-    // } else if (
-    //     $programName === 'Higher Diploma in Biomedical Science' ||
-    //     $programName === 'Graduate Diploma in Management (Level 6)' ||
-    //     $programName === 'BSc (Hons) in Software Engineering' ||
-    //     $programName === 'Higher Diploma in Biotechnology' ||
-    //     $programName === 'Higher Diploma in Food Science and Nutrition' ||
-    //     $programName === 'Higher Diploma in Medical Biotechnology'
-    // ) {
-    //     $status = $displayResult;
-    // } else {
-    //     // Determine status based on displayResult for other programs
-    //     if (strtolower($displayResult) === 'absent') {
-    //         $status = 'Absent';
-    //     } else if (strtolower($displayResult) === 'not submitted') {
-    //         $status = 'Not Submitted';
-    //     } else if (
-    //         strtolower($displayResult) === 'merit' ||
-    //         strtolower($displayResult) === 'pass' ||
-    //         strtolower($displayResult) === 'distinction'
-    //     ) {
-    //         $status = 'Completed';
-    //     } else {
-    //         $status = 'Not Completed';
-    //     }
-    // }
-
-    // ---------- pending comes wanna send Pending ---------------- 
-
     if (empty($paymentStatus) || strtolower($paymentStatus) === 'withheld') {
         $status = 'Withheld'; // Set status to 'Withheld' if payment status is withheld
 
@@ -1247,26 +1221,6 @@ if (isset($_POST['send_result_email'])) {
         $programName === 'Higher Diploma in Medical Biotechnology'
     ) {
         $status = $displayResult;
-    } else if (
-        $programName === 'International Foundation Diploma (Business) - ATHE Level 3' ||
-        $programName === 'International Foundation Diploma (Applied Science) - ATHE Level 3'
-    ) {
-        // ATHE Level 3 programmes
-        if (stripos($displayResult, 'absent') !== false) {
-            $status = 'Absent';
-        } else if (stripos($displayResult, 'not submitted') !== false) {
-            $status = 'Not Submitted';
-        } else if (stripos($displayResult, 'pending') !== false) {
-            $status = 'Pending';
-        } else if (
-            stripos($displayResult, 'merit') !== false ||
-            stripos($displayResult, 'pass') !== false ||
-            stripos($displayResult, 'distinction') !== false
-        ) {
-            $status = 'Completed';
-        } else {
-            $status = 'Not Completed';
-        }
     } else {
         // Determine status based on displayResult for other programs
         if (strtolower($displayResult) === 'absent') {

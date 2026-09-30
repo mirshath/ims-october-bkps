@@ -31,6 +31,10 @@ if (!in_array($studentStatus, $allowedStudentStatuses, true)) {
     $studentStatus = '';
 }
 
+// Helper SQL fragments used by all queries that join allocate_programme:
+//   $apStatusWhere        -> for queries using WHERE ap.status = ...
+//   $apStatusJoinClause   -> for queries using ON(... AND ap.status ...)
+//   Uses LOWER(TRIM(ap.status)) comparison so DB values like 'Completed', 'COMPLETED', 'completed ' all match.
 //   "Completed Students" also includes students whose status is 'progressionTo'.
 if ($studentStatus === '') {
     $apStatusJoinClause = '';
@@ -548,31 +552,8 @@ $semester = $details['semester_name'];
                                                     $programmeName == 'International Foundation Diploma (Applied Science) - ATHE Level 3'
                                                 ) {
 
-                                                    // $resultValue = !empty($row['resit_result_4']) ? $row['resit_result_4'] : (!empty($row['resit_result_3']) ? $row['resit_result_3'] : (!empty($row['resit_result_2']) ? $row['resit_result_2'] : (!empty($row['resit_result_1']) ? $row['resit_result_1'] : $row['result'])));
-                                                    // $status = (stripos($resultValue, 'absent') !== false) ? 'Absent' : ((stripos($resultValue, 'merit') !== false || stripos($resultValue, 'pass') !== false || stripos($resultValue, 'distinction') !== false) ? 'Completed' : 'Not Completed');
-                                                    // // $mail->Body .= '<tr><th>Status</th><td>' . htmlspecialchars($resultValue) . '</td></tr>';
-                                                    // $mail->Body .= '<tr><th>Status</th><td>' . ucfirst(htmlspecialchars($status)) . '</td></tr>';
-                                                    // $emailedResult = ucfirst($status);
-
-
-                                                    // ------------- new pending added -------------
                                                     $resultValue = !empty($row['resit_result_4']) ? $row['resit_result_4'] : (!empty($row['resit_result_3']) ? $row['resit_result_3'] : (!empty($row['resit_result_2']) ? $row['resit_result_2'] : (!empty($row['resit_result_1']) ? $row['resit_result_1'] : $row['result'])));
-
-                                                    // Determine the status
-                                                    if (stripos($resultValue, 'absent') !== false) {
-                                                        $status = 'Absent';
-                                                    } elseif (stripos($resultValue, 'pending') !== false) {
-                                                        $status = 'Pending';
-                                                    } elseif (
-                                                        stripos($resultValue, 'merit') !== false ||
-                                                        stripos($resultValue, 'pass') !== false ||
-                                                        stripos($resultValue, 'distinction') !== false
-                                                    ) {
-                                                        $status = 'Completed';
-                                                    } else {
-                                                        $status = 'Not Completed';
-                                                    }
-
+                                                    $status = (stripos($resultValue, 'absent') !== false) ? 'Absent' : ((stripos($resultValue, 'merit') !== false || stripos($resultValue, 'pass') !== false || stripos($resultValue, 'distinction') !== false) ? 'Completed' : 'Not Completed');
                                                     // $mail->Body .= '<tr><th>Status</th><td>' . htmlspecialchars($resultValue) . '</td></tr>';
                                                     $mail->Body .= '<tr><th>Status</th><td>' . ucfirst(htmlspecialchars($status)) . '</td></tr>';
                                                     $emailedResult = ucfirst($status);
@@ -1020,47 +1001,22 @@ $semester = $details['semester_name'];
                                                                 $programmeName == 'International Foundation Diploma (Applied Science) - ATHE Level 3'
                                                             ) {
                                                                 // Get the result value using the same logic as other programs
-                                                                // $resultValue = !empty($row['resit_result_4']) ? $row['resit_result_4'] : (!empty($row['resit_result_3']) ? $row['resit_result_3'] : (!empty($row['resit_result_2']) ? $row['resit_result_2'] : (!empty($row['resit_result_1']) ? $row['resit_result_1'] :
-                                                                //     $row['result'])));
-
-                                                                // // Determine if the program is completed or not
-                                                                // $status = (stripos($resultValue, 'absent') !== false) ? 'Absent' : ((stripos($resultValue, 'merit') !== false ||
-                                                                //     stripos($resultValue, 'pass') !== false ||
-                                                                //     stripos($resultValue, 'distinction') !== false) ? 'Completed' : 'Not Completed');
-
-                                                                // // Add both the result and status to the email body
-                                                                // // echo "<td>" . htmlspecialchars($resultValue) . "</td>";
-                                                                // echo "<td>" . htmlspecialchars(ucfirst($resultValue)) . "</td>";
-
-                                                                // echo "<td>" . htmlspecialchars($status) . "</td>";
-
-
-
-                                                                // -------------------------- new pending also included ------------- 
-                                                                // Get the result value using the same logic as other programs
                                                                 $resultValue = !empty($row['resit_result_4']) ? $row['resit_result_4'] : (!empty($row['resit_result_3']) ? $row['resit_result_3'] : (!empty($row['resit_result_2']) ? $row['resit_result_2'] : (!empty($row['resit_result_1']) ? $row['resit_result_1'] :
                                                                     $row['result'])));
 
-                                                                // Determine the status
-                                                                if (stripos($resultValue, 'absent') !== false) {
-                                                                    $status = 'Absent';
-                                                                } elseif (stripos($resultValue, 'pending') !== false) {
-                                                                    $status = 'Pending';
-                                                                } elseif (
-                                                                    stripos($resultValue, 'merit') !== false ||
+                                                                // Determine if the program is completed or not
+                                                                $status = (stripos($resultValue, 'absent') !== false) ? 'Absent' : ((stripos($resultValue, 'merit') !== false ||
                                                                     stripos($resultValue, 'pass') !== false ||
-                                                                    stripos($resultValue, 'distinction') !== false
-                                                                ) {
-                                                                    $status = 'Completed';
-                                                                } else {
-                                                                    $status = 'Not Completed';
-                                                                }
+                                                                    stripos($resultValue, 'distinction') !== false) ? 'Completed' : 'Not Completed');
 
+                                                                // Add both the result and status to the email body
+                                                                // echo "<td>" . htmlspecialchars($resultValue) . "</td>";
                                                                 echo "<td>" . htmlspecialchars(ucfirst($resultValue)) . "</td>";
+
                                                                 echo "<td>" . htmlspecialchars($status) . "</td>";
                                                             }
 
-
+                                                            // ------------------------- 
                                                             // ------------------------- 
                                                             else {
                                                                 if (!empty($row['resit_result_4'])) {
@@ -2538,6 +2494,12 @@ if (isset($_POST['send_to_all']) && !empty($programmeId) && !empty($batchId) && 
 
             $componentsResult = $conn->query($componentsQuery);
 
+            // Calculate HD final grade
+            // $finalHDGrade = 'N/A'; // Initialize HD final grade
+            // $componentGrades = [];
+            // $componentMarks = [];
+
+
             $finalHDGrade = 'N/A';
             if (
                 $programName == 'Higher Diploma in Biomedical Science' ||
@@ -2577,7 +2539,91 @@ if (isset($_POST['send_to_all']) && !empty($programmeId) && !empty($batchId) && 
                 }
             }
 
+            // -------------
+            // if ($programName == 'Executive Certificate in Management') {
 
+            //     // Determine grade based on final result
+            //     if (is_numeric($finalResult)) {
+            //         $gradeStatus = ($finalResult >= 70) ? 'Distinction' : (($finalResult >= 60) ? 'Merit' : (($finalResult >= 50) ? 'Pass' : 'Resit'));
+            //     } else {
+            //         $gradeStatus = $finalResult;
+            //     }
+
+            //     // Apply payment status
+            //     $gradeStatus = ($paymentStatus == 'withheld' || empty($paymentStatus)) ? 'Withheld' : $gradeStatus;
+
+            //     // Check if grade is Pending
+            //     if (strcasecmp(trim($gradeStatus), 'Pending') === 0) {
+
+            //         // Fetch main component grades for this module
+            //         $componentsQuery = "
+            //             SELECT ac.as_main_component_name AS component_name,
+            //                    COALESCE(sr.ecm_r4_converted_marks_grade,
+            //                             sr.ecm_r3_converted_marks_grade,
+            //                             sr.ecm_r2_converted_marks_grade,
+            //                             sr.ecm_r1_converted_marks_grade,
+            //                             sr.converted_marks_grade) AS component_grade
+            //             FROM student_results sr
+            //             LEFT JOIN assignment_components ac ON sr.main_component_id = ac.id
+            //             WHERE sr.student_id = '{$row['student_code']}'
+            //               AND sr.program_id = '{$row['program_id']}'
+            //               AND sr.batch_id = '{$row['batch_id']}'
+            //               AND sr.module_id = '$moduleId'
+            //             ORDER BY ac.id
+            //         ";
+
+            //         $componentsResult = $conn->query($componentsQuery);
+
+            //         // Show Pending as the final grade
+            //         $mail->Body .= '
+            //             <tr>
+            //                 <td><strong style="font-size: 17px; font-weight: bolder;">Final Grade:</strong></td>
+            //                 <td><strong style="font-size: 17px; font-weight: bolder;">Pending</strong></td>
+            //             </tr>';
+
+            //         if ($componentsResult && $componentsResult->num_rows > 0) {
+            //             $mail->Body .= '<tr><td colspan="2"><strong>Main Component Grades:</strong></td></tr>';
+
+            //             while ($compRow = $componentsResult->fetch_assoc()) {
+            //                 $componentName = !empty($compRow['component_name']) ? htmlspecialchars($compRow['component_name']) : 'Component';
+            //                 $componentGrade = !empty($compRow['component_grade']) ? htmlspecialchars($compRow['component_grade']) : 'N/A';
+
+            //                 $mail->Body .= '
+            //                     <tr>
+            //                         <td>' . $componentName . '</td>
+            //                         <td>' . ucfirst($componentGrade) . '</td>
+            //                     </tr>';
+            //             }
+            //         } else {
+            //             $mail->Body .= '
+            //                 <tr>
+            //                     <td colspan="2">No component results available.</td>
+            //                 </tr>';
+            //         }
+            //     } else {
+            //         // Normal flow when not Pending
+            //         $mail->Body .= '
+            //             <tr>
+            //                 <td><strong style="font-size: 17px; font-weight: bolder;">Final Grade:</strong></td>
+            //                 <td><strong style="font-size: 17px; font-weight: bolder;">' . ucfirst($gradeStatus) . '</strong></td>
+            //             </tr>';
+            //         if (strtolower($gradeStatus) == 'withheld') {
+            //             $mail->Body .= '
+            //             <br><br>
+            //                 <tr>
+            //                     <th>Note :</th>
+            //                     <td>You are kindly Requested to Contact BMS Campus <br> Finance Department <br> 0704001092</td>
+            //                 </tr>';
+            //         }
+            //     }
+            // }
+
+            // FIX (Gmail vs Outlook rendering): every branch below appends <tr> rows
+            // directly to $mail->Body with NO enclosing <table>. Browsers (Gmail) silently
+            // auto-repair broken table markup, but Outlook's Word rendering engine does not -
+            // it just flows the orphaned <tr>/<td> content as plain inline text on one line.
+            // Opening the table here (it is closed later at the single '</table>' line) fixes
+            // this for every branch, including the GDM branch which nests its own inner table.
             $mail->Body .= '
                     <table style="width:100%; border-collapse:collapse; margin-top:10px; margin-bottom:20px;">';
 
@@ -2786,6 +2832,18 @@ if (isset($_POST['send_to_all']) && !empty($programmeId) && !empty($batchId) && 
                             </td>
                         </tr>';
                 }
+
+                // Academic appeals note
+                // $mail->Body .= '
+                //                 <tr>
+                //                     <td colspan="2" style="color: #c0392b; font-size: 14px; padding-top: 15px; border:1px solid #ddd; background: #fff;">
+                //                         <strong>Academic Appeals:</strong> If any, shall be submitted within 7 days from the date hereof.<br>
+                //                         Please email: <a href="mailto:shankar@bms.ac.lk" style="color: #2980b9;">shankar@bms.ac.lk</a>
+                //                     </td>
+                //                 </tr>
+                //             </table>
+                //         </td>
+                //     </tr>';
             } else {
                 // Determine if the program is completed or not
                 $status = (strpos(strtolower($finalResult), 'merit') !== false ||
