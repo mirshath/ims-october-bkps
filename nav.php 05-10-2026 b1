@@ -28,246 +28,36 @@ if ($result_for_up) {
 ?>
 
 <style>
-    /* ===== Pro sidebar (dark glass) — design only, logic untouched ===== */
+    .nav-item.active .nav-link {
+        color: white !important;
+        background: rgb(203, 0, 0);
+        background: radial-gradient(circle, rgba(203, 0, 0, 1) 0%, rgba(110, 4, 4, 1) 92%);
+        /* border-radius: 5px; */
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border: none;
+    }
+
+    #navHover:hover .nav-link {
+        color: white !important;
+        background: rgb(203, 0, 0);
+        background: radial-gradient(circle, rgba(203, 0, 0, 1) 0%, rgba(110, 4, 4, 1) 92%);
+        /* border-radius: 5px; */
+        transition: background-color 0.3s ease;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border: none;
+    }
+
     a {
         font-size: 14px;
     }
 
-    #accordionSidebar {
-        --nav-bg-top: #182a51;
-        --nav-bg-mid: #0f2e71;
-        --nav-bg-bot: #03143d;
-        --nav-line: rgba(255, 255, 255, 0.09);
-        --nav-ink: #c6d0e3;
-        --nav-mute: #7d8db0;
-        --nav-accent: #a70000;
-        --nav-accent-soft: #7f9df0;
-        --nav-pop: #1d2d4d;
-        background: linear-gradient(180deg, var(--nav-bg-top) 0%, var(--nav-bg-mid) 48%, var(--nav-bg-bot) 100%) !important;
-        border-right: 1px solid var(--nav-line);
-        box-shadow: 6px 0 28px rgba(20, 28, 60, .18);
-        position: sticky;
-        top: 0;
-        height: 100vh;
-        align-self: flex-start;
-        min-height: 0;
-        scrollbar-width: thin;
-        scrollbar-color: rgba(255, 255, 255, .2) transparent;
-    }
-
-    #accordionSidebar:not(.toggled) {
-        overflow-y: auto;
-        overflow-x: hidden;
-    }
-
-    #accordionSidebar::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    #accordionSidebar::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, .18);
-        border-radius: 6px;
-    }
-
-    /* Brand: logo on a light glass card so any logo colours stay readable */
-    #accordionSidebar .sidebar-brand {
-        height: auto;
-        margin: 14px 12px 14px !important;
-        padding: 10px 12px;
-        background: rgba(255, 255, 255, .92);
-        border-radius: 14px;
-        box-shadow: 0 6px 18px rgba(0, 0, 0, .22), inset 0 1px 0 #fff;
-    }
-
-    #accordionSidebar .sidebar-brand-text {
-        margin: 0 !important;
-    }
-
-    #accordionSidebar .sidebar-brand img {
-        max-height: 46px;
-        width: auto;
-    }
-
-    #accordionSidebar .sidebar-divider {
-        border-top: 1px solid var(--nav-line);
-        margin: 0 14px 8px !important;
-    }
-
-    /* Top-level items */
-    #accordionSidebar .nav-item {
-        border: 0;
-    }
-
     .top_bottom_line {
-        border: 0 !important;
-    }
-
-    #accordionSidebar:not(.toggled) .nav-item .nav-link {
-        display: flex;
-        align-items: center;
-        width: auto;
-        margin: 2px 12px;
-        padding: .72rem .9rem;
-        border-radius: 12px;
-        text-align: left;
-        color: var(--nav-ink) !important;
-        font-weight: 500;
-        letter-spacing: 0;
-        text-transform: none;
-        border: 0;
-        transition: background .18s ease, color .18s ease, box-shadow .18s ease;
-    }
-
-    #accordionSidebar:not(.toggled) .nav-item .nav-link span {
-        font-size: .88rem;
-        display: inline;
-    }
-
-    #accordionSidebar .nav-item .nav-link i {
-        width: 1.4rem;
-        margin-right: .6rem;
-        font-size: .95rem;
-        color: var(--nav-mute);
-        transition: color .18s ease;
-    }
-
-    #accordionSidebar .nav-item .nav-link[data-toggle="collapse"]::after {
-        margin-left: auto;
-        float: none;
-        color: var(--nav-mute);
-    }
-
-    /* Hover */
-    #accordionSidebar .nav-item:hover>.nav-link,
-    #accordionSidebar .nav-item .nav-link:not(.collapsed) {
-        background: rgba(255, 255, 255, .08);
-        color: #fff !important;
-    }
-
-    #accordionSidebar .nav-item:hover>.nav-link i,
-    #accordionSidebar .nav-item .nav-link:not(.collapsed) i {
-        color: #fff;
-    }
-
-    /* Active (current section) */
-    #accordionSidebar .nav-item.active>.nav-link {
-        color: #fff !important;
-        font-weight: 600;
-        background: linear-gradient(135deg, #c20000, var(--nav-accent) 55%, #7d0000) !important;
-        box-shadow: 0 8px 20px rgba(167, 0, 0, .40), inset 0 1px 0 rgba(255, 255, 255, .22);
-    }
-
-    #accordionSidebar .nav-item.active>.nav-link i,
-    #accordionSidebar .nav-item.active>.nav-link::after {
-        color: #fff;
-    }
-
-    /* Sub-menu panel */
-    #accordionSidebar .collapse-inner,
-    #accordionSidebar .collapse-inner.bg-white {
-        background: var(--nav-pop) !important;
-        border: 1px solid var(--nav-line);
-        border-radius: 14px !important;
-        margin: 4px 12px 10px;
-        padding: 8px !important;
-        box-shadow: none;
-    }
-
-    #accordionSidebar .collapse-header {
-        margin: 8px 8px 4px;
-        padding: 0;
-        font-size: .72rem;
-        font-weight: 700;
-        letter-spacing: .02em;
-        text-transform: none;
-        color: var(--nav-mute);
-    }
-
-    #accordionSidebar .collapse-header:first-child {
-        margin-top: 2px;
-    }
-
-    #accordionSidebar .collapse-item {
-        display: block;
-        position: relative;
-        margin: 1px 0;
-        padding: .5rem .75rem .5rem 1.6rem;
-        border-radius: 9px;
-        font-size: .82rem;
-        font-weight: 500;
-        white-space: normal;
-        color: var(--nav-ink);
-        transition: background .15s ease, color .15s ease;
-    }
-
-    #accordionSidebar .collapse-item::before {
-        content: "";
-        position: absolute;
-        left: .75rem;
-        top: 50%;
-        width: 5px;
-        height: 5px;
-        margin-top: -2.5px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, .25);
-    }
-
-    #accordionSidebar .collapse-item:hover {
-        background: rgba(255, 255, 255, .09);
-        color: #fff;
-        text-decoration: none;
-    }
-
-    #accordionSidebar .collapse-item:hover::before {
-        background: var(--nav-accent-soft);
-    }
-
-    #accordionSidebar .collapse-item.active {
-        background: rgba(127, 157, 240, .18);
-        color: #fff;
-        font-weight: 600;
-    }
-
-    #accordionSidebar .collapse-item.active {
-        box-shadow: inset 3px 0 0 var(--nav-accent-soft);
-    }
-
-    #accordionSidebar .collapse-item.active::before {
-        background: var(--nav-accent-soft);
-        box-shadow: 0 0 0 3px rgba(127, 157, 240, .25);
-    }
-
-    /* Pages the user has no permission for: dim + lock icon */
-    #accordionSidebar .collapse-item[style*="pointer-events: none"] {
-        color: var(--nav-mute) !important;
-        opacity: .55;
-        cursor: not-allowed;
-    }
-
-    #accordionSidebar .collapse-item[style*="pointer-events: none"]::after {
-        content: "\f023";
-        font-family: "Font Awesome 5 Free";
-        font-weight: 900;
-        font-size: .62rem;
-        position: absolute;
-        right: .75rem;
-        top: 50%;
-        transform: translateY(-50%);
-    }
-
-    #accordionSidebar .nav-link:focus-visible,
-    #accordionSidebar .collapse-item:focus-visible {
-        outline: 2px solid var(--nav-accent-soft);
-        outline-offset: 2px;
-    }
-
-    /* Collapsed (icon-only) mode keeps SB Admin behaviour, just themed */
-    #accordionSidebar.toggled .nav-item .nav-link {
-        color: var(--nav-ink) !important;
-    }
-
-    #accordionSidebar.toggled .nav-item.active>.nav-link {
-        background: linear-gradient(135deg, #c20000, var(--nav-accent) 55%, #7d0000) !important;
+        /* border-top: 2px solid whitesmoke; */
+        border-bottom: 2px solid whitesmoke;
     }
 </style>
 
@@ -454,6 +244,10 @@ if ($result_for_up) {
                 <a class="collapse-item <?= ($current_url == 're_register' && in_array('Program Re Registration - re_register', $subListValues)) ? 'active' : '' ?>"
                     href="re_register" <?= !in_array('Program Re Registration - re_register', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Program Re Registration
                 </a>
+
+                <!--<a class="collapse-item <?= ($current_url == 'UpdateElectiveModule' && in_array('Update Students E Module - UpdateElectiveModule', $subListValues)) ? 'active' : '' ?>"-->
+                <!--    href="UpdateElectiveModule" <?= !in_array('Update Students E Module - UpdateElectiveModule', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>><strike>Update Students E-->
+                <!--        Module</strike></a>-->
 
                 <a class="collapse-item <?= ($current_url == 'uploadScanCopies' && in_array('Upload Student Documents - uploadScanCopies', $subListValues)) ? 'active' : '' ?>"
                     href="uploadScanCopies" <?= !in_array('Upload Student Documents - uploadScanCopies', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Upload Student Documents </a>
@@ -761,6 +555,21 @@ if ($result_for_up) {
         <div id="collapseInductionSectionsection" class="collapse" aria-labelledby="headingOne"
             data-parent="#accordionSidebar">
             <div class="bg-white py-2 collapse-inner rounded">
+
+                <!-- <h6 class="collapse-header">FROM OUT SOURCE</h6>
+
+                <a class="collapse-item <?= ($current_url == 'induction_scan' && in_array('Induction Scan - induction_scan', $subListValues)) ? 'active' : '' ?>"
+                    href="induction_scan" <?= !in_array('Induction Scan - induction_scan', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Induction Scan</a>
+
+                <a class="collapse-item <?= ($current_url == 'upload_induction_students' && in_array('Induction Upload Student - upload_induction_students', $subListValues)) ? 'active' : '' ?>"
+                    href="upload_induction_students" <?= !in_array('Induction Upload Student - upload_induction_students', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Induction Upload Student</a>
+
+
+                <a class="collapse-item <?= ($current_url == 'total_induction_students' && in_array('Total Induction Student List - total_induction_students', $subListValues)) ? 'active' : '' ?>"
+                    href="total_induction_students" <?= !in_array('Total Induction Student List - total_induction_students', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Total Induction Student List</a>
+ -->
+
+
                 <h6 class="collapse-header">FROM DB</h6>
 
                 <a class="collapse-item <?= ($current_url == 'induction_from_db_email_send' && in_array('Induction Email Send - induction_from_db_email_send', $subListValues)) ? 'active' : '' ?>"

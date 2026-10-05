@@ -57,13 +57,13 @@ if ($isSuperAdmin) {
                 <div class="dash-hero">
                     <div class="dash-hero-text">
                         <?php
-                        // $h = (int)date('G');
-                        // $ampm = $h < 12 ? 'AM' : 'PM';
-                        // $hour12 = $h % 12 === 0 ? 12 : $h % 12;
-                        // $greeting = $h < 12 ? 'Morning' : ($h < 17 ? 'Afternoon' : 'Evening');
-                        // echo $greeting;
-                        ?>
-                        <p class="dash-greeting">Hello, <strong><?php echo htmlspecialchars(ucfirst($_SESSION['username'])); ?></strong></p>
+                                                        // $h = (int)date('G');
+                                                        // $ampm = $h < 12 ? 'AM' : 'PM';
+                                                        // $hour12 = $h % 12 === 0 ? 12 : $h % 12;
+                                                        // $greeting = $h < 12 ? 'Morning' : ($h < 17 ? 'Afternoon' : 'Evening');
+                                                        // echo $greeting;
+                                                        ?>
+                        <p class="dash-greeting">Hello , <strong><?php echo htmlspecialchars(ucfirst($_SESSION['username'])); ?></strong> 👋</p>
                         <h1 class="dash-title">Institution Management<br><span>Overview</span></h1>
                         <p class="dash-sub">Here's what's happening across your institution today.</p>
                     </div>
@@ -366,6 +366,21 @@ if ($isSuperAdmin) {
                     </div>
                 </div>
 
+                
+
+                <!-- ── Students Table ── -->
+                <!-- <div class="table-section">
+                    <h2 class="section-heading">
+                        <span class="heading-bar"></span>
+                        Student Records
+                    </h2>
+                    <div class="table-card">
+                        <div class="table-responsive">
+                            <table id="studentsTable" class="table table-striped table-bordered dash-table" style="width:100%;font-size:12px;"></table>
+                        </div>
+                    </div>
+                </div> -->
+
             </div>
             <!-- ════════════════ END DASHBOARD ════════════════ -->
         </div>
@@ -449,42 +464,35 @@ if ($isSuperAdmin) {
 
 <style>
     /* ═══════════════════════════════════════════════════════
-   DASHBOARD — PRO REDESIGN (navy + red, matches sidebar & glass top bar)
-   Font: Sora (text) + IBM Plex Mono (numbers)
+   DASHBOARD — MODERN REDESIGN
+   Font: Sora (display) + IBM Plex Mono (numbers)
    ═══════════════════════════════════════════════════════ */
 
     :root {
-        --bg: #eef2f9;
+        --bg: #f1f5f9;
         --surface: #ffffff;
-        --border: #dfe5f1;
-        --text-1: #0f1b3a;
-        --text-2: #4a5878;
-        --text-3: #7d8db0;
+        --border: #e2e8f0;
+        --text-1: #0f172a;
+        --text-2: #475569;
+        --text-3: #94a3b8;
         --green: #22c55e;
         --amber: #f59e0b;
         --blue: #3b82f6;
         --red: #ef4444;
-
-        --brand-top: #182a51;
-        --brand-mid: #0f2e71;
-        --brand-bot: #03143d;
-        --brand-red: #a70000;
-        --brand-soft: #7f9df0;
-
+        --indigo: #6366f1;
         --radius: 16px;
-        --shadow: 0 1px 2px rgba(15, 27, 58, .05), 0 6px 20px rgba(15, 27, 58, .06);
-        --shadow-lg: 0 10px 30px rgba(15, 27, 58, .13);
+        --shadow: 0 2px 16px rgba(15, 23, 42, .07);
+        --shadow-lg: 0 8px 32px rgba(15, 23, 42, .12);
         --font: 'Sora', sans-serif;
         --mono: 'IBM Plex Mono', monospace;
     }
 
-    /* ── Root (transparent so the page's soft glass backdrop shows through) ── */
+    /* ── Root ── */
     .dash-root {
-        padding: 4px 32px 60px;
-        background: transparent;
+        padding: 28px 32px 60px;
+        background: var(--bg);
         min-height: 100vh;
         font-family: var(--font);
-        color: var(--text-1);
     }
 
     /* ── Hero ── */
@@ -492,66 +500,69 @@ if ($isSuperAdmin) {
         display: flex;
         align-items: flex-end;
         justify-content: space-between;
-        margin-bottom: 28px;
-        padding: 30px 36px;
-        background: linear-gradient(135deg, var(--brand-top) 0%, var(--brand-mid) 55%, var(--brand-bot) 100%);
-        border: 1px solid rgba(255, 255, 255, .08);
-        border-radius: 20px;
-        box-shadow: 0 14px 34px rgba(3, 20, 61, .28), inset 0 1px 0 rgba(255, 255, 255, .12);
+        margin-bottom: 32px;
+        padding: 32px 36px;
+        background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #0284c7 100%);
+        border-radius: 24px;
         position: relative;
         overflow: hidden;
     }
 
-    /* red edge marker */
     .dash-hero::before {
         content: '';
         position: absolute;
-        left: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 4px;
-        height: 56%;
-        border-radius: 0 4px 4px 0;
-        background: var(--brand-red);
-        box-shadow: 0 0 18px rgba(167, 0, 0, .6);
+        top: -60px;
+        right: -60px;
+        width: 260px;
+        height: 260px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, .04);
+        pointer-events: none;
     }
 
     .dash-hero::after {
-        display: none;
+        content: '';
+        position: absolute;
+        bottom: -40px;
+        left: 42%;
+        width: 170px;
+        height: 170px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, .03);
+        pointer-events: none;
     }
 
     .dash-greeting {
         font-size: 14px;
-        color: #c6d0e3;
-        margin: 0 0 8px;
+        color: rgba(255, 255, 255, .55);
+        margin: 0 0 6px;
         font-weight: 400;
     }
 
     .dash-greeting strong {
-        color: #fff;
+        color: #7dd3fc;
         font-weight: 600;
     }
 
     .dash-title {
         font-size: 30px;
-        font-weight: 700;
+        font-weight: 800;
         color: #fff;
         margin: 0 0 8px;
-        line-height: 1.18;
-        letter-spacing: -.02em;
+        line-height: 1.15;
+        letter-spacing: -.03em;
     }
 
     .dash-title span {
-        display: block;
-        background: none;
-        -webkit-text-fill-color: initial;
-        color: #c6d0e3;
-        font-weight: 400;
+        background: linear-gradient(90deg, #38bdf8, #818cf8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
     }
 
     .dash-sub {
         font-size: 13px;
-        color: #7d8db0;
+        color: rgba(255, 255, 255, .4);
         margin: 0;
     }
 
@@ -569,28 +580,22 @@ if ($isSuperAdmin) {
         display: flex;
         align-items: center;
         gap: 8px;
-        background: rgba(255, 255, 255, .08);
-        -webkit-backdrop-filter: blur(10px);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, .14);
+        background: rgba(255, 255, 255, .1);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, .12);
         border-radius: 100px;
         padding: 8px 16px;
         font-size: 13px;
         font-weight: 500;
-        color: #e6ebf5;
+        color: rgba(255, 255, 255, .85);
         white-space: nowrap;
-    }
-
-    .dash-date-pill i,
-    .dash-time-pill i {
-        color: var(--brand-soft);
     }
 
     .dash-time-pill {
         font-family: var(--mono);
     }
 
-    /* ── Section heading ── */
+    /* ── Section Heading ── */
     .section-heading {
         display: flex;
         align-items: center;
@@ -598,7 +603,7 @@ if ($isSuperAdmin) {
         font-size: 16px;
         font-weight: 700;
         color: var(--text-1);
-        margin: 0 0 18px;
+        margin: 0 0 20px;
         letter-spacing: -.01em;
     }
 
@@ -606,40 +611,40 @@ if ($isSuperAdmin) {
         display: block;
         width: 4px;
         height: 20px;
-        background: var(--brand-red);
+        background: linear-gradient(180deg, #3b82f6, #6366f1);
         border-radius: 100px;
         flex-shrink: 0;
     }
 
-    /* ── KPI grid ── */
+    /* ── KPI Grid ── */
     .kpi-section {
         margin-bottom: 28px;
     }
 
     .kpi-grid {
         display: grid;
-        grid-template-columns: repeat(5, 1fr);
+        /* grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); */
+        /* grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); */
+        grid-template-columns: repeat(4, 1fr);
         gap: 16px;
     }
 
     .kpi-card {
-        display: flex;
-        flex-direction: column;
-        background: var(--surface);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, #ffffff 55%, #f8fafc 100%);
         border-radius: var(--radius);
         padding: 20px;
         box-shadow: var(--shadow);
         border: 1px solid var(--border);
-        animation: riseIn .45s ease both;
+        animation: riseIn .5s ease both;
         animation-delay: var(--delay, 0s);
-        transition: box-shadow .2s ease, border-color .2s ease;
+        transition: transform .2s ease, box-shadow .2s ease;
         position: relative;
         overflow: hidden;
     }
 
     .kpi-card:hover {
+        transform: translateY(-3px);
         box-shadow: var(--shadow-lg);
-        border-color: #c9d3e8;
     }
 
     .kpi-card::before {
@@ -649,14 +654,22 @@ if ($isSuperAdmin) {
         left: 0;
         right: 0;
         height: 3px;
+        border-radius: var(--radius) var(--radius) 0 0;
     }
 
     .kpi-card::after {
-        display: none;
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(140px 90px at 18% 0%, rgba(99, 102, 241, .14) 0%, rgba(99, 102, 241, 0) 60%),
+            radial-gradient(110px 80px at 95% 10%, rgba(56, 189, 248, .12) 0%, rgba(56, 189, 248, 0) 58%);
+        pointer-events: none;
+        opacity: .9;
     }
 
     .kpi-total::before {
-        background: var(--brand-top);
+        background: #64748b;
     }
 
     .kpi-active::before {
@@ -676,22 +689,22 @@ if ($isSuperAdmin) {
     }
 
     .kpi-program::before {
-        background: var(--brand-mid);
+        background: var(--indigo);
     }
 
     .kpi-batch::before {
-        background: #5b7fd6;
+        background: #0f766e;
     }
 
     .kpi-users::before {
-        background: var(--brand-red);
+        background: #be185d;
     }
 
     .kpi-card-top {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 16px;
+        margin-bottom: 14px;
     }
 
     .kpi-icon-wrap {
@@ -705,8 +718,8 @@ if ($isSuperAdmin) {
     }
 
     .kpi-total .kpi-icon-wrap {
-        background: #e8edf8;
-        color: var(--brand-top);
+        background: #f1f5f9;
+        color: #64748b;
     }
 
     .kpi-active .kpi-icon-wrap {
@@ -730,59 +743,79 @@ if ($isSuperAdmin) {
     }
 
     .kpi-program .kpi-icon-wrap {
-        background: #e6edfb;
-        color: var(--brand-mid);
+        background: #eef2ff;
+        color: #4338ca;
     }
 
     .kpi-batch .kpi-icon-wrap {
-        background: #eaf0fd;
-        color: #4a6fcf;
+        background: #f0fdfa;
+        color: #0f766e;
     }
 
     .kpi-users .kpi-icon-wrap {
-        background: #fbe9e9;
-        color: var(--brand-red);
+        background: #fdf2f8;
+        color: #be185d;
     }
 
-    /* the arrow chips carried no real trend data — hidden to avoid implying one */
     .kpi-trend {
-        display: none;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 100px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+
+    .kpi-trend.up {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .kpi-trend.down {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .kpi-trend.neutral {
+        background: #f1f5f9;
+        color: #64748b;
     }
 
     .kpi-value {
-        font-size: 28px;
-        font-weight: 700;
+        font-size: 30px;
+        font-weight: 800;
         color: var(--text-1);
-        letter-spacing: -.02em;
+        letter-spacing: -.03em;
         font-family: var(--mono);
         line-height: 1;
-        margin-bottom: 6px;
+        margin-bottom: 4px;
     }
 
     .kpi-sub {
         font-size: 12px;
-        font-weight: 600;
+        font-weight: 700;
         color: var(--text-3);
         font-family: var(--mono);
         margin-bottom: 10px;
+        letter-spacing: -.01em;
     }
 
     .kpi-label {
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 500;
         color: var(--text-2);
-        margin-bottom: 14px;
-        text-transform: none;
-        letter-spacing: 0;
-        line-height: 1.35;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        letter-spacing: .08em;
     }
 
     .kpi-bar {
         height: 6px;
-        background: #e8edf6;
+        background: var(--border);
         border-radius: 100px;
         overflow: hidden;
-        margin-top: auto;
     }
 
     .kpi-bar-fill {
@@ -792,7 +825,7 @@ if ($isSuperAdmin) {
     }
 
     .kpi-total .kpi-bar-fill {
-        background: var(--brand-top);
+        background: #64748b;
     }
 
     .kpi-active .kpi-bar-fill {
@@ -812,21 +845,21 @@ if ($isSuperAdmin) {
     }
 
     .kpi-program .kpi-bar-fill {
-        background: var(--brand-mid);
+        background: var(--indigo);
     }
 
     .kpi-batch .kpi-bar-fill {
-        background: #5b7fd6;
+        background: #0f766e;
     }
 
     .kpi-users .kpi-bar-fill {
-        background: var(--brand-red);
+        background: #be185d;
     }
 
     @keyframes riseIn {
         from {
             opacity: 0;
-            transform: translateY(8px);
+            transform: translateY(16px);
         }
 
         to {
@@ -835,7 +868,7 @@ if ($isSuperAdmin) {
         }
     }
 
-    /* ── Summary strip ── */
+    /* ── Summary Strip ── */
     .summary-strip {
         background: var(--surface);
         border-radius: var(--radius);
@@ -858,7 +891,7 @@ if ($isSuperAdmin) {
         display: flex;
         flex-direction: column;
         gap: 12px;
-        min-width: 220px;
+        min-width: 200px;
     }
 
     .legend-row {
@@ -910,23 +943,23 @@ if ($isSuperAdmin) {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 4px;
+        gap: 3px;
     }
 
     .qs-value {
         font-size: 28px;
-        font-weight: 700;
-        color: var(--brand-top);
+        font-weight: 800;
+        color: var(--text-1);
         font-family: var(--mono);
         letter-spacing: -.02em;
     }
 
     .qs-label {
-        font-size: 12px;
+        font-size: 11px;
         color: var(--text-3);
         font-weight: 500;
-        text-transform: none;
-        letter-spacing: 0;
+        text-transform: uppercase;
+        letter-spacing: .07em;
         white-space: nowrap;
     }
 
@@ -936,7 +969,7 @@ if ($isSuperAdmin) {
         background: var(--border);
     }
 
-    /* ── Department tiles (one calm colour family instead of a rainbow) ── */
+    /* ── Nav Tiles ── */
     .nav-section {
         margin-bottom: 28px;
     }
@@ -948,8 +981,6 @@ if ($isSuperAdmin) {
     }
 
     .nav-tile {
-        --accent: var(--brand-mid) !important;
-        --accent-light: #e9effb !important;
         display: flex;
         align-items: center;
         gap: 16px;
@@ -959,9 +990,9 @@ if ($isSuperAdmin) {
         padding: 18px 20px;
         text-decoration: none;
         box-shadow: var(--shadow);
-        animation: riseIn .45s ease both;
+        animation: riseIn .5s ease both;
         animation-delay: var(--delay, 0s);
-        transition: border-color .2s ease, box-shadow .2s ease;
+        transition: all .22s ease;
         position: relative;
         overflow: hidden;
     }
@@ -969,24 +1000,21 @@ if ($isSuperAdmin) {
     .nav-tile::before {
         content: '';
         position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 3px;
-        background: var(--brand-red);
-        transform: scaleY(0);
-        transform-origin: center;
-        transition: transform .22s ease;
+        inset: 0;
+        background: var(--accent-light);
+        opacity: 0;
+        transition: opacity .2s;
     }
 
     .nav-tile:hover {
-        border-color: #c3d0ec;
+        border-color: var(--accent);
+        transform: translateY(-2px);
         box-shadow: var(--shadow-lg);
         text-decoration: none;
     }
 
     .nav-tile:hover::before {
-        transform: scaleY(1);
+        opacity: 1;
     }
 
     .nav-tile:hover .nav-tile-arrow {
@@ -1007,11 +1035,11 @@ if ($isSuperAdmin) {
         flex-shrink: 0;
         position: relative;
         z-index: 1;
-        transition: background .2s, color .2s;
+        transition: all .2s;
     }
 
     .nav-tile:hover .nav-tile-icon {
-        background: var(--brand-top);
+        background: var(--accent);
         color: #fff;
     }
 
@@ -1032,16 +1060,16 @@ if ($isSuperAdmin) {
     }
 
     .nav-tile-desc {
-        font-size: 12px;
+        font-size: 11px;
         color: var(--text-3);
         font-weight: 400;
     }
 
     .nav-tile-arrow {
-        color: var(--brand-red);
+        color: var(--accent);
         font-size: 13px;
         opacity: 0;
-        transition: transform .2s ease, opacity .2s ease;
+        transition: all .2s ease;
         position: relative;
         z-index: 1;
         flex-shrink: 0;
@@ -1063,22 +1091,22 @@ if ($isSuperAdmin) {
         display: flex;
         align-items: center;
         gap: 6px;
-        background: var(--brand-red);
+        background: var(--red);
         color: #fff;
         padding: 8px 18px;
         border-radius: 100px;
         font-size: 12px;
         font-weight: 600;
         text-decoration: none;
-        transition: background .2s, box-shadow .2s;
+        transition: all .2s;
         font-family: var(--font);
-        box-shadow: 0 6px 16px rgba(167, 0, 0, .28);
     }
 
     .view-all-btn:hover {
-        background: #8a0000;
+        background: #dc2626;
         color: #fff;
         text-decoration: none;
+        transform: translateY(-1px);
     }
 
     .notif-grid {
@@ -1103,8 +1131,8 @@ if ($isSuperAdmin) {
     }
 
     .notif-card.notif-unread {
-        border-color: #c3d0ec;
-        background: #f5f8ff;
+        border-color: #bfdbfe;
+        background: #f8faff;
     }
 
     .notif-card-accent {
@@ -1132,7 +1160,7 @@ if ($isSuperAdmin) {
         font-weight: 700;
         padding: 2px 8px;
         border-radius: 100px;
-        letter-spacing: .05em;
+        letter-spacing: .07em;
         font-family: var(--mono);
     }
 
@@ -1145,7 +1173,7 @@ if ($isSuperAdmin) {
     .notif-unread-dot {
         width: 7px;
         height: 7px;
-        background: var(--brand-red);
+        background: var(--blue);
         border-radius: 50%;
         margin-left: auto;
         animation: pulseDot 2s infinite;
@@ -1155,11 +1183,11 @@ if ($isSuperAdmin) {
 
         0%,
         100% {
-            box-shadow: 0 0 0 0 rgba(167, 0, 0, .4);
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, .4);
         }
 
         50% {
-            box-shadow: 0 0 0 5px rgba(167, 0, 0, 0);
+            box-shadow: 0 0 0 5px rgba(59, 130, 246, 0);
         }
     }
 
@@ -1186,7 +1214,7 @@ if ($isSuperAdmin) {
     }
 
     .notif-read-btn {
-        background: var(--brand-top);
+        background: var(--blue);
         color: #fff;
         border: none;
         border-radius: 100px;
@@ -1199,7 +1227,7 @@ if ($isSuperAdmin) {
     }
 
     .notif-read-btn:hover {
-        background: var(--brand-mid);
+        background: #1d4ed8;
     }
 
     .notif-read-badge {
@@ -1217,7 +1245,7 @@ if ($isSuperAdmin) {
     .notif-skeleton {
         height: 110px;
         border-radius: var(--radius);
-        background: linear-gradient(90deg, #eaeff8 25%, #dfe5f1 50%, #eaeff8 75%);
+        background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
         background-size: 200% 100%;
         animation: shimmer 1.4s infinite;
     }
@@ -1246,7 +1274,7 @@ if ($isSuperAdmin) {
         margin-bottom: 8px;
     }
 
-    /* ── Table (kept for when the records table is re-enabled) ── */
+    /* ── Table ── */
     .table-section {
         margin-bottom: 20px;
     }
@@ -1264,36 +1292,7 @@ if ($isSuperAdmin) {
         font-family: var(--font) !important;
     }
 
-    /* ── Accessibility ── */
-    .nav-tile:focus-visible,
-    .view-all-btn:focus-visible,
-    .notif-read-btn:focus-visible {
-        outline: 2px solid var(--brand-soft);
-        outline-offset: 2px;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-
-        .kpi-card,
-        .nav-tile,
-        .notif-card,
-        .notif-unread-dot,
-        .notif-skeleton {
-            animation: none !important;
-        }
-
-        .kpi-bar-fill {
-            transition: none;
-        }
-    }
-
     /* ── Responsive ── */
-    @media (max-width: 1279px) {
-        .kpi-grid {
-            grid-template-columns: repeat(3, 1fr);
-        }
-    }
-
     @media (max-width: 1024px) {
         .summary-strip {
             gap: 24px;
@@ -1306,7 +1305,7 @@ if ($isSuperAdmin) {
 
     @media (max-width: 768px) {
         .dash-root {
-            padding: 4px 16px 40px;
+            padding: 16px 16px 40px;
         }
 
         .dash-hero {
@@ -1323,7 +1322,6 @@ if ($isSuperAdmin) {
         .dash-hero-meta {
             flex-direction: row;
             flex-wrap: wrap;
-            align-items: flex-start;
         }
 
         .kpi-grid {
@@ -1332,19 +1330,15 @@ if ($isSuperAdmin) {
 
         .summary-strip {
             flex-direction: column;
-            align-items: flex-start;
             padding: 20px;
             gap: 20px;
         }
 
-        .nav-grid,
-        .notif-grid {
+        .nav-grid {
             grid-template-columns: 1fr;
         }
-    }
 
-    @media (max-width: 420px) {
-        .kpi-grid {
+        .notif-grid {
             grid-template-columns: 1fr;
         }
     }
