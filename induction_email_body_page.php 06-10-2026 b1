@@ -88,641 +88,16 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
     }
 </style>
 
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500;600&display=swap" rel="stylesheet">
-<style>
-    /* ===== Induction email template — taste-skill pass (variance 8 / motion 6 / density 4) =====
-   One accent (softened brand red), navy-tinted neutrals, no glow, no gradient text, tinted shadows */
-    .ie-page {
-        --ie-ink: #101828;
-        --ie-text: #475467;
-        --ie-mute: #7a869a;
-        --ie-line: #e4e8ef;
-        --ie-line-2: #d5dbe6;
-        --ie-bg: #f3f5f9;
-        --ie-surface: #fff;
-        --ie-navy: #182a51;
-        --ie-navy-2: #0f2e71;
-        --ie-accent: #a22b2f;
-        --ie-accent-soft: #f7e9e9;
-        --ie-shadow: 0 1px 2px rgba(24, 42, 81, .05), 0 8px 24px -8px rgba(24, 42, 81, .12);
-        --ease: cubic-bezier(.16, 1, .3, 1);
-        font-family: 'Geist', system-ui, sans-serif;
-        color: var(--ie-ink);
-        padding: 8px 40px 56px !important;
-        max-width: 1400px;
-    }
-
-    #content-wrapper {
-        background: var(--ie-bg) !important
-    }
-
-    .ie-page * {
-        font-family: inherit
-    }
-
-    /* header — left aligned, quiet */
-    .ie-head {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        align-items: end;
-        gap: 16px;
-        margin: 0 0 28px;
-        padding-bottom: 18px;
-        border-bottom: 1px solid var(--ie-line)
-    }
-
-    .ie-head h1 {
-        font-size: 1.35rem;
-        font-weight: 600;
-        letter-spacing: -.025em;
-        margin: 0 0 6px;
-        color: var(--ie-ink)
-    }
-
-    .ie-head h1 .ie-bar {
-        display: inline-block;
-        width: 3px;
-        height: 20px;
-        border-radius: 2px;
-        background: var(--ie-accent);
-        margin-right: 12px;
-        vertical-align: -4px
-    }
-
-    .ie-head p {
-        margin: 0;
-        color: var(--ie-text);
-        font-size: .9rem;
-        max-width: 62ch;
-        line-height: 1.55
-    }
-
-    .ie-mode {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-size: .76rem;
-        font-weight: 500;
-        padding: 6px 12px;
-        border-radius: 999px;
-        background: #fff;
-        border: 1px solid var(--ie-line-2);
-        color: var(--ie-text)
-    }
-
-    .ie-mode::before {
-        content: "";
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: #16a34a;
-        animation: iePulse 2.4s var(--ease) infinite
-    }
-
-    .ie-mode.edit::before {
-        background: #d97706
-    }
-
-    @keyframes iePulse {
-
-        0%,
-        100% {
-            box-shadow: 0 0 0 0 rgba(22, 163, 74, .35)
-        }
-
-        60% {
-            box-shadow: 0 0 0 6px rgba(22, 163, 74, 0)
-        }
-    }
-
-    /* form card */
-    .ie-page .card {
-        background: var(--ie-surface);
-        border: 1px solid var(--ie-line);
-        border-radius: 16px;
-        box-shadow: var(--ie-shadow) !important;
-        overflow: visible
-    }
-
-    .ie-page .card-header {
-        background: transparent;
-        border-bottom: 1px solid var(--ie-line);
-        padding: 16px 28px;
-        border-radius: 16px 16px 0 0
-    }
-
-    .ie-page .card-header h6 {
-        font-size: .95rem;
-        font-weight: 600;
-        letter-spacing: -.01em;
-        color: var(--ie-ink);
-        margin: 0
-    }
-
-    .ie-page .card-body {
-        padding: 28px
-    }
-
-    /* asymmetric split via CSS Grid: form (1.5fr) | reference (1fr) */
-    #emailTemplateForm .card-body>.row {
-        display: grid;
-        grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
-        gap: 48px;
-        margin: 0
-    }
-
-    #emailTemplateForm .card-body>.row>[class*="col-"] {
-        max-width: none;
-        width: auto;
-        flex: none;
-        padding: 0
-    }
-
-    #emailTemplateForm .col-md-7 {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 22px 20px;
-        align-content: start
-    }
-
-    #emailTemplateForm .col-md-7>.row.mb-3 {
-        display: block;
-        margin: 0 !important;
-        padding: 0;
-        grid-column: 1/-1
-    }
-
-    #emailTemplateForm .col-md-7>.row.mb-3:nth-child(-n+2) {
-        grid-column: auto
-    }
-
-    /* labels sit ABOVE inputs */
-    #emailTemplateForm .row.mb-3>[class*="col-"] {
-        width: 100%;
-        max-width: 100%;
-        flex: none;
-        padding: 0
-    }
-
-    .ie-page .form-label {
-        display: block;
-        font-size: .82rem;
-        font-weight: 600;
-        color: var(--ie-ink);
-        padding: 0;
-        margin: 0 0 8px
-    }
-
-    .ie-help {
-        display: block;
-        font-size: .76rem;
-        font-weight: 400;
-        color: var(--ie-mute);
-        margin-top: 2px;
-        line-height: 1.4
-    }
-
-    /* inputs */
-    .ie-page .form-control,
-    .ie-page .select2-container--default .select2-selection--single {
-        border: 1px solid var(--ie-line-2);
-        border-radius: 10px;
-        background: #fff;
-        color: var(--ie-ink);
-        font-size: .9rem;
-        transition: border-color .2s var(--ease), box-shadow .2s var(--ease)
-    }
-
-    .ie-page .form-control:not(textarea):not([type=file]) {
-        height: 42px
-    }
-
-    .ie-page textarea.form-control {
-        padding: 12px 14px;
-        line-height: 1.55
-    }
-
-    .ie-page .form-control:hover {
-        border-color: #b8c1d1
-    }
-
-    .ie-page .form-control:focus {
-        border-color: var(--ie-navy-2);
-        box-shadow: 0 0 0 3px rgba(15, 46, 113, .12);
-        outline: 0
-    }
-
-    .ie-page .form-control:user-invalid {
-        border-color: var(--ie-accent);
-        box-shadow: 0 0 0 3px rgba(162, 43, 47, .10)
-    }
-
-    .ie-page input[type=file].form-control {
-        height: auto;
-        padding: 8px 10px
-    }
-
-    .ie-page input[type=file]::file-selector-button {
-        border: 0;
-        border-radius: 7px;
-        background: #eef1f6;
-        color: var(--ie-text);
-        padding: 6px 12px;
-        margin-right: 12px;
-        font-weight: 500;
-        font-family: inherit
-    }
-
-    .ie-page .select2-container {
-        width: 100% !important
-    }
-
-    .ie-page .select2-container--default .select2-selection--single {
-        height: 42px
-    }
-
-    .ie-page .select2-container--default .select2-selection--single .select2-selection__rendered {
-        line-height: 40px;
-        padding-left: 14px;
-        color: var(--ie-ink)
-    }
-
-    .ie-page .select2-container--default .select2-selection--single .select2-selection__arrow {
-        height: 40px
-    }
-
-    .banner-preview {
-        border: 1px dashed var(--ie-line-2) !important;
-        border-radius: 12px;
-        background: #f8f9fc;
-        margin-top: 12px !important
-    }
-
-    .cke_chrome {
-        border: 1px solid var(--ie-line-2) !important;
-        border-radius: 10px !important;
-        box-shadow: none !important;
-        overflow: hidden
-    }
-
-    .cke_top {
-        background: #f6f7fa !important;
-        border-bottom: 1px solid var(--ie-line) !important
-    }
-
-    /* sticky liquid-glass action bar (inner refraction edge, tinted shadow) */
-    #emailTemplateForm .col-md-7>.row:last-child {
-        grid-column: 1/-1;
-        position: sticky;
-        bottom: 16px;
-        margin: 8px 0 0 !important;
-        padding: 12px 14px;
-        background: rgba(255, 255, 255, .72);
-        -webkit-backdrop-filter: blur(14px) saturate(150%);
-        backdrop-filter: blur(14px) saturate(150%);
-        border: 1px solid rgba(255, 255, 255, .7);
-        border-radius: 14px;
-        box-shadow: 0 10px 30px -10px rgba(24, 42, 81, .25), inset 0 1px 0 rgba(255, 255, 255, .9), 0 0 0 1px var(--ie-line);
-    }
-
-    #emailTemplateForm .col-md-7>.row:last-child>[class*="col-"] {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        gap: 10px;
-        padding: 0
-    }
-
-    #emailTemplateForm .col-md-7>.row:last-child .btn {
-        margin: 0 !important
-    }
-
-    /* reference column: no card, just an image that stays in view */
-    @media (min-width:992px) {
-        #emailTemplateForm .col-md-5 {
-            position: sticky;
-            top: 96px;
-            align-self: start
-        }
-    }
-
-    .ie-page .col-md-5 h6 {
-        font-size: .74rem;
-        font-weight: 600;
-        color: var(--ie-mute);
-        margin-bottom: 12px !important;
-        text-align: left
-    }
-
-    .ie-page .col-md-5 .text-center {
-        text-align: left !important
-    }
-
-    .ie-page .col-md-5 img {
-        border: 1px solid var(--ie-line) !important;
-        border-radius: 12px !important;
-        box-shadow: 0 18px 40px -16px rgba(24, 42, 81, .28) !important
-    }
-
-    /* buttons — single accent on the primary action, tactile press */
-    .ie-page .btn {
-        border: 0;
-        border-radius: 10px;
-        font-weight: 500;
-        font-size: .88rem;
-        padding: .6rem 1.15rem;
-        transition: background .2s var(--ease), transform .15s var(--ease), box-shadow .2s var(--ease)
-    }
-
-    .ie-page .btn:active {
-        transform: translateY(1px) scale(.98)
-    }
-
-    .ie-page .btn-primary {
-        background: var(--ie-accent);
-        color: #fff
-    }
-
-    .ie-page .btn-primary:hover {
-        background: #8d2125;
-        color: #fff
-    }
-
-    .ie-page #saveBtn {
-        box-shadow: 0 8px 18px -8px rgba(162, 43, 47, .55)
-    }
-
-    .ie-page #previewFormBtn {
-        background: #fff;
-        color: var(--ie-ink);
-        box-shadow: inset 0 0 0 1px var(--ie-line-2)
-    }
-
-    .ie-page #previewFormBtn:hover {
-        background: #f3f5f9;
-        color: var(--ie-ink)
-    }
-
-    .ie-page .btn-secondary {
-        background: transparent;
-        color: var(--ie-text)
-    }
-
-    .ie-page .btn-secondary:hover {
-        background: #eef1f6;
-        color: var(--ie-ink)
-    }
-
-    .ie-page .btn:focus-visible {
-        outline: 2px solid var(--ie-navy-2);
-        outline-offset: 2px
-    }
-
-    .ie-page .btn-sm {
-        padding: .38rem .8rem;
-        font-size: .8rem;
-        border-radius: 8px
-    }
-
-    .ie-page .btn-sm.btn-info {
-        background: #fff;
-        color: var(--ie-ink);
-        box-shadow: inset 0 0 0 1px var(--ie-line-2)
-    }
-
-    .ie-page .btn-sm.btn-info:hover {
-        background: #f3f5f9
-    }
-
-    .ie-page .btn-sm.btn-primary {
-        background: var(--ie-navy);
-        color: #fff;
-        box-shadow: none
-    }
-
-    .ie-page .btn-sm.btn-primary:hover {
-        background: var(--ie-navy-2)
-    }
-
-    .ie-page .btn-sm.btn-danger {
-        background: var(--ie-accent-soft);
-        color: var(--ie-accent)
-    }
-
-    .ie-page .btn-sm.btn-danger:hover {
-        background: var(--ie-accent);
-        color: #fff
-    }
-
-    /* saved templates — hairlines, mono ids, no zebra */
-    #templatesTable {
-        border-collapse: separate !important;
-        border-spacing: 0;
-        border: 0 !important
-    }
-
-    #templatesTable thead th {
-        background: transparent !important;
-        color: var(--ie-mute) !important;
-        font-size: .74rem;
-        font-weight: 600;
-        border: 0 !important;
-        border-bottom: 1px solid var(--ie-line-2) !important;
-        padding: 12px 14px;
-        white-space: nowrap
-    }
-
-    #templatesTable tbody td {
-        border: 0 !important;
-        border-bottom: 1px solid var(--ie-line) !important;
-        padding: 14px;
-        vertical-align: middle;
-        background: transparent !important;
-        color: var(--ie-ink);
-        font-size: .86rem
-    }
-
-    #templatesTable tbody td:first-child {
-        font-family: 'Geist Mono', monospace;
-        font-weight: 500;
-        color: var(--ie-text)
-    }
-
-    #templatesTable tbody tr {
-        transition: background .2s var(--ease)
-    }
-
-    #templatesTable tbody tr:hover td {
-        background: #f8f9fc !important
-    }
-
-    #templatesTable img {
-        border-radius: 8px;
-        border: 1px solid var(--ie-line)
-    }
-
-    .ie-page .dataTables_wrapper .dataTables_filter input,
-    .ie-page .dataTables_wrapper .dataTables_length select {
-        border: 1px solid var(--ie-line-2);
-        border-radius: 9px;
-        padding: 6px 10px;
-        background: #fff
-    }
-
-    .ie-page .dataTables_info {
-        color: var(--ie-mute);
-        font-size: .8rem
-    }
-
-    .ie-page .page-item .page-link {
-        border: 0;
-        border-radius: 8px;
-        margin: 0 2px;
-        color: var(--ie-text);
-        background: transparent
-    }
-
-    .ie-page .page-item.active .page-link {
-        background: var(--ie-navy);
-        color: #fff
-    }
-
-    /* preview modal chrome (email preview inside stays as the real email) */
-    #previewModal .modal-content {
-        border: 1px solid rgba(255, 255, 255, .1);
-        border-radius: 18px;
-        overflow: hidden;
-        box-shadow: 0 30px 70px -20px rgba(3, 20, 61, .45)
-    }
-
-    .ie-modal-head {
-        background: var(--ie-navy);
-        color: #fff;
-        border: 0;
-        padding: 16px 26px;
-        box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .1)
-    }
-
-    .ie-modal-head .modal-title {
-        font-weight: 600;
-        font-size: 1rem;
-        letter-spacing: -.01em
-    }
-
-    .ie-modal-head .close {
-        color: #fff;
-        opacity: .75;
-        text-shadow: none
-    }
-
-    #previewModal .modal-footer {
-        background: #f6f7fa;
-        border-top: 1px solid var(--ie-line)
-    }
-
-    #previewModal .modal-footer .btn {
-        border: 0;
-        border-radius: 10px;
-        font-weight: 500;
-        background: #fff;
-        color: var(--ie-ink);
-        box-shadow: inset 0 0 0 1px var(--ie-line-2)
-    }
-
-    /* load-in cascade (transform + opacity only) */
-    @keyframes ieIn {
-        from {
-            opacity: 0;
-            transform: translateY(10px)
-        }
-
-        to {
-            opacity: 1;
-            transform: none
-        }
-    }
-
-    #emailTemplateForm .col-md-7>.row.mb-3 {
-        animation: ieIn .6s var(--ease) both
-    }
-
-    #emailTemplateForm .col-md-7>.row.mb-3:nth-child(1) {
-        animation-delay: .04s
-    }
-
-    #emailTemplateForm .col-md-7>.row.mb-3:nth-child(2) {
-        animation-delay: .08s
-    }
-
-    #emailTemplateForm .col-md-7>.row.mb-3:nth-child(3) {
-        animation-delay: .12s
-    }
-
-    #emailTemplateForm .col-md-7>.row.mb-3:nth-child(4) {
-        animation-delay: .16s
-    }
-
-    #emailTemplateForm .col-md-7>.row.mb-3:nth-child(5) {
-        animation-delay: .20s
-    }
-
-    #emailTemplateForm .col-md-7>.row.mb-3:nth-child(n+6) {
-        animation-delay: .24s
-    }
-
-    #emailTemplateForm .col-md-5 {
-        animation: ieIn .7s var(--ease) .2s both
-    }
-
-    @media (prefers-reduced-motion:reduce) {
-
-        #emailTemplateForm *,
-        .ie-mode::before {
-            animation: none !important
-        }
-    }
-
-    /* mobile: asymmetric layout collapses to a single column */
-    @media (max-width:991px) {
-        .ie-page {
-            padding: 4px 16px 40px !important
-        }
-
-        #emailTemplateForm .card-body>.row {
-            grid-template-columns: 1fr;
-            gap: 32px
-        }
-
-        #emailTemplateForm .col-md-7 {
-            grid-template-columns: 1fr
-        }
-
-        #emailTemplateForm .col-md-7>.row.mb-3:nth-child(-n+2) {
-            grid-column: 1/-1
-        }
-
-        .ie-head {
-            grid-template-columns: 1fr
-        }
-
-        .ie-page .card-body {
-            padding: 20px
-        }
-    }
-</style>
-
 <div id="wrapper">
     <?php include("nav.php"); ?>
     <div id="content-wrapper" class="d-flex flex-column">
         <div id="content">
             <?php include("includes/topnav.php"); ?>
-            <div class="p-3 ie-page">
-                <div class="ie-head">
-                    <div>
-                        <h1><span class="ie-bar"></span><?php echo $isEdit ? 'Edit' : 'Create'; ?> induction email template</h1>
-                        <p>Set the banner, message and event details that go out to students for one programme and batch.</p>
-                    </div>
-                    <span class="ie-mode<?php echo $isEdit ? ' edit' : ''; ?>"><?php echo $isEdit ? 'Editing existing template' : 'New template'; ?></span>
+            <div class="p-3">
+                <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                    <h4 class="h4 mb-0 text-gray-800">
+                        <?php echo $isEdit ? 'Edit' : 'Create'; ?> Induction Email Template
+                    </h4>
                 </div>
 
                 <!-- Form Section -->
@@ -730,9 +105,6 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
                     <div class="row mb-5">
                         <div class="col-md-12">
                             <div class="card shadow">
-                                <div class="card-header">
-                                    <h6>Template details</h6>
-                                </div>
                                 <div class="card-body">
                                     <div class="row">
                                         <!-- Column 1: All Form Fields -->
@@ -775,7 +147,7 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
 
                                             <div class="row mb-3">
                                                 <div class="col-md-3">
-                                                    <label class="form-label">Banner Image<span class="ie-help">Shown at the top of the email.</span></label>
+                                                    <label class="form-label">Banner Image</label>
                                                 </div>
                                                 <div class="col-md-9">
                                                     <input type="file" id="bannerImage" name="banner_image"
@@ -790,7 +162,7 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
 
                                             <div class="row mb-3">
                                                 <div class="col-md-3">
-                                                    <label class="form-label">Email Body<span class="ie-help">The main message students read first.</span></label>
+                                                    <label class="form-label">Email Body</label>
                                                 </div>
                                                 <div class="col-md-9">
                                                     <textarea id="emailBody" name="email_body"
@@ -813,7 +185,7 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
 
                                             <div class="row mb-3">
                                                 <div class="col-md-3">
-                                                    <label class="form-label">Time<span class="ie-help">Shown in the event details of the email.</span></label>
+                                                    <label class="form-label">Time</label>
                                                 </div>
                                                 <div class="col-md-9">
                                                     <textarea id="time" name="time"
@@ -825,7 +197,7 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
 
                                             <div class="row mb-3">
                                                 <div class="col-md-3">
-                                                    <label class="form-label">Dress Code<span class="ie-help">Shown in the event details of the email.</span></label>
+                                                    <label class="form-label">Dress Code</label>
                                                 </div>
                                                 <div class="col-md-9">
                                                     <input type="text" id="dressCode" name="dress_code"
@@ -836,7 +208,7 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
 
                                             <div class="row mb-3">
                                                 <div class="col-md-3">
-                                                    <label class="form-label">Important Note<span class="ie-help">Highlighted in a notice box inside the email.</span></label>
+                                                    <label class="form-label">Important Note</label>
                                                 </div>
                                                 <div class="col-md-9">
                                                     <textarea id="importantNote" name="important_note"
@@ -917,8 +289,8 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
 <!-- Preview Modal -->
 <div class="modal fade" id="previewModal" tabindex="-1" role="dialog" aria-labelledby="previewModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content shadow-lg">
-            <div class="modal-header ie-modal-head">
+        <div class="modal-content shadow-lg rounded-0">
+            <div class="modal-header bg-gradient-primary text-white" style="background: linear-gradient(90deg, #0f4c81 0%, #1a73b5 100%);">
                 <h5 class="modal-title" id="previewModalLabel">Email Preview</h5>
                 <button type="button" class="close text-white" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
@@ -984,7 +356,7 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer" style="background: #f8f9fa;">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal" data-bs-dismiss="modal">
                     <i class="fas fa-times mr-2"></i>Close
                 </button>

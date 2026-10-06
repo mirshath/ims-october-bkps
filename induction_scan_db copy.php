@@ -16,461 +16,323 @@ require_once 'PermissionChecking.php';
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
-    /* ===== Induction attendance (DB) — taste-skill pass: asymmetric console + ledger ===== */
+    /* ===== Induction scan (DB) — glass pro redesign: navy + red ===== */
     .ia-page {
-        --ink: #101828;
-        --text: #475467;
-        --mute: #7a869a;
-        --line: #e4e8ef;
-        --line-2: #d5dbe6;
-        --navy: #182a51;
-        --navy-2: #0f2e71;
-        --accent: #a22b2f;
-        --accent-soft: #f7e9e9;
-        --shadow: 0 1px 2px rgba(24, 42, 81, .05), 0 8px 24px -8px rgba(24, 42, 81, .12);
-        --ease: cubic-bezier(.16, 1, .3, 1);
-        font-family: 'Geist', system-ui, sans-serif;
-        color: var(--ink);
-        max-width: 1400px;
-        padding: 8px 40px 56px !important;
+        --ia-navy: #182a51;
+        --ia-navy-2: #0f2e71;
+        --ia-navy-3: #03143d;
+        --ia-red: #a70000;
+        --ia-soft: #7f9df0;
+        --ia-ink: #0f1b3a;
+        --ia-text: #4a5878;
+        --ia-mute: #7d8db0;
+        --ia-line: rgba(24, 42, 81, .10);
+        --ia-glass: rgba(255, 255, 255, .62);
+        --ia-shadow: 0 8px 28px rgba(24, 42, 81, .10), inset 0 1px 0 rgba(255, 255, 255, .85);
+        padding-left: 32px;
+        padding-right: 32px;
+        font-family: 'Roboto', Arial, sans-serif;
+        color: var(--ia-ink);
     }
 
-    .ia-page * {
-        font-family: inherit
-    }
-
-    .ia-page .material-icons {
-        font-family: 'Material Icons'
-    }
-
-    .ia-page .fas,
-    .ia-page .fa {
-        font-family: 'Font Awesome 5 Free'
-    }
-
-    #content-wrapper {
-        background: #f3f5f9 !important
-    }
-
-    /* header: title left, filter right */
+    /* page header */
     .ia-head {
-        display: grid;
-        grid-template-columns: 1fr minmax(240px, 320px);
-        align-items: end;
-        gap: 24px;
-        margin: 0 0 28px;
-        padding-bottom: 18px;
-        border-bottom: 1px solid var(--line)
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 16px;
+        margin: 0 0 22px;
+        flex-wrap: wrap
     }
 
     .ia-head h1 {
-        font-size: 1.35rem;
-        font-weight: 600;
-        letter-spacing: -.025em;
-        margin: 0 0 6px
-    }
-
-    .ia-head h1 .bar {
-        display: inline-block;
-        width: 3px;
-        height: 20px;
-        border-radius: 2px;
-        background: var(--accent);
-        margin-right: 12px;
-        vertical-align: -4px
+        font-size: 1.55rem;
+        font-weight: 700;
+        letter-spacing: -.02em;
+        margin: 0 0 4px;
+        color: var(--ia-ink)
     }
 
     .ia-head p {
         margin: 0;
-        color: var(--text);
-        font-size: .9rem;
-        line-height: 1.55;
-        max-width: 60ch
+        color: var(--ia-mute);
+        font-size: .9rem
     }
 
-    .ia-filter label {
-        display: block;
-        font-size: .74rem;
-        font-weight: 600;
-        color: var(--mute);
-        margin: 0 0 6px
+    .ia-head .ia-bar {
+        display: inline-block;
+        width: 4px;
+        height: 22px;
+        border-radius: 4px;
+        background: var(--ia-red);
+        margin-right: 10px;
+        vertical-align: -4px
+    }
+
+    /* glass surfaces */
+    .ia-page .card {
+        background: var(--ia-glass) !important;
+        -webkit-backdrop-filter: blur(16px) saturate(160%);
+        backdrop-filter: blur(16px) saturate(160%);
+        border: 1px solid rgba(255, 255, 255, .75) !important;
+        border-radius: 18px !important;
+        box-shadow: var(--ia-shadow) !important;
+    }
+
+    .ia-page .card-header {
+        background: transparent !important;
+        border-bottom: 1px solid var(--ia-line) !important;
+        height: auto !important;
+        padding: 14px 20px
+    }
+
+    .ia-page .card-header .bg-primary {
+        background: var(--ia-navy) !important;
+        border-radius: 10px !important
+    }
+
+    .ia-page .card-header h6 {
+        font-size: .98rem
+    }
+
+    /* filter */
+    .ia-page .form-label {
+        color: var(--ia-text);
+        font-size: .85rem
     }
 
     .ia-page .form-select,
-    .ia-page .select2-container--default .select2-selection--single {
-        height: 42px;
-        border: 1px solid var(--line-2);
-        border-radius: 10px;
-        background-color: #fff;
-        font-size: .9rem;
-        color: var(--ink)
+    .ia-page .form-control {
+        border: 1px solid var(--ia-line);
+        border-radius: 12px;
+        background-color: rgba(255, 255, 255, .85)
+    }
+
+    .ia-page .form-select-lg {
+        font-size: .95rem;
+        padding: .6rem .9rem
     }
 
     .ia-page .form-select:focus,
-    .ia-page .select2-container--default.select2-container--focus .select2-selection--single {
-        border-color: var(--navy-2);
-        box-shadow: 0 0 0 3px rgba(15, 46, 113, .12);
-        outline: 0
+    .ia-page .form-control:focus {
+        border-color: var(--ia-soft);
+        box-shadow: 0 0 0 4px rgba(127, 157, 240, .25)
     }
 
-    .ia-page .select2-container {
-        width: 100% !important
+    .ia-page .select2-container--default .select2-selection--single {
+        height: 44px;
+        border: 1px solid var(--ia-line);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, .85)
     }
 
     .ia-page .select2-container--default .select2-selection--single .select2-selection__rendered {
-        line-height: 40px;
+        line-height: 42px;
         padding-left: 14px;
-        color: var(--ink)
+        color: var(--ia-ink)
     }
 
     .ia-page .select2-container--default .select2-selection--single .select2-selection__arrow {
-        height: 40px
+        height: 42px
     }
 
-    /* hero grid: console (1.7fr) | ledger (1fr) */
-    .ia-hero {
-        display: grid;
-        grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
-        gap: 24px;
-        margin-bottom: 28px;
-        align-items: stretch
+    .ia-page .select2-container--default.select2-container--focus .select2-selection--single {
+        border-color: var(--ia-soft);
+        box-shadow: 0 0 0 4px rgba(127, 157, 240, .25)
     }
 
-    /* scan console */
-    .ia-console {
+    /* stat cards: replace rainbow gradients with calm glass + one accent each */
+    #statsContainer .card {
+        background: var(--ia-glass) !important;
         position: relative;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        min-height: 320px;
-        padding: 32px 36px;
-        border-radius: 20px;
-        color: #e6ebf5;
-        overflow: hidden;
-        background: radial-gradient(rgba(255, 255, 255, .07) 1px, transparent 1px) 0 0/18px 18px, linear-gradient(160deg, #182a51 0%, #10285f 100%);
-        box-shadow: 0 24px 50px -24px rgba(3, 20, 61, .55), inset 0 1px 0 rgba(255, 255, 255, .12)
+        overflow: hidden
     }
 
-    .ia-console-top {
-        display: flex;
-        align-items: center;
-        justify-content: space-between
-    }
-
-    .ia-live {
-        display: inline-flex;
-        align-items: center;
-        gap: 9px;
-        font-size: .78rem;
-        font-weight: 500;
-        color: #c6d0e3;
-        padding: 6px 12px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, .07);
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12)
-    }
-
-    .ia-live i {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: #4ade80;
-        animation: iaPulse 2.4s var(--ease) infinite
-    }
-
-    @keyframes iaPulse {
-
-        0%,
-        100% {
-            box-shadow: 0 0 0 0 rgba(74, 222, 128, .4)
-        }
-
-        60% {
-            box-shadow: 0 0 0 6px rgba(74, 222, 128, 0)
-        }
-    }
-
-    .ia-console-top .material-icons {
-        font-size: 30px;
-        color: rgba(255, 255, 255, .55)
-    }
-
-    .ia-console h2 {
-        font-size: 1.5rem;
-        font-weight: 600;
-        letter-spacing: -.025em;
-        color: #fff;
-        margin: 28px 0 8px
-    }
-
-    .ia-console p {
-        margin: 0 0 24px;
-        color: #9fb0d4;
-        font-size: .9rem;
-        line-height: 1.55;
-        max-width: 46ch
-    }
-
-    .ia-input {
-        position: relative
-    }
-
-    .ia-page #scanInput {
-        height: 64px;
-        padding: 0 84px 0 22px;
-        font-family: 'Geist Mono', monospace;
-        font-size: 1.2rem;
-        font-weight: 500;
-        letter-spacing: .04em;
-        text-align: left;
-        color: #fff;
-        background: rgba(255, 255, 255, .08);
-        border: 1px solid rgba(255, 255, 255, .2);
-        border-radius: 14px;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1);
-        transition: border-color .2s var(--ease), background .2s var(--ease), box-shadow .2s var(--ease)
-    }
-
-    .ia-page #scanInput::placeholder {
-        color: rgba(198, 208, 227, .55);
-        font-family: 'Geist', sans-serif;
-        letter-spacing: 0;
-        font-weight: 400
-    }
-
-    .ia-page #scanInput:focus {
-        background: rgba(255, 255, 255, .12);
-        border-color: rgba(255, 255, 255, .7);
-        box-shadow: 0 0 0 4px rgba(255, 255, 255, .12), inset 0 1px 0 rgba(255, 255, 255, .14);
-        outline: 0
-    }
-
-    .ia-input kbd {
+    #statsContainer .card::before {
+        content: "";
         position: absolute;
-        right: 16px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: rgba(255, 255, 255, .12);
-        color: #c6d0e3;
-        border-radius: 7px;
-        padding: 4px 9px;
-        font-size: .74rem;
-        font-weight: 500;
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .15)
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: var(--st, #182a51)
     }
 
-    /* ledger — one panel, hairline rows, no equal card row */
-    .ia-ledger {
-        display: flex;
-        flex-direction: column;
-        background: #fff;
-        border: 1px solid var(--line);
-        border-radius: 20px;
-        box-shadow: var(--shadow);
-        padding: 28px 30px
+    #statsContainer .card-body,
+    #statsContainer .card-body.text-white {
+        color: var(--ia-ink) !important;
+        text-align: left !important;
+        padding: 18px 20px 18px 24px
     }
 
-    .ia-ledger-main .k {
-        font-size: .78rem;
-        font-weight: 600;
-        color: var(--mute)
+    #statsContainer .d-flex {
+        justify-content: flex-start !important
     }
 
-    .ia-ledger h3 {
-        margin: 0;
-        font-family: 'Geist Mono', monospace;
-        font-weight: 600;
-        letter-spacing: -.03em;
-        color: var(--ink)
-    }
-
-    .ia-ledger-main h3 {
-        font-size: 3.1rem;
-        line-height: 1.05;
-        margin-top: 6px
-    }
-
-    .ia-rows {
-        margin: 22px 0 0;
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-        justify-content: flex-end
-    }
-
-    .ia-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 15px 0;
-        border-top: 1px solid var(--line);
-        animation: iaIn .6s var(--ease) both
-    }
-
-    .ia-row:nth-child(1) {
-        animation-delay: .18s
-    }
-
-    .ia-row:nth-child(2) {
-        animation-delay: .24s
-    }
-
-    .ia-row:nth-child(3) {
-        animation-delay: .30s
-    }
-
-    .ia-row span {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        font-size: .88rem;
-        color: var(--text);
-        font-weight: 500
-    }
-
-    .ia-row span i {
-        width: 9px;
-        height: 9px;
-        border-radius: 3px
-    }
-
-    .ia-row h3 {
-        font-size: 1.35rem
-    }
-
-    .d-g {
-        background: #22a05b
-    }
-
-    .d-b {
-        background: #3b6fd9
-    }
-
-    .d-a {
-        background: #d98a14
-    }
-
-    /* attended students table */
-    .ia-page .ia-table-card {
-        background: #fff;
-        border: 1px solid var(--line);
-        border-radius: 20px;
-        box-shadow: var(--shadow)
-    }
-
-    .ia-table-head {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 20px 28px 16px;
-        border-bottom: 1px solid var(--line)
-    }
-
-    .ia-table-head h2 {
+    #statsContainer .fa-2x {
         font-size: 1rem;
-        font-weight: 600;
-        letter-spacing: -.01em;
-        margin: 0
+        width: 40px;
+        height: 40px;
+        line-height: 40px;
+        text-align: center;
+        border-radius: 12px;
+        margin: 0 !important;
+        background: var(--st-bg, #e8edf8);
+        color: var(--st, #182a51)
     }
 
-    .ia-table-head small {
-        color: var(--mute);
-        font-size: .8rem
+    #statsContainer h3 {
+        font-family: 'IBM Plex Mono', ui-monospace, monospace;
+        font-size: 1.9rem;
+        font-weight: 700;
+        letter-spacing: -.02em;
+        color: var(--ia-ink);
+        margin: 6px 0 2px !important
     }
 
-    .ia-table-body {
-        padding: 8px 20px 20px
+    #statsContainer p {
+        color: var(--ia-text);
+        font-size: .85rem !important
     }
 
-    #studentsTable {
+    #statsContainer>div:nth-child(1) {
+        --st: #182a51;
+        --st-bg: #e8edf8
+    }
+
+    #statsContainer>div:nth-child(2) {
+        --st: #15803d;
+        --st-bg: #dcfce7
+    }
+
+    #statsContainer>div:nth-child(3) {
+        --st: #1d4ed8;
+        --st-bg: #dbeafe
+    }
+
+    #statsContainer>div:nth-child(4) {
+        --st: #b45309;
+        --st-bg: #fef3c7
+    }
+
+    /* scan card = the main action */
+    .ia-page .card-header.text-white {
+        background: linear-gradient(135deg, var(--ia-navy), var(--ia-navy-2) 60%, var(--ia-navy-3)) !important;
+        border-bottom: 0 !important;
+        color: #fff !important;
+        border-radius: 18px 18px 0 0 !important;
+        padding: 16px 22px;
+    }
+
+    .ia-page .card-header.text-white .material-icons {
+        color: #c6d0e3
+    }
+
+    .ia-page .card-header.text-white .h5 {
+        font-size: 1.05rem;
+        letter-spacing: -.01em
+    }
+
+    #scanInput {
+        height: 58px;
+        font-size: 1.15rem;
+        letter-spacing: .04em;
+        border: 2px solid var(--ia-line);
+        border-radius: 14px;
+        background: #fff
+    }
+
+    #scanInput:focus {
+        border-color: var(--ia-red);
+        box-shadow: 0 0 0 5px rgba(167, 0, 0, .12)
+    }
+
+    .ia-page kbd {
+        background: var(--ia-navy);
+        color: #fff;
+        border-radius: 6px;
+        padding: 2px 7px;
+        font-size: .78rem
+    }
+
+    /* table */
+    .ia-page table.dataTable,
+    .ia-page #studentsTable {
         border-collapse: separate !important;
         border-spacing: 0;
-        border: 0 !important;
-        font-size: .84rem !important
+        border: 0 !important
     }
 
-    #studentsTable thead th {
-        background: transparent !important;
-        color: var(--mute) !important;
-        font-size: .72rem;
+    .ia-page #studentsTable thead th {
+        background: rgba(24, 42, 81, .06) !important;
+        color: var(--ia-text);
+        font-size: .78rem;
         font-weight: 600;
         border: 0 !important;
-        border-bottom: 1px solid var(--line-2) !important;
+        border-bottom: 1px solid var(--ia-line) !important;
         padding: 12px 14px;
         white-space: nowrap
     }
 
-    #studentsTable tbody td {
+    .ia-page #studentsTable tbody td {
         border: 0 !important;
-        border-bottom: 1px solid var(--line) !important;
-        padding: 13px 14px;
-        vertical-align: middle;
+        border-bottom: 1px solid var(--ia-line) !important;
+        padding: 11px 14px;
+        color: var(--ia-ink);
         background: transparent !important;
-        color: var(--ink);
         box-shadow: none !important
     }
 
-    #studentsTable tbody td:nth-child(1),
-    #studentsTable tbody td:nth-child(3),
-    #studentsTable tbody td:nth-child(6),
-    #studentsTable tbody td:nth-child(9) {
-        font-family: 'Geist Mono', monospace;
-        font-size: .78rem;
-        color: var(--text)
-    }
-
-    #studentsTable tbody tr {
-        transition: background .2s var(--ease)
-    }
-
-    #studentsTable tbody tr:hover td {
-        background: #f8f9fc !important
+    .ia-page #studentsTable tbody tr:hover td {
+        background: rgba(127, 157, 240, .12) !important
     }
 
     .ia-page .dataTables_wrapper .dataTables_filter input,
     .ia-page .dataTables_wrapper .dataTables_length select {
-        border: 1px solid var(--line-2);
-        border-radius: 9px;
+        border: 1px solid var(--ia-line);
+        border-radius: 10px;
         padding: 6px 10px;
-        background: #fff
+        background: rgba(255, 255, 255, .85)
     }
 
-    .ia-page .dataTables_info {
-        color: var(--mute);
-        font-size: .8rem
+    .ia-page .dataTables_wrapper .dataTables_info {
+        color: var(--ia-mute);
+        font-size: .82rem
     }
 
     .ia-page .page-item .page-link {
         border: 0;
-        border-radius: 8px;
+        border-radius: 9px;
         margin: 0 2px;
-        color: var(--text);
+        color: var(--ia-text);
         background: transparent
     }
 
     .ia-page .page-item.active .page-link {
-        background: var(--navy);
+        background: var(--ia-navy);
         color: #fff
     }
 
+    .ia-page .page-item .page-link:hover {
+        background: rgba(24, 42, 81, .08)
+    }
+
+    /* status badges: soft pills */
     .badge {
-        font-weight: 500;
+        font-weight: 600;
         border-radius: 999px;
-        padding: .42em .8em;
-        font-size: .74rem
+        padding: .4em .75em
     }
 
     .badge.bg-success {
-        background: #e3f4e8 !important;
+        background: #dcfce7 !important;
         color: #15803d
     }
 
     .badge.bg-danger {
-        background: var(--accent-soft) !important;
-        color: var(--accent)
+        background: #fee2e2 !important;
+        color: #b91c1c
     }
 
     .badge.bg-secondary {
@@ -480,26 +342,23 @@ require_once 'PermissionChecking.php';
 
     /* result modal */
     #resultModal .modal-content {
-        font-family: 'Geist', system-ui, sans-serif;
-        background: rgba(255, 255, 255, .92);
-        -webkit-backdrop-filter: blur(20px) saturate(150%);
-        backdrop-filter: blur(20px) saturate(150%);
-        border: 1px solid rgba(255, 255, 255, .7);
+        background: rgba(255, 255, 255, .88);
+        -webkit-backdrop-filter: blur(20px) saturate(160%);
+        backdrop-filter: blur(20px) saturate(160%);
+        border: 1px solid rgba(255, 255, 255, .8);
         border-radius: 20px;
-        box-shadow: 0 30px 70px -20px rgba(3, 20, 61, .45), inset 0 1px 0 #fff;
+        box-shadow: 0 24px 60px rgba(3, 20, 61, .30);
         overflow: hidden
     }
 
     #resultModal .modal-header {
-        border-bottom: 1px solid var(--line) !important;
-        padding: 16px 24px
+        border-bottom: 1px solid var(--ia-line) !important;
+        padding: 16px 22px
     }
 
     #resultModal .modal-title {
-        color: var(--ink) !important;
-        font-weight: 600;
-        font-size: 1rem;
-        letter-spacing: -.01em
+        color: var(--ia-ink) !important;
+        font-weight: 700
     }
 
     #resultModal .modal-body {
@@ -507,9 +366,9 @@ require_once 'PermissionChecking.php';
     }
 
     #resultModal .card.bg-light {
-        background: #f6f7fa !important;
+        background: rgba(24, 42, 81, .05) !important;
         box-shadow: none !important;
-        border: 1px solid var(--line) !important;
+        border: 1px solid var(--ia-line) !important;
         border-radius: 14px !important
     }
 
@@ -518,88 +377,27 @@ require_once 'PermissionChecking.php';
     }
 
     #resultModal .text-danger {
-        color: var(--accent) !important
+        color: var(--ia-red) !important
     }
 
     #resultModal .text-muted {
-        color: var(--mute) !important
+        color: var(--ia-mute) !important
     }
 
-    #resultModal .btn {
-        border: 0;
-        border-radius: 10px;
-        font-weight: 500;
-        transition: transform .15s var(--ease)
-    }
-
-    #resultModal .btn:active {
-        transform: translateY(1px) scale(.98)
-    }
-
-    @keyframes iaIn {
-        from {
-            opacity: 0;
-            transform: translateY(10px)
-        }
-
-        to {
-            opacity: 1;
-            transform: none
-        }
-    }
-
-    .ia-console {
-        animation: iaIn .7s var(--ease) both
-    }
-
-    .ia-ledger {
-        animation: iaIn .7s var(--ease) .1s both
-    }
-
-    .ia-table-card {
-        animation: iaIn .7s var(--ease) .2s both
-    }
-
-    @media (prefers-reduced-motion:reduce) {
-
-        .ia-console,
-        .ia-ledger,
-        .ia-table-card,
-        .ia-row,
-        .ia-live i {
-            animation: none !important
-        }
-    }
-
-    .ia-page :focus-visible {
-        outline: 2px solid var(--navy-2);
+    .ia-page .form-control:focus-visible,
+    .ia-page .page-link:focus-visible {
+        outline: 2px solid var(--ia-soft);
         outline-offset: 2px
     }
 
-    @media (max-width:991px) {
+    @media (max-width:768px) {
         .ia-page {
-            padding: 4px 16px 40px !important
+            padding-left: 16px;
+            padding-right: 16px
         }
 
-        .ia-head {
-            grid-template-columns: 1fr
-        }
-
-        .ia-hero {
-            grid-template-columns: 1fr
-        }
-
-        .ia-console {
-            min-height: 0;
-            padding: 26px 22px
-        }
-
-        .ia-ledger-main h3 {
-            font-size: 2.5rem
-        }
-
-        .ia-table-head {
-            padding: 18px 18px 14px
+        .ia-head h1 {
+            font-size: 1.3rem
         }
     }
 </style>
@@ -610,75 +408,128 @@ require_once 'PermissionChecking.php';
         <div id="content">
             <?php include("includes/topnav.php"); ?>
             <div class="container-fluid py-4 ia-page">
-                <!-- Page header + programme filter -->
+                <!-- Page header -->
                 <div class="ia-head">
                     <div>
-                        <h1><span class="bar"></span>Induction attendance</h1>
-                        <p>Scan a student's NIC to mark attendance and record whether the induction pack was collected.</p>
-                    </div>
-                    <div class="ia-filter">
-                        <label for="programFilter">Programme</label>
-                        <select id="programFilter" class="form-select" style="width: 100%;">
-                            <option value="all">All Programmes</option>
-                        </select>
-                        <script>
-                            $(document).ready(function() {
-                                $('#programFilter').select2({
-                                    placeholder: "Select a programme",
-                                    allowClear: true,
-                                    width: '100%'
-                                });
-                            });
-                        </script>
+                        <h1><span class="ia-bar"></span>Induction attendance</h1>
+                        <p>Scan a student's NIC to mark attendance and track pack collection.</p>
                     </div>
                 </div>
 
-                <div class="ia-hero">
-                    <!-- Attendance scan console -->
-                    <section class="ia-console">
-                        <div class="ia-console-top">
-                            <span class="ia-live"><i></i>Scanner ready</span>
-                            <span class="material-icons">qr_code_scanner</span>
-                        </div>
-                        <div>
-                            <h2>Scan here for attendance</h2>
-                            <p>Point the scanner at the student's QR code, or type the NIC and press Enter.</p>
-                            <form autocomplete="off" onsubmit="return false;">
-                                <div class="ia-input">
-                                    <input type="text" id="scanInput" class="form-control" placeholder="Scan or enter NIC" autofocus>
-                                    <kbd>Enter</kbd>
+                <!-- Program Filter -->
+                <div class="row mb-3">
+                    <div class="col-12 d-flex justify-content-end">
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm rounded-3">
+                                <div class="card-body">
+                                    <label for="programFilter" class="form-label fw-semibold mb-2">
+                                        <i class="fas fa-filter me-2"></i>Filter by Programme
+                                    </label>
+                                    <select id="programFilter" class="form-select form-select-lg" style="width: 100%;">
+                                        <option value="all">All Programmes</option>
+                                    </select>
+                                    <script>
+                                        $(document).ready(function() {
+                                            $('#programFilter').select2({
+                                                placeholder: "Select a programme",
+                                                allowClear: true,
+                                                width: '100%'
+                                            });
+                                        });
+                                    </script>
                                 </div>
-                            </form>
+                            </div>
                         </div>
-                    </section>
+                    </div>
+                </div>
 
-                    <!-- Statistics ledger -->
-                    <section class="ia-ledger" id="statsContainer">
-                        <div class="ia-ledger-main">
-                            <div class="k">Total students</div>
-                            <h3 id="totalStudents">0</h3>
-                        </div>
-                        <div class="ia-rows">
-                            <div class="ia-row"><span><i class="d-g"></i>Attended</span>
-                                <h3 id="attendedStudents">0</h3>
-                            </div>
-                            <div class="ia-row"><span><i class="d-b"></i>Pack issued</span>
-                                <h3 id="packIssuedCount">0</h3>
-                            </div>
-                            <div class="ia-row"><span><i class="d-a"></i>Pack not issued</span>
-                                <h3 id="packNotIssuedCount">0</h3>
+                <!-- Statistics Cards -->
+                <div class="row mb-4" id="statsContainer">
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card border-0 shadow-sm h-100 rounded-4"
+                            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <div class="card-body text-white text-center">
+                                <div class="d-flex align-items-center justify-content-center mb-2">
+                                    <i class="fas fa-users fa-2x me-2"></i>
+                                </div>
+                                <h3 class="mb-1 fw-bold" id="totalStudents">0</h3>
+                                <p class="mb-0 small">Total Students</p>
                             </div>
                         </div>
-                    </section>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card border-0 shadow-sm h-100 rounded-4"
+                            style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            <div class="card-body text-white text-center">
+                                <div class="d-flex align-items-center justify-content-center mb-2">
+                                    <i class="fas fa-check-circle fa-2x me-2"></i>
+                                </div>
+                                <h3 class="mb-1 fw-bold" id="attendedStudents">0</h3>
+                                <p class="mb-0 small">Attended</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card border-0 shadow-sm h-100 rounded-4"
+                            style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                            <div class="card-body text-white text-center">
+                                <div class="d-flex align-items-center justify-content-center mb-2">
+                                    <i class="fas fa-box-open fa-2x me-2"></i>
+                                </div>
+                                <h3 class="mb-1 fw-bold" id="packIssuedCount">0</h3>
+                                <p class="mb-0 small">Pack Issued</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card border-0 shadow-sm h-100 rounded-4"
+                            style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                            <div class="card-body text-white text-center">
+                                <div class="d-flex align-items-center justify-content-center mb-2">
+                                    <i class="fas fa-box fa-2x me-2"></i>
+                                </div>
+                                <h3 class="mb-1 fw-bold" id="packNotIssuedCount">0</h3>
+                                <p class="mb-0 small">Pack Not Issued</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Attendance Scan Card -->
+                <div class="row justify-content-center mb-5">
+                    <div class="col-lg-6 col-md-8">
+                        <div class="card shadow-lg border-0 rounded-4">
+                            <div class="card-header text-white d-flex align-items-center rounded-top-4"
+                                style="gap:14px;">
+                                <span class="material-icons fs-2 me-2">qr_code_scanner</span>
+                                <span class="h5 fw-bold mb-0">Induction Attendance (From DB)</span>
+                            </div>
+                            <div class="card-body text-center">
+                                <div class="mb-3 fw-bold text-secondary fs-5">
+                                    Scan Here for Attendance
+                                </div>
+                                <form autocomplete="off" onsubmit="return false;">
+                                    <div class="mb-3 mx-auto" style="max-width:340px;">
+                                        <input type="text" id="scanInput"
+                                            class="form-control form-control-lg text-center rounded-3"
+                                            placeholder="Scan or Enter NIC" autofocus>
+                                    </div>
+                                    <div class="text-muted mb-2">
+                                        Scan QR or type NIC and press <kbd>Enter</kbd>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Modal Attendance Status -->
                 <div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel"
                     aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
+                        <div class="modal-content" style="font-family:'Roboto', Arial, sans-serif;">
                             <div class="modal-header border-bottom">
-                                <h5 class="modal-title" id="resultModalLabel">Attendance Status</h5>
+                                <h5 class="modal-title text-primary" id="resultModalLabel">Attendance Status</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"
                                     aria-label="Close"></button>
                             </div>
@@ -692,16 +543,23 @@ require_once 'PermissionChecking.php';
                 <!-- Student Update Card / Table -->
                 <div class="row mb-5">
                     <div class="col-12">
-                        <div class="card border-0 ia-table-card">
-                            <div class="ia-table-head">
-                                <h2>Attended students</h2>
-                                <small>Updates as each scan is recorded</small>
+                        <div class="card border-0 shadow-sm rounded-4">
+                            <div class="card-header bg-white d-flex align-items-center justify-content-between"
+                                style="height: 60px;">
+                                <div class="d-flex align-items-center">
+                                    <span
+                                        class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center me-3"
+                                        style="width: 34px; height: 34px; font-size:1.2rem;">
+                                        <i class="fas fa-user-edit"></i>
+                                    </span>
+                                    <h6 class="mb-0 fw-semibold">Attended students</h6>
+                                </div>
                             </div>
-                            <div class="ia-table-body">
-                                <div class="table-responsive">
+                            <div class="card-body">
+                                <div class="table-responsive mb-4">
                                     <table id="studentsTable"
                                         class="table table-striped table-bordered align-middle mb-0"
-                                        style="width:100%;">
+                                        style="width:100%;font-size:13px;">
                                         <thead class="table-light">
                                             <tr>
                                                 <th>#</th>
