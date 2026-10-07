@@ -35,28 +35,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['pdf'])) {
       exit;
     }
 
-    // Load SMTP config from config.ini
-    $config = parse_ini_file(__DIR__ . '/config.ini');
-    if ($config === false) {
-      echo json_encode(['success' => false, 'message' => 'Email configuration could not be loaded.']);
-      exit;
-    }
-
     try {
       // Now send the PDF file via email using PHPMailer
       $mail = new PHPMailer(true); // Enable exceptions
 
-      // Server settings (from config.ini)
       $mail->isSMTP();
-      $mail->Host = $config['SMTP_HOST'];
+      $mail->Host = 'smtp.office365.com';
       $mail->SMTPAuth = true;
-      $mail->Username = $config['SMTP_USER'];
-      $mail->Password = $config['SMTP_PASS'];
+      $mail->Username = 'noreply.ims@bms.ac.lk';
+      $mail->Password = 'Lox51527';
       $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-      $mail->Port = (int)$config['SMTP_PORT'];
+      $mail->Port = 587;
 
       // Recipients
-      $mail->setFrom($config['SMTP_FROM_EMAIL'], $config['SMTP_FROM_NAME']);
+      $mail->setFrom('noreply.ims@bms.ac.lk', 'Business Management School');
       $mail->addAddress($studentBmsEmail);
       $mail->addAttachment($uploadFile);
 

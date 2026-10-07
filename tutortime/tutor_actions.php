@@ -14,6 +14,13 @@ use PHPMailer\PHPMailer\Exception;
 
 require '../vendor/autoload.php';
 
+// Load SMTP config from config.ini
+$config = parse_ini_file(__DIR__ . '/../config.ini');
+if ($config === false) {
+    echo json_encode(['status' => 'error', 'message' => 'Email configuration could not be loaded.']);
+    exit;
+}
+
 try {
 
     /* ================= ROLE HANDLING (UPDATED) ================= */
@@ -263,16 +270,16 @@ if ($action === 'add_student') {
             $mail = new PHPMailer(true);
 
             $mail->isSMTP();
-            $mail->Host = 'smtp.office365.com';
+            $mail->Host = $config['SMTP_HOST'];
             $mail->SMTPAuth = true;
-            $mail->Username = 'noreply.ims@bms.ac.lk';
-            $mail->Password = 'Lox51527';
+            $mail->Username = $config['SMTP_USER'];
+            $mail->Password = $config['SMTP_PASS'];
             
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port = 587;
+            $mail->Port = (int)$config['SMTP_PORT'];
 
-            $mail->setFrom('noreply.ims@bms.ac.lk', 'BMS Session');
-            $mail->addReplyTo('noreply.ims@bms.ac.lk', 'BMS Support');
+            $mail->setFrom($config['SMTP_FROM_EMAIL'], 'BMS Session');
+            $mail->addReplyTo($config['SMTP_FROM_EMAIL'], 'BMS Support');
             $mail->addAddress($slot['bms_email'], $slot['first_name']);
 
             $mail->CharSet = 'UTF-8';

@@ -258,8 +258,8 @@ require_once 'PermissionChecking.php';
                                             let sentDate = '';
 
                                             if (statusData.status) {
-                                                emailStatus = statusData.status === 'sent' ?
-                                                    '<span class="badge bg-success text-white">Sent</span>' :
+                                                emailStatus = statusData.status === 'sent' ? 
+                                                    '<span class="badge bg-success text-white">Sent</span>' : 
                                                     '<span class="badge bg-danger text-white">Failed</span>';
                                                 sentBy = statusData.sent_by || 'N/A';
                                                 sentDate = statusData.sent_date || '';
@@ -305,6 +305,151 @@ require_once 'PermissionChecking.php';
                 }
             });
 
+
+            // $('#viewResults').click(function() {
+            //     let programmeId = $('#programme').val();
+            //     let batchId = $('#batch').val();
+
+            //     if (programmeId && batchId) {
+            //         // Show loading indicator
+            //         $("#resultsTable tbody").html('<tr><td colspan="9" class="text-center">Loading results...</td></tr>');
+
+            //         $.ajax({
+            //             url: "module_result_mailing/fetch_results.php",
+            //             method: "POST",
+            //             data: {
+            //                 programme_id: programmeId,
+            //                 batch_id: batchId
+            //             },
+            //             dataType: "json",
+            //             success: function(response) {
+            //                 let resultsTable = $("#resultsTable tbody");
+            //                 resultsTable.empty();
+
+            //                 if (response.length > 0) {
+            //                     // Group students by student_code to handle the data better
+            //                     let students = {};
+            //                     response.forEach(function(result) {
+            //                         if (!students[result.student_code]) {
+            //                             students[result.student_code] = {
+            //                                 first_name: result.first_name,
+            //                                 last_name: result.last_name,
+            //                                 bms_email: result.bms_email,
+            //                                 student_registration_id: result.student_registration_id,
+            //                                 module_count: result.module_count,
+            //                                 modules: []
+            //                             };
+            //                         }
+            //                         students[result.student_code].modules.push({
+            //                             module_name: result.module_name,
+            //                             final_result: result.final_result
+            //                         });
+            //                     });
+
+            //                     // Process each student
+            //                     let studentIndex = 1;
+            //                     Object.values(students).forEach(function(student) {
+            //                         // Fetch email status for this student
+            //                         $.ajax({
+            //                             url: "module_result_mailing/fetch_email_status.php",
+            //                             method: "POST",
+            //                             data: {
+            //                                 student_id: student.student_registration_id,
+            //                                 email: student.bms_email,
+            //                                 programme_id: programmeId,
+            //                                 batch_id: batchId
+            //                             },
+            //                             dataType: "json",
+            //                             success: function(statusData) {
+            //                                 let emailStatus = 'Not Sent';
+            //                                 let sentBy = 'N/A';
+            //                                 let sentDate = '';
+
+            //                                 if (statusData.status) {
+            //                                     emailStatus = statusData.status === 'sent' ?
+            //                                         '<span class="badge bg-success text-white">Sent</span>' :
+            //                                         '<span class="badge bg-danger text-white">Failed</span>';
+            //                                     sentBy = statusData.sent_by || 'N/A';
+            //                                     sentDate = statusData.sent_date || '';
+            //                                 } else {
+            //                                     emailStatus = '<span class="badge bg-warning text-dark">Not Sent</span>';
+            //                                 }
+
+            //                                 // Add the first row with student info and first module
+            //                                 let firstModule = student.modules[0];
+            //                                 resultsTable.append(`
+            //                         <tr class="student-row" data-student-id="${student.student_registration_id}">
+            //                             <td rowspan="${student.module_count}">${studentIndex}</td>
+            //                             <td rowspan="${student.module_count}">${student.first_name} ${student.last_name}</td>
+            //                             <td rowspan="${student.module_count}">${student.bms_email}</td>
+            //                             <td rowspan="${student.module_count}">${student.student_registration_id}</td>
+            //                             <td>${firstModule.module_name}</td>
+            //                             <td>${firstModule.final_result}</td>
+            //                             <td rowspan="${student.module_count}">${emailStatus}</td>
+            //                             <td rowspan="${student.module_count}">${sentBy}</td>
+            //                             <td rowspan="${student.module_count}">${sentDate}</td>
+            //                         </tr>
+            //                     `);
+
+            //                                 // Add remaining modules for this student
+            //                                 for (let i = 1; i < student.modules.length; i++) {
+            //                                     let module = student.modules[i];
+            //                                     resultsTable.append(`
+            //                             <tr class="module-row" data-student-id="${student.student_registration_id}">
+            //                                 <td>${module.module_name}</td>
+            //                                 <td>${module.final_result}</td>
+            //                             </tr>
+            //                         `);
+            //                                 }
+
+            //                                 studentIndex++;
+            //                             },
+            //                             error: function(xhr, status, error) {
+            //                                 console.error("Error fetching email status:", error);
+            //                                 // Still add the student row but with error status
+            //                                 let firstModule = student.modules[0];
+            //                                 resultsTable.append(`
+            //                         <tr class="student-row" data-student-id="${student.student_registration_id}">
+            //                             <td rowspan="${student.module_count}">${studentIndex}</td>
+            //                             <td rowspan="${student.module_count}">${student.first_name} ${student.last_name}</td>
+            //                             <td rowspan="${student.module_count}">${student.bms_email}</td>
+            //                             <td rowspan="${student.module_count}">${student.student_registration_id}</td>
+            //                             <td>${firstModule.module_name}</td>
+            //                             <td>${firstModule.final_result}</td>
+            //                             <td rowspan="${student.module_count}"><span class="badge bg-danger text-white">Error</span></td>
+            //                             <td rowspan="${student.module_count}">N/A</td>
+            //                             <td rowspan="${student.module_count}"></td>
+            //                         </tr>
+            //                     `);
+
+            //                                 // Add remaining modules for this student
+            //                                 for (let i = 1; i < student.modules.length; i++) {
+            //                                     let module = student.modules[i];
+            //                                     resultsTable.append(`
+            //                             <tr class="module-row" data-student-id="${student.student_registration_id}">
+            //                                 <td>${module.module_name}</td>
+            //                                 <td>${module.final_result}</td>
+            //                             </tr>
+            //                         `);
+            //                                 }
+
+            //                                 studentIndex++;
+            //                             }
+            //                         });
+            //                     });
+            //                 } else {
+            //                     resultsTable.append(`<tr><td colspan="9" class="text-center">No results found.</td></tr>`);
+            //                 }
+            //             },
+            //             error: function(xhr, status, error) {
+            //                 console.error("Error fetching results:", error);
+            //                 $("#resultsTable tbody").html(`<tr><td colspan="9" class="text-center text-danger">Error: ${error}</td></tr>`);
+            //             }
+            //         });
+            //     } else {
+            //         alert("Please select both Programme and Batch.");
+            //     }
+            // });
 
             $('#sendEmailBtn').click(function() {
                 let emailData = [];

@@ -11,21 +11,6 @@ require '../vendor/autoload.php';
 $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    @set_time_limit(120);
-
-    $lockFilePath = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'assi_email_send.lock';
-    $lockHandle = @fopen($lockFilePath, 'c');
-    if ($lockHandle) {
-        if (!@flock($lockHandle, LOCK_EX | LOCK_NB)) {
-            $busyMsg = 'Email sender is busy. Please try again in a moment.';
-            if ($isAjax) {
-                echo json_encode(['success' => false, 'message' => $busyMsg]);
-            } else {
-                echo $busyMsg;
-            }
-            exit;
-        }
-    }
     $to = $_POST['email'];
     $student_name = $_POST['student_name'];
     $assessment_id = $_POST['assessment_id'];
@@ -44,7 +29,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $result = $stmt->get_result();
     $studentData = $result->fetch_assoc();
     $stmt->close();
-
+    
     $studentId = $studentData['student_registration_id'] ?? '';
     $student_code = $studentData['student_code'] ?? '';
 
@@ -52,11 +37,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $detailsQuery = "SELECT a.*, 
                 m.module_name,
                 a.description,
-                a.subject_body,
                 a.assessment_date,
                 a.year_id,
                 a.semester_id
-            FROM save_assessment_document_send a 
+            FROM assessments a 
             LEFT JOIN modules m ON a.module_id = m.id 
             WHERE a.id = ?";
 
@@ -69,7 +53,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if (!$assessmentDetails) {
         $errorMessage = "Assessment details not found.";
-
+        
         if ($isAjax) {
             echo json_encode(['success' => false, 'message' => $errorMessage]);
             exit;
@@ -81,7 +65,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     $moduleName = $assessmentDetails['module_name'];
     $description = $assessmentDetails['description'];
-    $subjectBody = $assessmentDetails['subject_body'];
     $assessmentDate = $assessmentDetails['assessment_date'];
     $yearId = $assessmentDetails['year_id'];
     $semesterId = $assessmentDetails['semester_id'];
@@ -107,43 +90,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $attachments[] = "../uploads_exam_assessments/" . $attachment1;
     }
 
-    // Load SMTP config from config.ini
-    $config = parse_ini_file(__DIR__ . '/../config.ini');
-    if ($config === false) {
-        $errorMessage = "Email configuration could not be loaded.";
-        if ($lockHandle) {
-            @flock($lockHandle, LOCK_UN);
-            @fclose($lockHandle);
-        }
-        if ($isAjax) {
-            echo json_encode(['success' => false, 'message' => $errorMessage]);
-        } else {
-            echo $errorMessage;
-        }
-        exit;
-    }
-
     $mail = new PHPMailer(true);
 
     try {
-        // Server settings (from config.ini)
         $mail->isSMTP();
-        $mail->Host = $config['SMTP_HOST'];
+        $mail->Host = 'smtp.office365.com';
         $mail->SMTPAuth = true;
-        $mail->Username = $config['SMTP_USER'];
-        $mail->Password = $config['SMTP_PASS'];
+        $mail->Username = 'noreply.ims@bms.ac.lk';
+        $mail->Password = 'gqfxxrphvjnlmwrn';
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = $config['SMTP_PORT'];
-        $mail->SMTPKeepAlive = true;
-        $mail->Timeout = 60;
+        $mail->Port = 587;
 
-        $mail->setFrom($config['SMTP_FROM_EMAIL'], $config['SMTP_FROM_NAME']);
+        $mail->setFrom('noreply.ims@bms.ac.lk', 'BMS Campus');
         $mail->addAddress($to, $student_name);
 
         $mail->isHTML(true);
-        // Use subject_body if available, otherwise fallback to default
-        $subjectPrefix = !empty($subjectBody) ? $subjectBody : "Pre-seen Case Study";
-        $mail->Subject = "$subjectPrefix - $moduleName - $as_main_component_name";
+        $mail->Subject = "Assessment : $moduleName - $as_main_component_name";
 
         // Split student name into first and last name if needed
         $nameParts = explode(' ', $student_name, 2);
@@ -158,7 +120,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <style>
                 body { font-family: Arial, sans-serif; line-height: 1.6; }
                 .container { max-width: 600px; margin: 0 auto; }
-                .header { padding: 20px; text-align: center; background-color: #f8f9fa; border-bottom: 2px solid #007bff; }
+                .header { padding: 10px; text-align: center; }
                 .content { padding: 20px; }
                 .footer { background-color: #f1f1f1; padding: 10px; text-align: center; font-size: 12px; }
                 table { border-collapse: collapse; width: 100%; }
@@ -168,13 +130,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </head>
         <body>
             <div class='container'>
-                 <div class='header'>
-                    <img src='https://www.bms.ac.lk/assets/images/logo/BMS-Logo.png' alt='BMS Logo' style='width: 150px; margin-bottom: 10px;'>
-                    <h2 style='color: #007bff; margin: 0;'>" . htmlspecialchars($subjectPrefix) . "</h2>
+                <div class='header'>
+                    <img src='https://www.bms.ac.lk/assets/images/logo/BMS-Logo.png' alt='BMS Logo' style='width: 150px;'>
+                    <h2>Assessment Notification</h2>
                 </div>
                 <div class='content'>
                     <p>Dear $fullName (ID: $studentId),</p>
- 
+                    
+                    <p>This is to inform you about an upcoming assessment for your program:</p>
+                    
                     <table>
                         <tr>
                             <th>Program Name:</th>
@@ -200,6 +164,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         $emailBody .= "
                         <tr>
+                            <th>Assessment Date:</th>
+                            <td>$assessmentDate</td>
+                        </tr>
+                        <tr>
                             <th>Year:</th>
                             <td>$yearId</td>
                         </tr>
@@ -209,23 +177,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         </tr>
                     </table>
                     
-                    <div style='margin-top: 15px;'>
-                    <p>$description</p>
+                    <div style='margin-top: 20px;'>
+                        <h3>Assessment Details:</h3>
+                        <p>$description</p>
                     </div>
                     
-                     <p>Best regards,<br>
-                        <strong>BMS Campus Academic Team</strong></p>
-                        </div>
-                        <div class='footer'>
-                        <p><strong>This is an automated email. Please do not reply to this message.</strong></p>
-                        <p>© " . date('Y') . " BMS Campus. All rights reserved.</p>
-                        <p>If you received this email in error, please contact the IT department immediately.</p>
-                    </div>
-                    </div>
-                    </body>
-                    </html>";
+                    <p>Best regards,<br>BMS Campus</p>
+                </div>
+                <div class='footer'>
+                    <p>This is an automated email. Please do not reply to this message.</p>
+                    <p>" . date('Y') . " BMS Campus. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>";
 
-        // <h3 style='color: #007bff; margin-top: 0;'>Description</h3>
         $mail->Body = $emailBody;
         $mail->AltBody = strip_tags(str_replace(['<br>', '</p>'], ["\n", "\n\n"], $emailBody));
 
@@ -237,27 +203,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         $mail->send();
-        usleep(500000);
-        $mail->clearAddresses();
-        $mail->clearAttachments();
-        if (method_exists($mail, 'smtpClose')) {
-            $mail->smtpClose();
-        }
-
-        // Record successful email sending in the assesment_document_send_email_log table
+        
+        // Record successful email sending in the assessment_email_log table
         $sentBy = $_SESSION['username'] ?? 'system';
-        $logQuery = "INSERT INTO assesment_document_send_email_log 
-                    (assessment_id, student_id, student_registration_id, email, status, sent_date, sent_by, error_message) 
-                    VALUES (?, ?, ?, ?, 'sent', NOW(), ?, NULL)";
+        $logQuery = "INSERT INTO assessment_email_log 
+                    (assessment_id, student_id, email, status, sent_date, sent_by) 
+                    VALUES (?, ?, ?, 'sent', NOW(), ?)";
         $logStmt = $conn->prepare($logQuery);
-        $logStmt->bind_param("iisss", $assessment_id, $student_code, $studentId, $to, $sentBy);
+        $logStmt->bind_param("iiss", $assessment_id, $student_code, $to, $sentBy);
         $logStmt->execute();
-        $logStmt->close();
-
-        if ($lockHandle) {
-            @flock($lockHandle, LOCK_UN);
-            @fclose($lockHandle);
-        }
 
         if ($isAjax) {
             echo json_encode(['success' => true, 'message' => "Email sent successfully to $student_name"]);
@@ -267,27 +221,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             echo "<h3 style='color: green;'>Email sent successfully to $student_name!</h3>";
             echo "<p>The assessment details have been sent to the student's email address.</p>";
             echo "<button style='padding: 10px 20px; background-color: #003366; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 15px;' 
-            onclick=\"window.location.href='../view_details_of_exams.php?id=$assessment_id'\">
-            Return to Assessment Details</button>";
+                onclick=\"window.location.href='../view_details_of_exams.php?id=$assessment_id'\">
+                Return to Assessment Details</button>";
             echo "</div>";
         }
     } catch (Exception $e) {
-        // Record failed email sending in the assesment_document_send_email_log table
+        // Record failed email sending in the assessment_email_log table
         $errorMsg = $mail->ErrorInfo;
         $sentBy = $_SESSION['username'] ?? 'system';
-        $logQuery = "INSERT INTO assesment_document_send_email_log 
-                    (assessment_id, student_id, student_registration_id, email, status, sent_date, sent_by, error_message) 
-                    VALUES (?, ?, ?, ?, 'failed', NOW(), ?, ?)";
+        $logQuery = "INSERT INTO assessment_email_log 
+                    (assessment_id, student_id, email, status, sent_date, sent_by, error_message) 
+                    VALUES (?, ?, ?, 'failed', NOW(), ?, ?)";
         $logStmt = $conn->prepare($logQuery);
-        $logStmt->bind_param("iissss", $assessment_id, $student_code, $studentId, $to, $sentBy, $errorMsg);
+        $logStmt->bind_param("iisss", $assessment_id, $student_code, $to, $sentBy, $errorMsg);
         $logStmt->execute();
-        $logStmt->close();
-
-        if ($lockHandle) {
-            @flock($lockHandle, LOCK_UN);
-            @fclose($lockHandle);
-        }
-
+        
         if ($isAjax) {
             echo json_encode(['success' => false, 'message' => "Failed to send email: " . $mail->ErrorInfo]);
         } else {

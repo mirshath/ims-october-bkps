@@ -1,0 +1,22 @@
+// Load SMTP config from config.ini
+$config = parse_ini_file(__DIR__ . '/config.ini');
+if ($config === false) {
+    die("Email configuration could not be loaded.");
+}
+
+
+
+
+
+
+  $mail->isSMTP();
+        $mail->Host = $config['SMTP_HOST'];
+        $mail->SMTPAuth = true;
+        $mail->Username = $config['SMTP_USER'];
+        $mail->Password = $config['SMTP_PASS'];
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port = (int)$config['SMTP_PORT'];
+
+        $mail->setFrom($config['SMTP_FROM_EMAIL'], $config['SMTP_FROM_NAME']);
+        $mail->addAddress($studentDetails['email'], $studentDetails['firstname'] . ' ' . $studentDetails['lastname']);
+

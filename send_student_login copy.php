@@ -40,17 +40,11 @@ require 'vendor/autoload.php';
 
 $message = "";
 
-// Load SMTP config from config.ini
-$config = parse_ini_file(__DIR__ . '/config.ini');
-if ($config === false) {
-    die("Email configuration could not be loaded.");
-}
-
 /* =========================================================
    FUNCTION: SEND LOGIN EMAIL
 ========================================================= */
-function sendStudentMail($email, $first_name, $last_name, $temp_password) {
-    global $config;
+function sendStudentMail($email, $first_name, $last_name, $temp_password)
+{
 
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         return "Invalid email skipped: $email";
@@ -61,16 +55,16 @@ function sendStudentMail($email, $first_name, $last_name, $temp_password) {
     try {
         $mail->isSMTP();
 
-            $mail->Host       = $config['SMTP_HOST'];
-            $mail->SMTPAuth   = true;
-            $mail->Username   = $config['SMTP_USER'];
-            $mail->Password   = $config['SMTP_PASS'];
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = (int)$config['SMTP_PORT'];
+        $mail->Host       = 'smtp.office365.com';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = 'noreply.ims@bms.ac.lk';
+        $mail->Password   = 'Lox51527';
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // Use STARTTLS
+        $mail->Port       = 587;
 
-            // Anti-spam headers
-            $mail->setFrom($config['SMTP_FROM_EMAIL'], 'BMS Student Portal');
-            $mail->addReplyTo($config['SMTP_FROM_EMAIL'], 'BMS Support');
+        // Anti-spam headers
+        $mail->setFrom('noreply.ims@bms.ac.lk', 'BMS Student Portal');
+        $mail->addReplyTo('noreply.ims@bms.ac.lk', 'BMS Support');
         $mail->addAddress($email, $first_name);
 
         $mail->CharSet = 'UTF-8';

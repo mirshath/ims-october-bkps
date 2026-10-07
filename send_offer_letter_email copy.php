@@ -34,28 +34,20 @@ use PHPMailer\PHPMailer\Exception;
 
 require 'vendor/autoload.php'; // Adjust path as needed
 
-// Load SMTP config from config.ini
-$config = parse_ini_file(__DIR__ . '/config.ini');
-if ($config === false) {
-    echo json_encode(['success' => false, 'message' => 'Email configuration could not be loaded.']);
-    exit;
-}
-
 // Create a new PHPMailer instance
 $mail = new PHPMailer(true);
 
 try {
-    // Server settings (from config.ini)
     $mail->isSMTP();
-    $mail->Host = $config['SMTP_HOST'];
+    $mail->Host = 'smtp.office365.com';
     $mail->SMTPAuth = true;
-    $mail->Username = $config['SMTP_USER'];
-    $mail->Password = $config['SMTP_PASS'];
+    $mail->Username = 'noreply.ims@bms.ac.lk';
+    $mail->Password = 'Lox51527';
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-    $mail->Port = (int)$config['SMTP_PORT'];
+    $mail->Port = 587;
 
     // Recipients
-    $mail->setFrom($config['SMTP_FROM_EMAIL'], 'BMS Academic Registrar');
+    $mail->setFrom('noreply.ims@bms.ac.lk', 'BMS Academic Registrar');
     $mail->addAddress($email, $name);
     
     // Attach PDF if data is provided

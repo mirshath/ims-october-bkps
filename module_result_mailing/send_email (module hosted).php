@@ -24,33 +24,6 @@ $sent_by = isset($_SESSION['username']) ? $_SESSION['username'] : 'system';
 
 $response = [];
 
-// Load SMTP config from config.ini
-$config = parse_ini_file(__DIR__ . '/../config.ini');
-if ($config === false) {
-    echo json_encode(["status" => "error", "message" => "Email configuration could not be loaded."]);
-    exit;
-}
-
-// Initialize PHPMailer once and reuse the SMTP connection for every email
-$mail = new PHPMailer(true);
-try {
-    // Server settings (from config.ini)
-    $mail->isSMTP();
-    $mail->Host = $config['SMTP_HOST'];
-    $mail->SMTPAuth = true;
-    $mail->Username = $config['SMTP_USER'];
-    $mail->Password = $config['SMTP_PASS'];
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-    $mail->Port = (int)$config['SMTP_PORT'];
-    $mail->SMTPKeepAlive = true;
-    $mail->Timeout = 60;
-
-    $mail->setFrom($config['SMTP_FROM_EMAIL'], $config['SMTP_FROM_NAME']);
-} catch (Exception $e) {
-    echo json_encode(["status" => "error", "message" => "Email configuration is invalid: " . $e->getMessage()]);
-    exit;
-}
-
 foreach ($emailData as $entry) {
     $full_name = mysqli_real_escape_string($conn, $entry['full_name']);
     $email = mysqli_real_escape_string($conn, $entry['email']);
@@ -119,9 +92,19 @@ foreach ($emailData as $entry) {
 
     $emailContent .= "<p>Best Regards,<br>BMS Team</p>";
 
+    // Initialize PHPMailer
+    $mail = new PHPMailer(true);
     try {
-        // Reset recipient from the previous student, then add the current one
-        $mail->clearAddresses();
+        $mail->isSMTP(); // Set mailer to use SMTP
+        $mail->Host = 'smtp.office365.com';
+        $mail->SMTPAuth = true; // Enable SMTP authentication
+        $mail->Username = 'noreply.ims@bms.ac.lk'; // SMTP username
+        $mail->Password = 'gqfxxrphvjnlmwrn'; // SMTP password
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // Enable TLS encryption
+        $mail->Port = 587; // TCP port to connect to
+
+        //Recipients
+        $mail->setFrom('noreply.ims@bms.ac.lk', 'Business Management School'); // Replace with your email and name
         $mail->addAddress($email);
 
         $mail->isHTML(true);
@@ -136,7 +119,7 @@ foreach ($emailData as $entry) {
             $stmt = $conn->prepare($log_query);
             $stmt->bind_param("ssiss", $student_id, $email, $programme_id, $batch_id, $sent_by);
             $stmt->execute();
-
+            
             $response[] = ["email" => $email, "status" => "success", "message" => "Email sent"];
         } else {
             // Log failed email
@@ -147,29 +130,25 @@ foreach ($emailData as $entry) {
             $stmt = $conn->prepare($log_query);
             $stmt->bind_param("ssisss", $student_id, $email, $programme_id, $batch_id, $sent_by, $error_message);
             $stmt->execute();
-
+            
             $response[] = ["email" => $email, "status" => "error", "message" => "Email failed"];
         }
     } catch (Exception $e) {
         // Log exception
-        $error_message = "Mailer Error: " . (!empty($mail->ErrorInfo) ? $mail->ErrorInfo : $e->getMessage());
+        $error_message = "Mailer Error: " . $mail->ErrorInfo;
         $log_query = "INSERT INTO module_result_email_log 
                      (student_id, email, programme_id, batch_id, status, sent_date, sent_by, error_message) 
                      VALUES (?, ?, ?, ?, 'failed', NOW(), ?, ?)";
         $stmt = $conn->prepare($log_query);
         $stmt->bind_param("ssisss", $student_id, $email, $programme_id, $batch_id, $sent_by, $error_message);
         $stmt->execute();
-
+        
         $response[] = ["email" => $email, "status" => "error", "message" => $error_message];
     }
 }
 
-// Close the SMTP connection
-$mail->smtpClose();
-
 // Ensure clean JSON output
-if (ob_get_length()) {
-    ob_clean();
-}
+ob_clean();
 echo json_encode(["status" => "completed", "results" => $response]);
 exit;
+?>

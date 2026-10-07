@@ -31,29 +31,36 @@ use PHPMailer\PHPMailer\Exception;
 
 require 'vendor/autoload.php';
 
-// Load SMTP config from config.ini
-$config = parse_ini_file(__DIR__ . '/config.ini');
-if ($config === false) {
-    echo json_encode(['status' => 'error', 'message' => 'Email configuration could not be loaded.']);
-    exit;
-}
-
 // Create a new PHPMailer instance
 $mail = new PHPMailer(true);
 
 try {
-  
-    // Server settings (from config.ini)
+    // Server settings
+    // $mail->isSMTP();
+    // $mail->Host       = 'mail.graduatejob.lk';
+    // $mail->SMTPAuth   = true;
+    // $mail->Username   = 'noreply@graduatejob.lk';
+    // $mail->Password   = 'Hasni@2024';
+    // $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+    // $mail->Port       = 587;
+
+    // // Recipients
+    // $mail->setFrom('noreply@graduatejob.lk', 'BMS Finance Department');
+
+
     $mail->isSMTP(); // Set mailer to use SMTP
-    $mail->Host = $config['SMTP_HOST'];
+    $mail->Host = 'smtp.office365.com';
     $mail->SMTPAuth = true; // Enable SMTP authentication
-    $mail->Username = $config['SMTP_USER']; // SMTP username
-    $mail->Password = $config['SMTP_PASS']; // SMTP password
+    $mail->Username = 'noreply.ims@bms.ac.lk'; // SMTP username
+    $mail->Password = 'gqfxxrphvjnlmwrn'; // SMTP password
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // Enable TLS encryption
-    $mail->Port = (int)$config['SMTP_PORT']; // TCP port to connect to
+    $mail->Port = 587; // TCP port to connect to
 
     //Recipients
-    $mail->setFrom($config['SMTP_FROM_EMAIL'], $config['SMTP_FROM_NAME']);
+    $mail->setFrom('noreply.ims@bms.ac.lk', 'Business Management School'); // Replace with your email and name
+
+
+
 
     $mail->addAddress($recipientEmail);
     // $mail->addReplyTo('finance@bms.edu.lk', 'BMS Finance Department');

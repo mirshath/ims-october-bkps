@@ -373,26 +373,20 @@ $semester = $details['semester_name'];
                                     $mail = new PHPMailer(true);
 
                                     try {
-                                        // Load SMTP config from config.ini
-                                        $config = parse_ini_file(__DIR__ . '/config.ini');
-                                        if ($config === false) {
-                                            throw new Exception('Email configuration could not be loaded.');
-                                        }
-
-                                        // Server settings (from config.ini)
                                         $mail->isSMTP();
-                                        $mail->Host = $config['SMTP_HOST'];
+                                        $mail->Host = 'smtp.office365.com';
                                         $mail->SMTPAuth = true;
-                                        $mail->Username = $config['SMTP_USER'];
-                                        $mail->Password = $config['SMTP_PASS'];
+                                        $mail->Username = 'noreply.ims@bms.ac.lk';
+                                        $mail->Password = 'gqfxxrphvjnlmwrn';
                                         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                                        $mail->Port = (int)$config['SMTP_PORT'];
+                                        $mail->Port = 587;
 
                                         // ✅ VERY IMPORTANT FOR 80+ EMAILS
                                         $mail->SMTPKeepAlive = true;
                                         $mail->Timeout = 60;
 
-                                        $mail->setFrom($config['SMTP_FROM_EMAIL'], $config['SMTP_FROM_NAME']);
+
+                                        $mail->setFrom('noreply.ims@bms.ac.lk', 'Business Management School');
                                         $mail->Subject = $programmeName . ' results';
 
                                         // Get selected student IDs
@@ -671,10 +665,9 @@ $semester = $details['semester_name'];
                                             // $mail->clearAddresses(); // Clear for next student
                                         }
 
-                                        $mail->smtpClose();
                                         echo '<script>alert("Emails sent successfully to all students!");</script>';
                                     } catch (Exception $e) {
-                                        echo "Message could not be sent. Mailer Error: " . htmlspecialchars($e->getMessage());
+                                        echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
                                     }
                                 }
 
@@ -2403,27 +2396,22 @@ if (isset($_POST['send_to_all']) && !empty($programmeId) && !empty($batchId) && 
     $mail = new PHPMailer(true);
 
     try {
-        // Load SMTP config from config.ini
-        $config = parse_ini_file(__DIR__ . '/config.ini');
-        if ($config === false) {
-            throw new Exception('Email configuration could not be loaded.');
-        }
+        $mail->isSMTP(); // Set mailer to use SMTP
+        $mail->Host = 'smtp.office365.com';
+        $mail->SMTPAuth = true; // Enable SMTP authentication
+        $mail->Username = 'noreply.ims@bms.ac.lk'; // SMTP username
+        $mail->Password = 'gqfxxrphvjnlmwrn'; // SMTP password
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // Enable TLS encryption
+        $mail->Port = 587; // TCP port to connect to
 
-        // Server settings (from config.ini)
-        $mail->isSMTP();
-        $mail->Host = $config['SMTP_HOST'];
-        $mail->SMTPAuth = true;
-        $mail->Username = $config['SMTP_USER'];
-        $mail->Password = $config['SMTP_PASS'];
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = (int)$config['SMTP_PORT'];
 
         // ✅ VERY IMPORTANT FOR 80+ EMAILS
         $mail->SMTPKeepAlive = true;
         $mail->Timeout = 60;
 
+
         //Recipients
-        $mail->setFrom($config['SMTP_FROM_EMAIL'], $config['SMTP_FROM_NAME']);
+        $mail->setFrom('noreply.ims@bms.ac.lk', 'Business Management School'); // Replace with your email and name
 
         $mail->Subject = $programmeName . ' results';
 
@@ -2921,10 +2909,9 @@ if (isset($_POST['send_to_all']) && !empty($programmeId) && !empty($batchId) && 
             // $mail->clearAddresses(); // Clear the recipient for the next iteration
         }
 
-        $mail->smtpClose();
         echo '<script>alert("Emails sent successfully to all students!"); window.location.href = window.location.href;</script>';
     } catch (Exception $e) {
-        echo "Message could not be sent. Mailer Error: " . htmlspecialchars($e->getMessage());
+        echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
     }
 }
 

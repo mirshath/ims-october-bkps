@@ -9,12 +9,6 @@ use PHPMailer\PHPMailer\Exception;
 
 require_once("vendor/autoload.php");
 
-// Load SMTP config from config.ini
-$config = parse_ini_file(__DIR__ . '/config.ini');
-if ($config === false) {
-    die("Email configuration could not be loaded.");
-}
-
 // Only allow POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: online_registration_data.php");
@@ -97,14 +91,14 @@ if (isset($_POST['action']) && $_POST['action'] === 'reject') {
 
     try {
         $mail->isSMTP();
-        $mail->Host = $config['SMTP_HOST'];
+        $mail->Host = 'smtp.office365.com';
         $mail->SMTPAuth = true;
-        $mail->Username = $config['SMTP_USER'];
-        $mail->Password = $config['SMTP_PASS'];
+        $mail->Username = 'noreply.ims@bms.ac.lk';
+        $mail->Password = 'Lox51527';
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = (int)$config['SMTP_PORT'];
+        $mail->Port = 587;
 
-        $mail->setFrom($config['SMTP_FROM_EMAIL'], $config['SMTP_FROM_NAME']);
+        $mail->setFrom('noreply.ims@bms.ac.lk', 'Business Management School');
         $mail->addAddress($studentDetails['email'], $studentDetails['firstname'] . ' ' . $studentDetails['lastname']);
 
         $mail->isHTML(true);
@@ -938,7 +932,7 @@ $conn->close();
                         $olResults = $qualifications['ol'];
                         $firstOl = $olResults[0];
                         $count = count($olResults);
-                    ?>
+                        ?>
 
                         <!-- Header info -->
                         <div class="d-flex justify-content-between mb-1" style="font-size:13px;">
@@ -964,7 +958,7 @@ $conn->close();
                                 <?php for ($i = 0; $i < $count; $i += 2):
                                     $left = $olResults[$i];
                                     $right = $olResults[$i + 1] ?? null;
-                                ?>
+                                    ?>
                                     <tr>
                                         <td><?php echo showVal($left['subject']); ?></td>
                                         <td style="font-weight:600;"><?php echo showVal($left['grade']); ?></td>
@@ -984,7 +978,7 @@ $conn->close();
                         $alResults = $qualifications['al'];
                         $firstAl = $alResults[0];
                         $count = count($alResults);
-                    ?>
+                        ?>
 
                         <!-- Header info -->
                         <div class="d-flex justify-content-between mb-1" style="font-size:13px;">
@@ -1136,17 +1130,17 @@ $conn->close();
                         </tr>
                         <?php
                         // Calculate installment rows dynamically
-
+                        
                         $courseFee = isset($batchDetails['course_fee_lkr']) ? floatval($batchDetails['course_fee_lkr']) : 0.0;
                         $registrationFee = isset($batchDetails['registration_fee']) ? floatval($batchDetails['registration_fee']) : 0.0;
                         $installments = isset($batchDetails['installment_no']) ? intval($batchDetails['installment_no']) : 0;
                         $courseFeeOnly = $courseFee - $registrationFee;
                         $installmentAmt = ($installments > 0) ? round($courseFeeOnly / $installments, 2) : 0.00;
                         $maxRows = $installments; // Only as many rows as installments (plus reg row)
-
+                        
                         // Installment rows (start from the 2nd row)
                         for ($i = 1; $i <= $installments; $i++):
-                        ?>
+                            ?>
                             <tr style="height:38px;">
                                 <td style="text-align:center;"></td>
                                 <td style="text-align:center;">
@@ -1434,7 +1428,7 @@ $conn->close();
             window.print();
         }
 
-        document.getElementById('allocate_btn').addEventListener('click', async function() {
+        document.getElementById('allocate_btn').addEventListener('click', async function () {
             // Show loading message
             Swal.fire({
                 title: 'Allocating Student and Generating PDF...',
@@ -1578,7 +1572,7 @@ $conn->close();
                     logging: false,
                     windowWidth: el.scrollWidth,
                     windowHeight: el.scrollHeight,
-                    onclone: function(clonedDoc) {
+                    onclone: function (clonedDoc) {
                         // Ensure proper styling in cloned document
                         const clonedEl = clonedDoc.getElementById(sections[sectionIndex]);
                         if (clonedEl) {

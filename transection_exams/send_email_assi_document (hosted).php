@@ -107,37 +107,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $attachments[] = "../uploads_exam_assessments/" . $attachment1;
     }
 
-    // Load SMTP config from config.ini
-    $config = parse_ini_file(__DIR__ . '/../config.ini');
-    if ($config === false) {
-        $errorMessage = "Email configuration could not be loaded.";
-        if ($lockHandle) {
-            @flock($lockHandle, LOCK_UN);
-            @fclose($lockHandle);
-        }
-        if ($isAjax) {
-            echo json_encode(['success' => false, 'message' => $errorMessage]);
-        } else {
-            echo $errorMessage;
-        }
-        exit;
-    }
-
     $mail = new PHPMailer(true);
 
     try {
-        // Server settings (from config.ini)
         $mail->isSMTP();
-        $mail->Host = $config['SMTP_HOST'];
+        $mail->Host = 'smtp.office365.com';
         $mail->SMTPAuth = true;
-        $mail->Username = $config['SMTP_USER'];
-        $mail->Password = $config['SMTP_PASS'];
+        $mail->Username = 'noreply.ims@bms.ac.lk';
+        $mail->Password = 'gqfxxrphvjnlmwrn';
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = $config['SMTP_PORT'];
+        $mail->Port = 587;
         $mail->SMTPKeepAlive = true;
         $mail->Timeout = 60;
 
-        $mail->setFrom($config['SMTP_FROM_EMAIL'], $config['SMTP_FROM_NAME']);
+        $mail->setFrom('noreply.ims@bms.ac.lk', 'BMS Campus');
         $mail->addAddress($to, $student_name);
 
         $mail->isHTML(true);
@@ -254,10 +237,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $logStmt->execute();
         $logStmt->close();
 
-        if ($lockHandle) {
-            @flock($lockHandle, LOCK_UN);
-            @fclose($lockHandle);
-        }
+        if ($lockHandle) { @flock($lockHandle, LOCK_UN); @fclose($lockHandle); }
 
         if ($isAjax) {
             echo json_encode(['success' => true, 'message' => "Email sent successfully to $student_name"]);
@@ -283,10 +263,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $logStmt->execute();
         $logStmt->close();
 
-        if ($lockHandle) {
-            @flock($lockHandle, LOCK_UN);
-            @fclose($lockHandle);
-        }
+        if ($lockHandle) { @flock($lockHandle, LOCK_UN); @fclose($lockHandle); }
 
         if ($isAjax) {
             echo json_encode(['success' => false, 'message' => "Failed to send email: " . $mail->ErrorInfo]);

@@ -70,25 +70,18 @@ $skipped_count = 0;
 $failed_emails = [];
 $success_emails = [];
 
-// Load SMTP config from config.ini
-$config = parse_ini_file(__DIR__ . '/../config.ini');
-if ($config === false) {
-    echo json_encode(['success' => false, 'message' => 'Email configuration could not be loaded']);
-    exit;
-}
-
 // Create a new PHPMailer instance
 $mail = new PHPMailer(true);
 
-// Server settings (from config.ini)
+// Server settings
 $mail->isSMTP();
-$mail->Host = $config['SMTP_HOST'];
+$mail->Host = 'smtp.office365.com';
 $mail->SMTPAuth = true;
-$mail->Username = $config['SMTP_USER'];
-$mail->Password = $config['SMTP_PASS'];
+$mail->Username = 'noreply@bms.ac.lk';
+$mail->Password = 'gqfxxrphvjnlmwrn';
 $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-$mail->Port = $config['SMTP_PORT'];
-$mail->setFrom($config['SMTP_FROM_EMAIL'], $config['SMTP_FROM_NAME']);
+$mail->Port = 587;
+$mail->setFrom('noreply@bms.ac.lk', 'BMS Campus');
 
 // Get the current user
 $sentBy = $_SESSION['username'] ?? 'system';
@@ -198,9 +191,9 @@ foreach ($students as $student) {
                     <div class='assessment-details'>
                     <div>" . $assessment['description'] . "</div>
                     </div>";
-        }
-
-        $emailBody .= "
+                }
+                
+                $emailBody .= "
                 
                 <p>Best regards,<br>
                 <strong>BMS Campus Academic Team</strong></p>
@@ -213,17 +206,17 @@ foreach ($students as $student) {
                 </div>
                 </body>
                 </html>";
-
-        // <h3 style='color: #007bff; margin-top: 0;'>Description</h3>
-        $mail->Body = $emailBody;
-        $mail->AltBody = strip_tags(str_replace(['<br>', '</p>', '</div>'], ["\n", "\n\n", "\n"], $emailBody));
-
-        // Attach files if they exist
-        $attachments = [];
-        for ($i = 1; $i <= 4; $i++) {
-            $attachmentField = "attachment_$i";
-            if (!empty($assessment[$attachmentField])) {
-                $attachmentPath = "../uploads_exam_assessments/" . $assessment[$attachmentField];
+                
+                // <h3 style='color: #007bff; margin-top: 0;'>Description</h3>
+                $mail->Body = $emailBody;
+                $mail->AltBody = strip_tags(str_replace(['<br>', '</p>', '</div>'], ["\n", "\n\n", "\n"], $emailBody));
+                
+                // Attach files if they exist
+                $attachments = [];
+                for ($i = 1; $i <= 4; $i++) {
+                    $attachmentField = "attachment_$i";
+                    if (!empty($assessment[$attachmentField])) {
+                        $attachmentPath = "../uploads_exam_assessments/" . $assessment[$attachmentField];
                 if (file_exists($attachmentPath)) {
                     $attachments[] = $attachmentPath;
                 }

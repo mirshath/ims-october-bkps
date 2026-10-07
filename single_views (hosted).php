@@ -941,24 +941,17 @@ if (isset($_POST['send_email'])) {
 
     $mail = new PHPMailer(true);
     try {
-        // Load SMTP config from config.ini
-        $config = parse_ini_file(__DIR__ . '/config.ini');
-        if ($config === false) {
-            throw new Exception('Email configuration could not be loaded.');
-        }
 
-        // Server settings (from config.ini)
-        $mail->isSMTP();
-        $mail->Host = $config['SMTP_HOST'];
-        $mail->SMTPAuth = true;
-        $mail->Username = $config['SMTP_USER'];
-        $mail->Password = $config['SMTP_PASS'];
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = (int)$config['SMTP_PORT'];
-        $mail->Timeout = 60;
+        $mail->isSMTP(); // Set mailer to use SMTP
+        $mail->Host = 'smtp.office365.com';
+        $mail->SMTPAuth = true; // Enable SMTP authentication
+        $mail->Username = 'noreply.ims@bms.ac.lk';
+        $mail->Password = 'gqfxxrphvjnlmwrn';
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // Enable TLS encryption
+        $mail->Port = 587; // TCP port to connect to
 
         //Recipients
-        $mail->setFrom($config['SMTP_FROM_EMAIL'], $config['SMTP_FROM_NAME']);
+        $mail->setFrom('noreply.ims@bms.ac.lk', 'Business Management School'); // Replace with your email and name
 
         $mail->addAddress($email);
         $mail->isHTML(true);
@@ -1177,7 +1170,7 @@ if (isset($_POST['send_email'])) {
         echo '<script>window.location.href = "' . $_SERVER['HTTP_REFERER'] . '";</script>';
     } catch (Exception $e) {
         // Record failed email sending
-        $errorMsg = !empty($mail->ErrorInfo) ? $mail->ErrorInfo : $e->getMessage();
+        $errorMsg = $mail->ErrorInfo;
 
         $logQuery = "INSERT INTO email_sending_log 
                     (student_id, program_id, batch_id, module_id, emailed_result, email_sent, sent_date, sent_by, status, error_message)
@@ -1187,7 +1180,7 @@ if (isset($_POST['send_email'])) {
         $logStmt->bind_param("iiiisss", $studentCode, $programId, $batchId, $moduleId, $emailedResult, $sentBy, $errorMsg);
         $logStmt->execute();
 
-        echo "Email could not be sent. Error: " . htmlspecialchars($errorMsg);
+        echo "Email could not be sent. Error: {$mail->ErrorInfo}";
     }
 }
 
@@ -1298,24 +1291,17 @@ if (isset($_POST['send_result_email'])) {
 
     $mail = new PHPMailer(true);
     try {
-        // Load SMTP config from config.ini
-        $config = parse_ini_file(__DIR__ . '/config.ini');
-        if ($config === false) {
-            throw new Exception('Email configuration could not be loaded.');
-        }
 
-        // Server settings (from config.ini)
-        $mail->isSMTP();
-        $mail->Host = $config['SMTP_HOST'];
-        $mail->SMTPAuth = true;
-        $mail->Username = $config['SMTP_USER'];
-        $mail->Password = $config['SMTP_PASS'];
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = (int)$config['SMTP_PORT'];
-        $mail->Timeout = 60;
+        $mail->isSMTP(); // Set mailer to use SMTP
+        $mail->Host = 'smtp.office365.com';
+        $mail->SMTPAuth = true; // Enable SMTP authentication
+        $mail->Username = 'noreply.ims@bms.ac.lk';
+        $mail->Password = 'gqfxxrphvjnlmwrn';
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // Enable TLS encryption
+        $mail->Port = 587; // TCP port to connect to
 
         //Recipients
-        $mail->setFrom($config['SMTP_FROM_EMAIL'], $config['SMTP_FROM_NAME']);
+        $mail->setFrom('noreply.ims@bms.ac.lk', 'Business Management School'); // Replace with your email and name
 
         $mail->addAddress($email);
         $mail->isHTML(true);
@@ -1412,7 +1398,7 @@ if (isset($_POST['send_result_email'])) {
         echo '<script>window.location.href = "' . $_SERVER['HTTP_REFERER'] . '";</script>';
     } catch (Exception $e) {
         // Record failed email sending
-        $errorMsg = !empty($mail->ErrorInfo) ? $mail->ErrorInfo : $e->getMessage();
+        $errorMsg = $mail->ErrorInfo;
         $logQuery = "INSERT INTO email_sending_log 
                     (student_id, program_id, batch_id, module_id, main_component_id, sub_component_id, email_sent, sent_date, sent_by, status, error_message, emailed_result) 
                     VALUES (?, ?, ?, ?, ?, ?, 0,NOW(), ?, 'failed', ?, ?)";
@@ -1432,7 +1418,7 @@ if (isset($_POST['send_result_email'])) {
         );
         $logStmt->execute();
 
-        echo "Email could not be sent. Error: " . htmlspecialchars($errorMsg);
+        echo "Email could not be sent. Error: {$mail->ErrorInfo}";
     }
 }
 

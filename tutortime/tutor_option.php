@@ -12,9 +12,18 @@ error_reporting(E_ALL);
 header('Content-Type: application/json');
 
 require_once "../database/connection.php";
+
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+
 require '../vendor/autoload.php';
+
+// Load SMTP config from config.ini
+$config = parse_ini_file(__DIR__ . '/../config.ini');
+if ($config === false) {
+    echo json_encode(['status' => 'error', 'message' => 'Email configuration could not be loaded.']);
+    exit;
+}
 
 $response = ['status' => 'error', 'message' => 'Unknown process error'];
 
@@ -121,9 +130,12 @@ try {
                 $student['last_name'],
                 "New Session Scheduled by Tutor ",
                 "A session has been scheduled for you by your tutor. Please find the details below:",
-                $slot_date, $start_time, $end_time, $reason,
+                $slot_date,
+                $start_time,
+                $end_time,
+                $reason,
 
-                $slot['Lecturer_Name'], 
+                $slot['Lecturer_Name'],
                 $slot['session_name'],
                 "Please ensure your availability for this session."
             );
@@ -134,8 +146,7 @@ try {
         }
     }
 
-    /* ================= CANCEL BEFORE ================= */
-    elseif ($action === 'cancel_pending') {
+    /* ================= CANCEL BEFORE ================= */ elseif ($action === 'cancel_pending') {
 
         $stmt = $conn->prepare("
             UPDATE tutor_time_slots
@@ -148,15 +159,14 @@ try {
         $response = ['status' => 'success', 'message' => 'Slot cancelled'];
     }
 
-    /* ================= DENY ================= */
-    elseif ($action === 'denied' && $hasStudent) {
+    /* ================= DENY ================= */ elseif ($action === 'denied' && $hasStudent) {
 
         $stmt = $conn->prepare("
             UPDATE tutor_time_slots
             SET student_id=NULL, status='Denied', created_by=?
             WHERE id=? AND tutor_id=?
         ");
-        $stmt->bind_param("iii",$current_user_id, $slot_id, $tutor_id);
+        $stmt->bind_param("iii", $current_user_id, $slot_id, $tutor_id);
         $stmt->execute();
 
         sendEmail(
@@ -166,25 +176,27 @@ try {
             $slot['last_name'],
             "Session Request Declined", //subject
             "We regret to inform you that your session request has been declined by the tutor.",
-            $slot_date, $start_time, $end_time, $reason,
+            $slot_date,
+            $start_time,
+            $end_time,
+            $reason,
 
-                $slot['Lecturer_Name'], 
-                $slot['session_name'],
-                "You may request a new session at a different time based on tutor availability."
+            $slot['Lecturer_Name'],
+            $slot['session_name'],
+            "You may request a new session at a different time based on tutor availability."
         );
 
         $response = ['status' => 'success', 'message' => 'Student denied'];
     }
 
-    /* ================= CANCEL AFTER ================= */
-    elseif ($action === 'cancelled' && $hasStudent) {
+    /* ================= CANCEL AFTER ================= */ elseif ($action === 'cancelled' && $hasStudent) {
 
         $stmt = $conn->prepare("
             UPDATE tutor_time_slots
             SET student_id=NULL, is_hidden=1, created_by=?
             WHERE id=? AND tutor_id=?
         ");
-        $stmt->bind_param("iii",$current_user_id, $slot_id, $tutor_id);
+        $stmt->bind_param("iii", $current_user_id, $slot_id, $tutor_id);
         $stmt->execute();
 
         sendEmail(
@@ -194,16 +206,18 @@ try {
             $slot['last_name'],
             "Booking Cancelled",
             "Your scheduled session has been cancelled by the tutor.",
-            $slot_date, $start_time, $end_time, $reason,
+            $slot_date,
+            $start_time,
+            $end_time,
+            $reason,
 
-                $slot['Lecturer_Name'], 
-                $slot['session_name'],
-                "We apologise for any inconvenience caused. You may reschedule the session at your convenience."
+            $slot['Lecturer_Name'],
+            $slot['session_name'],
+            "We apologise for any inconvenience caused. You may reschedule the session at your convenience."
         );
 
         $response = ['status' => 'success', 'message' => 'Booking cancelled'];
     }
-
 } catch (Exception $e) {
     $response = ['status' => 'error', 'message' => $e->getMessage()];
 }
@@ -216,7 +230,9 @@ exit;
 
 
 /* ================= EMAIL FUNCTION (UNCHANGED) ================= */
-function sendEmail($to, $headText, $fname, $lname, $subject, $messageText, $date, $start, $end, $reason, $lecturerName, $sessionName, $note) {
+function sendEmail($to, $headText, $fname, $lname, $subject, $messageText, $date, $start, $end, $reason, $lecturerName, $sessionName, $note)
+{
+    global $config;
 
     if (empty($to)) return;
 
@@ -224,20 +240,20 @@ function sendEmail($to, $headText, $fname, $lname, $subject, $messageText, $date
 
     try {
         $mail->isSMTP();
-        $mail->Host = 'smtp.office365.com';
+        $mail->Host = $config['SMTP_HOST'];
         $mail->SMTPAuth = true;
-        $mail->Username = 'noreply.ims@bms.ac.lk';
-        $mail->Password = 'Lox51527';
+        $mail->Username = $config['SMTP_USER'];
+        $mail->Password = $config['SMTP_PASS'];
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = 587;
+        $mail->Port = (int)$config['SMTP_PORT'];
 
-        $mail->setFrom('noreply.ims@bms.ac.lk', 'BMS Session');
+        $mail->setFrom($config['SMTP_FROM_EMAIL'], 'BMS Session');
         $mail->addAddress($to, $fname);
 
         $mail->isHTML(true);
         $mail->Subject = $subject;
 
-        $reasonHtml = (!empty($reason)) ? "<p><strong>Reason:</strong> ".htmlspecialchars($reason)."</p>" : "";
+        $reasonHtml = (!empty($reason)) ? "<p><strong>Reason:</strong> " . htmlspecialchars($reason) . "</p>" : "";
 
         $mail->Body = "
         <head>
@@ -298,13 +314,13 @@ function sendEmail($to, $headText, $fname, $lname, $subject, $messageText, $date
         </div>
         </body>";
 
-       $mail->send();
+        $mail->send();
     } catch (Exception $e) {
         error_log("Mail error: " . $mail->ErrorInfo);
     }
 } // <--- END OF FUNCTION
 
 /* --- FINAL OUTPUT SECTION (Must be here at the very end) --- */
-ob_end_clean();          
-echo json_encode($response); 
+ob_end_clean();
+echo json_encode($response);
 exit;
