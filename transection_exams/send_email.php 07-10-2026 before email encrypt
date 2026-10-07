@@ -90,31 +90,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $attachments[] = "../uploads_exam_assessments/" . $attachment1;
     }
 
-    // Load SMTP config from config.ini
-    $config = parse_ini_file(__DIR__ . '/../config.ini');
-    if ($config === false) {
-        $errorMessage = "Email configuration could not be loaded.";
-        if ($isAjax) {
-            echo json_encode(['success' => false, 'message' => $errorMessage]);
-        } else {
-            echo $errorMessage;
-        }
-        exit;
-    }
-
     $mail = new PHPMailer(true);
 
     try {
-        // Server settings (from config.ini)
         $mail->isSMTP();
-        $mail->Host = $config['SMTP_HOST'];
+        $mail->Host = 'smtp.office365.coms';
         $mail->SMTPAuth = true;
-        $mail->Username = $config['SMTP_USER'];
-        $mail->Password = $config['SMTP_PASS'];
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = $config['SMTP_PORT'];
 
-        $mail->setFrom($config['SMTP_FROM_EMAIL'], $config['SMTP_FROM_NAME']);
+        $mail->Username = 'noreply.ims@bms.ac.lk';
+        $mail->Password = 'gqfxxrphvjnlmwrn';
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port = 587;
+
+        $mail->setFrom('noreply.ims@bms.ac.lk', 'BMS Campus');
         $mail->addAddress($to, $student_name);
 
         $mail->isHTML(true);

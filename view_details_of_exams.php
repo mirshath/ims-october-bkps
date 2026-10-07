@@ -91,96 +91,96 @@ if (!isset($_SESSION['username'])) {
                                         if ($assessment) {
                                     ?>
 
-                                        <div class="table-responsive">
-                                            <button id="sendAllEmails" class="btn btn-primary mb-3" onclick="sendAllEmails(<?php echo $assessment['id']; ?>)">
-                                                <i class="fas fa-envelope"></i> Send All Emails
-                                                <span id="spinner" class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span>
-                                            </button>
+                                            <div class="table-responsive">
+                                                <button id="sendAllEmails" class="btn btn-primary mb-3" onclick="sendAllEmails(<?php echo $assessment['id']; ?>)">
+                                                    <i class="fas fa-envelope"></i> Send All Emails
+                                                    <span id="spinner" class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span>
+                                                </button>
 
-                                            <table class="table table-striped table-hover" style="width: 80%; font-size: 11px;">
-                                                <tr>
-                                                    <td class="bg-secondary text-white" style="width: 40%;">ID</td>
-                                                    <td><?php echo htmlspecialchars($assessment['id']); ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="bg-secondary text-white">Programme Name</td>
-                                                    <td><?php echo htmlspecialchars($assessment['program_name']); ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="bg-secondary text-white">Batch Name</td>
-                                                    <td><?php echo htmlspecialchars($assessment['batch_name']); ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="bg-secondary text-white">Module Name</td>
-                                                    <td><?php echo htmlspecialchars($assessment['module_name']); ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="bg-secondary text-white">Main Component Name</td>
-                                                    <td><?php echo htmlspecialchars($assessment['as_main_component_name']); ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="bg-secondary text-white">Sub Component Name</td>
-                                                    <td><?php echo htmlspecialchars($assessment['sub_component_name'] ?? 'N/A'); ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="bg-secondary text-white">Year</td>
-                                                    <td><?php echo htmlspecialchars($assessment['year_id']); ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="bg-secondary text-white">Semester</td>
-                                                    <td><?php echo htmlspecialchars($assessment['semester_id']); ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="bg-secondary text-white">Assessment Date</td>
-                                                    <td><?php echo htmlspecialchars($assessment['assessment_date']); ?></td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="bg-secondary text-white">Description</td>
-                                                    <td>
-                                                        <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
-                                                            <?php echo $assessment['description']; ?>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                <?php for ($i = 1; $i <= 4; $i++): ?>
+                                                <table class="table table-striped table-hover" style="width: 80%; font-size: 11px;">
                                                     <tr>
-                                                        <td class="bg-secondary text-white">Attachment <?php echo $i; ?></td>
+                                                        <td class="bg-secondary text-white" style="width: 40%;">ID</td>
+                                                        <td><?php echo htmlspecialchars($assessment['id']); ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="bg-secondary text-white">Programme Name</td>
+                                                        <td><?php echo htmlspecialchars($assessment['program_name']); ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="bg-secondary text-white">Batch Name</td>
+                                                        <td><?php echo htmlspecialchars($assessment['batch_name']); ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="bg-secondary text-white">Module Name</td>
+                                                        <td><?php echo htmlspecialchars($assessment['module_name']); ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="bg-secondary text-white">Main Component Name</td>
+                                                        <td><?php echo htmlspecialchars($assessment['as_main_component_name']); ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="bg-secondary text-white">Sub Component Name</td>
+                                                        <td><?php echo htmlspecialchars($assessment['sub_component_name'] ?? 'N/A'); ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="bg-secondary text-white">Year</td>
+                                                        <td><?php echo htmlspecialchars($assessment['year_id']); ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="bg-secondary text-white">Semester</td>
+                                                        <td><?php echo htmlspecialchars($assessment['semester_id']); ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="bg-secondary text-white">Assessment Date</td>
+                                                        <td><?php echo htmlspecialchars($assessment['assessment_date']); ?></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="bg-secondary text-white">Description</td>
                                                         <td>
-                                                            <?php if (!empty($assessment["attachment_$i"])): ?>
-                                                                <a href="uploads_exam_assessments/<?php echo htmlspecialchars($assessment["attachment_$i"]); ?>" target="_blank" class="text-primary">
-                                                                    <?php echo htmlspecialchars(basename($assessment["attachment_$i"])); ?>
-                                                                </a>
-                                                            <?php else: ?>
-                                                                <span class="text-muted">No attachment</span>
-                                                            <?php endif; ?>
+                                                            <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
+                                                                <?php echo $assessment['description']; ?>
+                                                            </div>
                                                         </td>
                                                     </tr>
-                                                <?php endfor; ?>
-                                            </table>
-                                        </div>
-
-                                        <!-- Separate Card for Allocated Students -->
-                                        <div class="card mt-4">
-                                            <div class="card-header d-flex align-items-center justify-content-between" style="height: 60px;">
-                                                <h6 class="mb-0 me-2">Allocated Students</h6>
-                                                <div>
-                                                    <button class="btn btn-sm btn-outline-primary" onclick="selectAllStudents()">
-                                                        <i class="fas fa-check-square"></i> Select All
-                                                    </button>
-                                                    <button class="btn btn-sm btn-outline-secondary" onclick="deselectAllStudents()">
-                                                        <i class="fas fa-square"></i> Deselect All
-                                                    </button>
-                                                </div>
+                                                    <?php for ($i = 1; $i <= 4; $i++): ?>
+                                                        <tr>
+                                                            <td class="bg-secondary text-white">Attachment <?php echo $i; ?></td>
+                                                            <td>
+                                                                <?php if (!empty($assessment["attachment_$i"])): ?>
+                                                                    <a href="uploads_exam_assessments/<?php echo htmlspecialchars($assessment["attachment_$i"]); ?>" target="_blank" class="text-primary">
+                                                                        <?php echo htmlspecialchars(basename($assessment["attachment_$i"])); ?>
+                                                                    </a>
+                                                                <?php else: ?>
+                                                                    <span class="text-muted">No attachment</span>
+                                                                <?php endif; ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endfor; ?>
+                                                </table>
                                             </div>
-                                            <div class="card-body">
-                                                <?php
-                                                $programme_id = $assessment['programme_id'];
-                                                $batch_id = $assessment['batch_id'];
-                                                $assessment_id = $assessment['id'];
-                                                $module_name = $assessment['module_name']; // Get the module name from the assessment
+
+                                            <!-- Separate Card for Allocated Students -->
+                                            <div class="card mt-4">
+                                                <div class="card-header d-flex align-items-center justify-content-between" style="height: 60px;">
+                                                    <h6 class="mb-0 me-2">Allocated Students</h6>
+                                                    <div>
+                                                        <button class="btn btn-sm btn-outline-primary" onclick="selectAllStudents()">
+                                                            <i class="fas fa-check-square"></i> Select All
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-secondary" onclick="deselectAllStudents()">
+                                                            <i class="fas fa-square"></i> Deselect All
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div class="card-body">
+                                                    <?php
+                                                    $programme_id = $assessment['programme_id'];
+                                                    $batch_id = $assessment['batch_id'];
+                                                    $assessment_id = $assessment['id'];
+                                                    $module_name = $assessment['module_name']; // Get the module name from the assessment
 
 
-                                                $students_query = "
+                                                    $students_query = "
                                                     SELECT s.*, 
                                                         ap.student_registration_id,
                                                         ap.compulsory_sub,
@@ -200,31 +200,31 @@ if (!isset($_SESSION['username'])) {
                                                     ORDER BY s.first_name, s.last_name";
 
 
-                                                $students_stmt = $conn->prepare($students_query);
-                                                $students_stmt->bind_param("iiiii", $assessment_id, $assessment_id, $assessment_id, $programme_id, $batch_id);
-                                                $students_stmt->execute();
-                                                $students_result = $students_stmt->get_result();
-                                                $all_students = $students_result->fetch_all(MYSQLI_ASSOC);
-                                                
-                                                // Now filter students who have the module in either compulsory_sub or elective_subs
-                                                $students = [];
-                                                foreach ($all_students as $student) {
-                                                    $compulsory_subs = explode(',', $student['compulsory_sub']);
-                                                    $elective_subs_array = explode(',', $student['elective_subs']);
-                                                    
-                                                    // Trim whitespace from each module name
-                                                    $compulsory_subs = array_map('trim', $compulsory_subs);
-                                                    $elective_subs_array = array_map('trim', $elective_subs_array);
-                                                    
-                                                    if (in_array($module_name, $compulsory_subs) || in_array($module_name, $elective_subs_array)) {
-                                                        $students[] = $student;
-                                                    }
-                                                }
+                                                    $students_stmt = $conn->prepare($students_query);
+                                                    $students_stmt->bind_param("iiiii", $assessment_id, $assessment_id, $assessment_id, $programme_id, $batch_id);
+                                                    $students_stmt->execute();
+                                                    $students_result = $students_stmt->get_result();
+                                                    $all_students = $students_result->fetch_all(MYSQLI_ASSOC);
 
-                                                // Display students in a DataTable with index
-                                                if ($students) {
-                                                    echo "<div class='table-responsive'>";
-                                                    echo "<table id='studentsTable' class='table table-striped table-hover' style='font-size: 12px;'>
+                                                    // Now filter students who have the module in either compulsory_sub or elective_subs
+                                                    $students = [];
+                                                    foreach ($all_students as $student) {
+                                                        $compulsory_subs = explode(',', $student['compulsory_sub']);
+                                                        $elective_subs_array = explode(',', $student['elective_subs']);
+
+                                                        // Trim whitespace from each module name
+                                                        $compulsory_subs = array_map('trim', $compulsory_subs);
+                                                        $elective_subs_array = array_map('trim', $elective_subs_array);
+
+                                                        if (in_array($module_name, $compulsory_subs) || in_array($module_name, $elective_subs_array)) {
+                                                            $students[] = $student;
+                                                        }
+                                                    }
+
+                                                    // Display students in a DataTable with index
+                                                    if ($students) {
+                                                        echo "<div class='table-responsive'>";
+                                                        echo "<table id='studentsTable' class='table table-striped table-hover' style='font-size: 12px;'>
                                                     <thead>
                                                         <tr>
                                                             <th>#</th>
@@ -239,36 +239,36 @@ if (!isset($_SESSION['username'])) {
                                                     </thead>
                                                     <tbody>";
 
-                                                    // Initialize index counter
-                                                    $index = 1;
+                                                        // Initialize index counter
+                                                        $index = 1;
 
-                                                    foreach ($students as $student) {
-                                                        // Format email status for display
-                                                        $emailStatusHtml = '';
-                                                        if (empty($student['email_status'])) {
-                                                            $emailStatusHtml = '<span class="badge bg-warning text-dark">Not Sent</span>';
-                                                        } else {
-                                                            $statusClass = ($student['email_status'] == 'sent') ? 'bg-success' : 'bg-danger';
-                                                            $statusText = ($student['email_status'] == 'sent') ? 'Sent' : 'Failed';
-                                                            $sentDate = !empty($student['email_sent_date']) ? date('M d, H:i', strtotime($student['email_sent_date'])) : '';
-                                                            $emailStatusHtml = "<span class='badge {$statusClass}'>{$statusText}</span>";
-                                                            if (!empty($sentDate)) {
-                                                                $emailStatusHtml .= "<br><small class='text-muted'>{$sentDate}</small>";
+                                                        foreach ($students as $student) {
+                                                            // Format email status for display
+                                                            $emailStatusHtml = '';
+                                                            if (empty($student['email_status'])) {
+                                                                $emailStatusHtml = '<span class="badge bg-warning text-dark">Not Sent</span>';
+                                                            } else {
+                                                                $statusClass = ($student['email_status'] == 'sent') ? 'bg-success' : 'bg-danger';
+                                                                $statusText = ($student['email_status'] == 'sent') ? 'Sent' : 'Failed';
+                                                                $sentDate = !empty($student['email_sent_date']) ? date('M d, H:i', strtotime($student['email_sent_date'])) : '';
+                                                                $emailStatusHtml = "<span class='badge {$statusClass}'>{$statusText}</span>";
+                                                                if (!empty($sentDate)) {
+                                                                    $emailStatusHtml .= "<br><small class='text-muted'>{$sentDate}</small>";
+                                                                }
                                                             }
-                                                        }
 
-                                                        // Button text based on status
-                                                        $buttonText = 'Send Email';
-                                                        $buttonClass = 'btn-primary';
-                                                        if ($student['email_status'] == 'sent') {
-                                                            $buttonText = 'Resend Email';
-                                                            $buttonClass = 'btn-info';
-                                                        } elseif ($student['email_status'] == 'failed') {
-                                                            $buttonText = 'Retry Send';
-                                                            $buttonClass = 'btn-warning';
-                                                        }
+                                                            // Button text based on status
+                                                            $buttonText = 'Send Email';
+                                                            $buttonClass = 'btn-primary';
+                                                            if ($student['email_status'] == 'sent') {
+                                                                $buttonText = 'Resend Email';
+                                                                $buttonClass = 'btn-info';
+                                                            } elseif ($student['email_status'] == 'failed') {
+                                                                $buttonText = 'Retry Send';
+                                                                $buttonClass = 'btn-warning';
+                                                            }
 
-                                                        $buttonHtml = "
+                                                            $buttonHtml = "
                                                         <form class='email-form' data-student-email='" . htmlspecialchars($student['bms_email']) . "'>
                                                             <input type='hidden' name='email' value='" . htmlspecialchars($student['bms_email']) . "'>
                                                             <input type='hidden' name='student_name' value='" . htmlspecialchars($student['first_name']) . " " . htmlspecialchars($student['last_name']) . "'>
@@ -283,7 +283,7 @@ if (!isset($_SESSION['username'])) {
                                                             </button>
                                                         </form>";
 
-                                                        echo "<tr>
+                                                            echo "<tr>
                                                         <td>" . $index++ . "</td>
                                                         <td>" . htmlspecialchars($student['student_registration_id'] ?? 'N/A') . "</td>
                                                         <td>" . htmlspecialchars($student['first_name']) . " " . htmlspecialchars($student['last_name']) . "</td>
@@ -295,18 +295,18 @@ if (!isset($_SESSION['username'])) {
                                                             <input type='checkbox' class='remove-student' value='" . htmlspecialchars($student['bms_email']) . "'>
                                                         </td>
                                                     </tr>";
-                                                    }
+                                                        }
 
-                                                    echo "</tbody></table>";
-                                                    echo "</div>";
-                                                } else {
-                                                    echo "<div class='alert alert-info'>";
-                                                    echo "<i class='fas fa-info-circle'></i> No students allocated for this program, batch, and module.";
-                                                    echo "</div>";
-                                                }
-                                                ?>
+                                                        echo "</tbody></table>";
+                                                        echo "</div>";
+                                                    } else {
+                                                        echo "<div class='alert alert-info'>";
+                                                        echo "<i class='fas fa-info-circle'></i> No students allocated for this program, batch, and module.";
+                                                        echo "</div>";
+                                                    }
+                                                    ?>
+                                                </div>
                                             </div>
-                                        </div>
                                     <?php
                                         } else {
                                             echo "<div class='alert alert-warning'>";
@@ -908,4 +908,3 @@ if (!isset($_SESSION['username'])) {
 </body>
 
 </html>
-
