@@ -52,7 +52,7 @@ try {
     $mail->Host = 'smtp.office365.com';
     $mail->SMTPAuth = true; // Enable SMTP authentication
     $mail->Username = 'noreply.ims@bms.ac.lk'; // SMTP username
-    $mail->Password = 'gqfxxrphvjnlmwrn'; // SMTP password
+    $mail->Password = 'testpasswordhere'; // SMTP password
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // Enable TLS encryption
     $mail->Port = 587; // TCP port to connect to
 

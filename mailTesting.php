@@ -22,7 +22,7 @@ try {
   
     // $mail->SMTPAuth   = true;
     // $mail->Username   = 'noreply.ims@bms.ac.lk';
-    // $mail->Password   = 'gqfxxrphvjnlmwrn';
+    // $mail->Password   = 'testpasswordhere';
     
      $mail->Host       = 'mail.hazz.lk';
       $mail->SMTPAuth   = true;

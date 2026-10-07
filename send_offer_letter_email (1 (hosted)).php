@@ -42,7 +42,7 @@ try {
     $mail->Host = 'smtp.office365.com';
     $mail->SMTPAuth = true;
     $mail->Username = 'noreply.ims@bms.ac.lk';
-    $mail->Password = 'gqfxxrphvjnlmwrn';
+    $mail->Password = 'testpasswordhere';
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
     $mail->Port = 587;
 

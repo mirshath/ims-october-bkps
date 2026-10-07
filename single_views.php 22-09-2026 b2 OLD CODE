@@ -925,7 +925,7 @@ if (isset($_POST['send_email'])) {
         $mail->Host = 'smtp.office365.com';
         $mail->SMTPAuth = true; // Enable SMTP authentication
         $mail->Username = 'noreply.ims@bms.ac.lk';
-        $mail->Password = 'gqfxxrphvjnlmwrn';
+        $mail->Password = 'testpasswordhere';
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // Enable TLS encryption
         $mail->Port = 587; // TCP port to connect to
 
@@ -1224,7 +1224,7 @@ if (isset($_POST['send_result_email'])) {
         $mail->Host = 'smtp.office365.com';
         $mail->SMTPAuth = true; // Enable SMTP authentication
         $mail->Username = 'noreply.ims@bms.ac.lk';
-        $mail->Password = 'gqfxxrphvjnlmwrn';
+        $mail->Password = 'testpasswordhere';
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // Enable TLS encryption
         $mail->Port = 587; // TCP port to connect to
 
