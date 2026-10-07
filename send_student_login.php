@@ -56,14 +56,14 @@ function sendStudentMail($email, $first_name, $last_name, $temp_password) {
 
             $mail->Host       = 'smtp.office365.com'; 
             $mail->SMTPAuth   = true;
-            $mail->Username   = 'noreply@bms.ac.lk';
+            $mail->Username   = 'noreply.ims@bms.ac.lk';
             $mail->Password   = 'Lox51527';
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // Use STARTTLS
             $mail->Port       = 587;
 
             // Anti-spam headers
-            $mail->setFrom('noreply@bms.ac.lk', 'BMS Student Portal');
-            $mail->addReplyTo('noreply@bms.ac.lk', 'BMS Support');
+            $mail->setFrom('noreply.ims@bms.ac.lk', 'BMS Student Portal');
+            $mail->addReplyTo('noreply.ims@bms.ac.lk', 'BMS Support');
             $mail->addAddress($email, $first_name);
 
             $mail->CharSet = 'UTF-8';

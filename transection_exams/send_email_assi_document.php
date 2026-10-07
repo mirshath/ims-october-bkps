@@ -113,14 +113,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $mail->isSMTP();
         $mail->Host = 'smtp.office365.com';
         $mail->SMTPAuth = true;
-        $mail->Username = 'noreply@bms.ac.lk';
+        $mail->Username = 'noreply.ims@bms.ac.lk';
         $mail->Password = 'Lox51527';
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = 587;
         $mail->SMTPKeepAlive = true;
         $mail->Timeout = 60;
 
-        $mail->setFrom('noreply@bms.ac.lk', 'BMS Campus');
+        $mail->setFrom('noreply.ims@bms.ac.lk', 'BMS Campus');
         $mail->addAddress($to, $student_name);
 
         $mail->isHTML(true);

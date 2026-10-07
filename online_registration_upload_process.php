@@ -93,12 +93,12 @@ if (isset($_POST['action']) && $_POST['action'] === 'reject') {
         $mail->isSMTP();
         $mail->Host = 'smtp.office365.com';
         $mail->SMTPAuth = true;
-        $mail->Username = 'noreply@bms.ac.lk';
+        $mail->Username = 'noreply.ims@bms.ac.lk';
         $mail->Password = 'Lox51527';
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = 587;
 
-        $mail->setFrom('noreply@bms.ac.lk', 'Business Management School');
+        $mail->setFrom('noreply.ims@bms.ac.lk', 'Business Management School');
         $mail->addAddress($studentDetails['email'], $studentDetails['firstname'] . ' ' . $studentDetails['lastname']);
 
         $mail->isHTML(true);

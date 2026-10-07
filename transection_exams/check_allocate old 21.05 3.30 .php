@@ -108,12 +108,12 @@ if (isset($_POST['id'])) {
             $mail->isSMTP(); // Set mailer to use SMTP
             $mail->Host = 'smtp.office365.com';
             $mail->SMTPAuth = true; // Enable SMTP authentication
-            $mail->Username = 'noreply@bms.ac.lk'; // SMTP username
+            $mail->Username = 'noreply.ims@bms.ac.lk'; // SMTP username
             $mail->Password = 'Lox51527'; // SMTP password
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // Enable TLS encryption
             $mail->Port = 587; // TCP port to connect to
 
-            $mail->setFrom('noreply@bms.ac.lk', 'BMS Campus');
+            $mail->setFrom('noreply.ims@bms.ac.lk', 'BMS Campus');
 
             $emailCount = 0;
             $failedEmails = []; // Array to store failed emails

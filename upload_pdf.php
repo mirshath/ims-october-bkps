@@ -42,13 +42,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['pdf'])) {
             $mail->isSMTP();
             $mail->Host = 'smtp.office365.com';
             $mail->SMTPAuth = true;
-            $mail->Username = 'noreply@bms.ac.lk';
+            $mail->Username = 'noreply.ims@bms.ac.lk';
             $mail->Password = 'Lox51527';
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
             $mail->Port = 587;
 
             // Recipients
-            $mail->setFrom('noreply@bms.ac.lk', 'Business Management School');
+            $mail->setFrom('noreply.ims@bms.ac.lk', 'Business Management School');
             $mail->addAddress($studentBmsEmail);
             $mail->addAttachment($uploadFile);
 

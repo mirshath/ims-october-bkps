@@ -12,7 +12,7 @@ try {
     $mail->isSMTP();        
     $mail->Host       = 'smtp.office365.com';
     $mail->SMTPAuth   = true;
-    $mail->Username   = 'noreply@bms.ac.lk'; 
+    $mail->Username   = 'noreply.ims@bms.ac.lk'; 
     $mail->Password   = 'gqfxxrphvjnlmwrn'; 
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; 
     $mail->Port       = 587;
@@ -45,7 +45,7 @@ try {
     ];
 
     // Recipients
-    $mail->setFrom('noreply@bms.ac.lk', 'BMS IMS');
+    $mail->setFrom('noreply.ims@bms.ac.lk', 'BMS IMS');
     // $mail->setFrom('info@hazz.lk', 'BMS IMS');
     //  $mail->setFrom('mirshath.mmm@gmail.com', 'BMS IMS');
     $mail->addAddress('webmaster@bms.ac.lk', 'Student Name'); 

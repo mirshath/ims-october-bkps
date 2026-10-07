@@ -21,7 +21,7 @@ try {
     
   
     // $mail->SMTPAuth   = true;
-    // $mail->Username   = 'noreply@bms.ac.lk';
+    // $mail->Username   = 'noreply.ims@bms.ac.lk';
     // $mail->Password   = 'gqfxxrphvjnlmwrn';
     
      $mail->Host       = 'mail.hazz.lk';
