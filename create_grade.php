@@ -105,7 +105,7 @@ if (isset($_GET['delete'])) {
             <div class="p-3">
                 <!-- Page Heading -->
                 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                    <h4 class="h4 mb-0 text-gray-800">Grade Managment</h4>
+                    <h4 class="h4 mb-0 text-gray-800">Grades Managment</h4>
                 </div>
 
 
