@@ -198,6 +198,7 @@ if ($result_examinor_find->num_rows > 0) {
                                     $result = $stmt->get_result();
                                     $assessment = $result->fetch_assoc();
                                     if ($assessment) {
+                                        $student_status = isset($_GET['student_status']) ? $_GET['student_status'] : 'active';
 
                                         // Add console logging for the required IDs
                                         echo "<script>
@@ -376,9 +377,9 @@ if ($result_examinor_find->num_rows > 0) {
                                                                         INNER JOIN allocate_programme a ON s.student_code = a.student_code 
                                                                         WHERE a.programme_code = ? 
                                                                         AND a.batch_id = ? 
-                                                                        AND a.status = 'active'";
+                                                                        AND a.status = ?";
                                                                 $students_stmt = $conn->prepare($students_query);
-                                                                $students_stmt->bind_param("ii", $programme_id, $batch_id);
+                                                                $students_stmt->bind_param("iis", $programme_id, $batch_id, $student_status);
                                                                 $students_stmt->execute();
                                                                 $students_result = $students_stmt->get_result();
                                                                 $students = $students_result->fetch_all(MYSQLI_ASSOC);
@@ -611,10 +612,10 @@ if ($result_examinor_find->num_rows > 0) {
                                                                 INNER JOIN allocate_programme a ON s.student_code = a.student_code 
                                                                 WHERE a.programme_code = ? 
                                                                 AND a.batch_id = ? 
-                                                                AND a.status = 'active'";
+                                                                AND a.status = ?";
 
                                                             $students_stmt = $conn->prepare($students_query);
-                                                            $students_stmt->bind_param("ii", $programme_id, $batch_id);
+                                                            $students_stmt->bind_param("iis", $programme_id, $batch_id, $student_status);
                                                             $students_stmt->execute();
                                                             $students_result = $students_stmt->get_result();
                                                             $students = $students_result->fetch_all(MYSQLI_ASSOC);
@@ -938,10 +939,10 @@ if ($result_examinor_find->num_rows > 0) {
                                                                 INNER JOIN allocate_programme a ON s.student_code = a.student_code 
                                                                 WHERE a.programme_code = ? 
                                                                 AND a.batch_id = ? 
-                                                                AND a.status = 'active'";
+                                                                AND a.status = ?";
 
                                                         $students_stmt = $conn->prepare($students_query);
-                                                        $students_stmt->bind_param("ii", $programme_id, $batch_id);
+                                                        $students_stmt->bind_param("iis", $programme_id, $batch_id, $student_status);
                                                         $students_stmt->execute();
                                                         $students_result = $students_stmt->get_result();
                                                         $students = $students_result->fetch_all(MYSQLI_ASSOC);

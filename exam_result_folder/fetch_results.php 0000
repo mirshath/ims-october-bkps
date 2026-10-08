@@ -22,6 +22,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sub_component_id = isset($_POST['sub_component_id']) ? $_POST['sub_component_id'] : null;
         $student_status = isset($_POST['student_status']) ? $_POST['student_status'] : '';
 
+        // Map the UI's simplified status choice to the actual value(s) stored in
+        // allocate_programme.status. Comparisons are done case-insensitively (LOWER/TRIM)
+        // to match how all_results.php already treats this column.
+        //   - '' (no filter posted) / 'active' -> Active students only (preserves original default)
+        //   - 'completed'                      -> Completed students, which ALSO includes
+        //                                          students whose status is 'progressionTo'
         switch (strtolower(trim($student_status))) {
             case 'completed':
                 $statusValues = ['completed', 'progressionto'];
