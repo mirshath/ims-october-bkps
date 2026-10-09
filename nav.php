@@ -926,7 +926,7 @@ if ($result_for_up) {
     <!-- reports -->
     <li class="nav-item top_bottom_line <?= ($current_url == 'allStudentDetails'
                                             || $current_url == 'studentWiseDetails'
-
+                                            || $current_url == 'progressionToReport'
                                             || $current_url == 'aluminiReport') ? 'active' : '' ?>" id="navHover">
         <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseSix"
             aria-expanded="true" aria-controls="collapseSix">
@@ -936,15 +936,27 @@ if ($result_for_up) {
         <div id="collapseSix" class="collapse" aria-labelledby="headingOne" data-parent="#accordionSidebar">
             <div class="bg-white py-2 collapse-inner rounded">
                 <h6 class="collapse-header">Components</h6>
-
-                <!-- --------------------------------------------------------  -->
-                <a class="collapse-item <?= ($current_url == 'check_all_data_for') ? 'active' : '' ?>"
-                    href="check_all_data_for" <?= !in_array('Payment Check Report - check_all_data_for', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Payment Check Report</a>
                 <!-- --------------------------------------------------------  -->
                 <a class="collapse-item <?= ($current_url == 'allStudentDetails') ? 'active' : '' ?>" href="allStudentDetails" <?= !in_array('All Student Details - allStudentDetails', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>All Student Details</a>
                 <a class="collapse-item <?= ($current_url == 'studentWiseDetails') ? 'active' : '' ?>" href="studentWiseDetails" <?= !in_array('Student Wise Details - studentWiseDetails', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Student Wise Details</a>
+                <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'super_admin') { ?>
+
+                    <!-- --------------------------------------------------------  -->
+                    <a class="collapse-item <?= ($current_url == 'check_all_data_for') ? 'active' : '' ?>"
+                        href="check_all_data_for" <?= !in_array('Payment Check Report - check_all_data_for', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Payment Check Report</a>
 
 
+                    <h6 class="collapse-header">Prog/trans/swap</h6>
+
+                    <a class="collapse-item <?= ($current_url == 'progressionToReport') ? 'active' : '' ?>"
+                        href="progressionToReport"
+                        <?= !in_array('Progression Report - progressionToReport', $subListValues)
+                            ? 'style="pointer-events: none; color: gray;"'
+                            : '' ?>>
+                        Progression Report
+                    </a>
+
+                <?php } ?>
             </div>
         </div>
     </li>
@@ -961,6 +973,7 @@ if ($result_for_up) {
         </a>
         <div id="collapseOption" class="collapse" aria-labelledby="headingOne" data-parent="#accordionSidebar">
             <div class="bg-white py-2 collapse-inner rounded">
+
                 <h6 class="collapse-header">Components</h6>
                 <a class="collapse-item <?= ($current_url == 'addUser') ? 'active' : '' ?>" href="addUser" <?= !in_array('Add Users - addUser', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Add Users</a>
                 <a class="collapse-item <?= ($current_url == 'userPermission') ? 'active' : '' ?>" href="userPermission" <?= !in_array('User Permission - userPermission', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>User Permission</a>
@@ -972,6 +985,8 @@ if ($result_for_up) {
 
                 <a class="collapse-item <?= ($current_url == 'send_student_login') ? 'active' : '' ?>" href="send_student_login" <?= !in_array('Send Student Login - send_student_login', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Student Log</a>
                 <a class="collapse-item <?= ($current_url == 'generate_student_logins') ? 'active' : '' ?>" href="generate_student_logins" <?= !in_array('Generate Student Logins - generate_student_logins', $subListValues) ? 'style="pointer-events: none; color: gray;"' : '' ?>>Loard Student Logins</a>
+
+
             </div>
         </div>
     </li>

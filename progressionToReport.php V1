@@ -1,0 +1,348 @@
+<?php
+    session_start();
+    include("database/connection.php");
+    include("includes/header.php");
+
+    if (!isset($_SESSION['username'])) {
+        // header("location: login.php");
+        echo '<script>window.location.href = "login";</script>';
+        // exit();
+    }
+
+    /* Clean names that contain extra spaces (common in this data) */
+    function cleanText($v)
+    {
+        return htmlspecialchars(preg_replace('/\s+/', ' ', trim((string)$v)), ENT_QUOTES, 'UTF-8');
+    }
+
+    /* ---------------- Filters ---------------- */
+    $sel_program = isset($_POST['programme_code']) && $_POST['programme_code'] !== '' ? (int)$_POST['programme_code'] : 0;
+    $sel_batch   = isset($_POST['batch_id']) && $_POST['batch_id'] !== '' ? (int)$_POST['batch_id'] : 0;
+
+    /* Programme list (only programmes that exist in the progression table) */
+    $programs = [];
+    $prog_res = mysqli_query($conn, "SELECT DISTINCT pp.programme_code, p.program_name
+                                     FROM program_progression_table pp
+                                     LEFT JOIN program_table p ON pp.programme_code = p.program_code
+                                     ORDER BY p.program_name ASC");
+    while ($r = mysqli_fetch_assoc($prog_res)) {
+        $programs[] = $r;
+    }
+
+    /* Batches grouped by programme (used by the dependent batch dropdown) */
+    $batchMap = [];
+    $batch_res = mysqli_query($conn, "SELECT DISTINCT pp.programme_code, pp.batch_id, b.batch_name
+                                      FROM program_progression_table pp
+                                      LEFT JOIN batch_table b ON pp.batch_id = b.id
+                                      ORDER BY b.batch_name ASC");
+    while ($r = mysqli_fetch_assoc($batch_res)) {
+        $batchMap[$r['programme_code']][] = [
+            'id'   => (int)$r['batch_id'],
+            'name' => $r['batch_name'] ?: ('Batch ID ' . $r['batch_id'])
+        ];
+    }
+
+    /* ---------------- Report query ---------------- */
+    $sql = "SELECT pp.*, p.program_name, b.batch_name, u.university_name
+            FROM program_progression_table pp
+            LEFT JOIN program_table p ON pp.programme_code = p.program_code
+            LEFT JOIN batch_table b ON pp.batch_id = b.id
+            LEFT JOIN universities u ON pp.university_id = u.id
+            WHERE 1=1";
+    $types  = '';
+    $params = [];
+    if ($sel_program > 0) {
+        $sql .= " AND pp.programme_code = ?";
+        $types .= 'i';
+        $params[] = $sel_program;
+    }
+    if ($sel_batch > 0) {
+        $sql .= " AND pp.batch_id = ?";
+        $types .= 'i';
+        $params[] = $sel_batch;
+    }
+    $sql .= " ORDER BY pp.transfer_date DESC, pp.id DESC";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($types !== '') {
+        mysqli_stmt_bind_param($stmt, $types, ...$params);
+    }
+    mysqli_stmt_execute($stmt);
+    $rows = mysqli_fetch_all(mysqli_stmt_get_result($stmt), MYSQLI_ASSOC);
+    $total_rows = count($rows);
+    ?>
+
+    <style>
+        .btn-print {
+            background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+            border: none;
+            color: #fff;
+            font-weight: 600;
+            letter-spacing: .3px;
+            padding: 8px 18px;
+            border-radius: 50px;
+            box-shadow: 0 3px 8px rgba(78, 115, 223, 0.35);
+        }
+
+        .btn-print:hover,
+        .btn-print:focus {
+            color: #fff;
+        }
+
+        /* keep the page inside the viewport (no sideways overflow, nav stays in place) */
+        #content-wrapper,
+        #content {
+            min-width: 0;
+        }
+
+        #progressionTable {
+            table-layout: auto;
+        }
+
+        #progressionTable th,
+        #progressionTable td {
+            white-space: normal;
+            word-break: break-word;
+            vertical-align: middle;
+            padding: 6px 8px;
+        }
+
+        #progressionTable th {
+            white-space: nowrap;
+        }
+
+        #progressionTable small {
+            font-size: 10px;
+            color: #6c757d;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            #progression_report_area,
+            #progression_report_area * {
+                visibility: visible;
+            }
+
+            #progression_report_area {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+            }
+
+            .no-print,
+            .dataTables_length,
+            .dataTables_filter,
+            .dataTables_paginate,
+            .dataTables_info {
+                display: none !important;
+            }
+        }
+    </style>
+
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+        <!-- Sidebar -->
+        <?php include("nav.php"); ?>
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+            <!-- Main Content -->
+            <div id="content">
+                <!-- Topbar -->
+                <?php include("includes/topnav.php"); ?>
+
+                <!-- Begin Page Content -->
+                <div class="p-3">
+                    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                        <h4 class="h4 mb-0 text-gray-800">Progression Report</h4>
+                    </div>
+
+                    <!-- Filter Form -->
+                    <div class="row mb-5 no-print">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header d-flex align-items-center" style="height: 60px;">
+                                    <span class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                        <i class="fas fa-filter"></i>
+                                    </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                                    <h6 class="mb-0 me-2">Filter Progression Report</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form method="POST">
+                                        <div class="form-group mb-3">
+                                            <label for="programme_select">Programme:</label>
+                                            <select id="programme_select" name="programme_code" class="form-control">
+                                                <option value="">All Programmes</option>
+                                                <?php foreach ($programs as $p) { ?>
+                                                    <option value="<?= (int)$p['programme_code'] ?>" <?= $sel_program === (int)$p['programme_code'] ? 'selected' : '' ?>>
+                                                        <?= cleanText($p['program_name'] ?: ('Programme ' . $p['programme_code'])) ?>
+                                                    </option>
+                                                <?php } ?>
+                                            </select>
+                                        </div>
+
+                                        <div class="form-group mb-3">
+                                            <label for="batch_select">Batch:</label>
+                                            <select id="batch_select" name="batch_id" class="form-control">
+                                                <option value="">All Batches</option>
+                                            </select>
+                                        </div>
+
+                                        <button type="submit" name="submit" class="btn btn-primary">Search</button>
+                                        <a href="progressionToReport" class="btn btn-secondary">Reset</a>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Report Data -->
+                    <div class="row mb-5">
+                        <div class="col-md-12">
+                            <div class="p-2 d-flex justify-content-end no-print">
+                                <button id="print" type="button" class="btn btn-print">
+                                    <i class="fas fa-print"></i> Print Report
+                                </button>
+                            </div>
+                            <div class="card">
+                                <div class="card-header d-flex align-items-center" style="height: 60px;">
+                                    <span class="bg-dark text-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
+                                        <i class="fas fa-list"></i>
+                                    </span> &nbsp;&nbsp;&nbsp;&nbsp;
+                                    <h6 class="mb-0 me-2">Progression Details</h6>
+                                    <span class="badge bg-primary ms-auto">Total Records: <?= $total_rows ?></span>
+                                </div>
+                                <div class="card-body" id="progression_report_area">
+                                    <!-- Progression Table -->
+                                    <div class="table-responsive mb-4">
+                                        <table id="progressionTable" class="table table-striped table-bordered" style="width: 100%; font-size: 11px;">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Student</th>
+                                                    <th>Old Reg. ID</th>
+                                                    <th>From Reg. Code</th>
+                                                    <th>From (Programme / Batch)</th>
+                                                    <th>To (Programme / Batch)</th>
+                                                    <th>Allocated ID</th>
+                                                    <th>Transfer Date</th>
+                                                    <th>Status</th>
+                                                    <th>Entered By</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php
+                                                $no = 0;
+                                                foreach ($rows as $row) {
+                                                    $no++;
+                                                    $status = strtolower(trim($row['active_status']));
+                                                    $badge  = $status === 'active' ? 'success' : ($status === 'drop' ? 'danger' : 'secondary');
+                                                ?>
+                                                    <tr>
+                                                        <td><?= $no ?></td>
+                                                        <td>
+                                                            <?= cleanText($row['from_student']) ?><br>
+                                                            <small>ID: <?= (int)$row['student_id'] ?></small>
+                                                        </td>
+                                                        <td><?= cleanText($row['OLD_registration_id']) ?></td>
+                                                        <td><?= cleanText($row['from_registration_code']) ?></td>
+                                                        <td>
+                                                            <?= cleanText($row['from_programme']) ?><br>
+                                                            <strong><?= cleanText($row['from_batch']) ?></strong>
+                                                            <small>(<?= cleanText($row['from_university']) ?>)</small>
+                                                        </td>
+                                                        <td>
+                                                            <?= cleanText($row['program_name']) ?><br>
+                                                            <strong><?= cleanText($row['batch_name']) ?></strong>
+                                                            <small>(<?= cleanText($row['university_name']) ?>)</small>
+                                                        </td>
+                                                        <td><?= (int)$row['allocated_id'] ?></td>
+                                                        <td>
+                                                            <?= htmlspecialchars(date('Y-m-d', strtotime($row['transfer_date']))) ?><br>
+                                                            <small><?= htmlspecialchars(date('H:i', strtotime($row['transfer_date']))) ?></small>
+                                                        </td>
+                                                        <td><span class="badge bg-<?= $badge ?>"><?= cleanText($row['active_status']) ?></span></td>
+                                                        <td><?= cleanText($row['entered_by']) ?></td>
+                                                    </tr>
+                                                <?php } ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/js/select2.min.js"></script>
+        <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
+
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/css/select2.min.css" rel="stylesheet" />
+        <link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+
+        <script>
+            // Batches grouped by programme_code (built by PHP)
+            const batchMap = <?= json_encode($batchMap, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+            const selectedBatch = "<?= $sel_batch ?: '' ?>";
+
+            function loadBatches(programCode, keepSelected) {
+                const $batch = $('#batch_select');
+                $batch.empty().append('<option value="">All Batches</option>');
+
+                let list = [];
+                if (programCode) {
+                    list = batchMap[programCode] || [];
+                } else {
+                    const seen = {};
+                    Object.values(batchMap).forEach(arr => arr.forEach(b => {
+                        if (!seen[b.id]) {
+                            seen[b.id] = true;
+                            list.push(b);
+                        }
+                    }));
+                    list.sort((a, b) => a.name.localeCompare(b.name, undefined, {
+                        numeric: true
+                    }));
+                }
+
+                list.forEach(b => {
+                    $batch.append(new Option(b.name, b.id, false, keepSelected && String(b.id) === selectedBatch));
+                });
+                $batch.trigger('change.select2');
+            }
+
+            $(document).ready(function() {
+                $('#programme_select').select2();
+                $('#batch_select').select2();
+
+                loadBatches($('#programme_select').val(), true);
+
+                $('#programme_select').on('change', function() {
+                    loadBatches($(this).val(), false);
+                });
+
+                $('#progressionTable').DataTable({
+                    retrieve: true,
+                    pageLength: 10,
+                    ordering: true,
+                    searching: true,
+                    order: [] // keep SQL order (latest transfer first)
+                });
+            });
+
+            document.body.addEventListener('click', function(e) {
+                if (e.target.closest('#print')) window.print();
+            });
+        </script>
+
+    </div>
+    </body>
+
+    </html>

@@ -108,7 +108,7 @@ if (isset($_POST['login'])) {
                     <div class="card-body">
                         <div class="d-flex justify-content-center mb-4 mt-4">
                             <!-- <img src="https://202.124.164.112:8140/img/logo4.png" alt="Logo" class="img-fluid w-75"> -->
-                            <img src="assets/bmspnglogo.png" alt="Logo" class="img-fluid w-75">
+                            <img src="assets/bmspnglogo.png" alt="Logo" class="img-fluid w-50">
                         </div>
 
                         <?php if (!empty($error_msg)): ?>

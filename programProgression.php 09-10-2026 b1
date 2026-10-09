@@ -385,6 +385,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $updateStmt->close();
                     }
 
+                    $nullRegQuery = "UPDATE allocate_programme SET student_registration_id = NULL WHERE student_code = ? AND programme_code = ? AND batch_id = ?";
+                    if ($nullRegStmt = $conn->prepare($nullRegQuery)) {
+                        $nullRegStmt->bind_param("iii", $student_id, $program_old_code, $batch_old_code);
+                        $nullRegStmt->execute();
+                        $nullRegStmt->close();
+                    }
+
                     echo "<script>
                         alert('Student Program Progression, Allocation & Payment Plan have been successfully recorded!');
                         window.location.href = window.location.href;
