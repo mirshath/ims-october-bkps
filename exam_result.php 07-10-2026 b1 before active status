@@ -79,20 +79,6 @@ $assessment = null;
                                         </div>
                                         <!-- ------------------------------------------------- -->
                                         <div class="col-md-3">
-                                            <label for="studentStatus">Student Status</label>
-                                        </div>
-                                        <div class="col-md-9">
-                                            <div class="form-group mb-3">
-                                                <select name="student_status" id="studentStatus" style="font-size: 12px;"
-                                                    class="form-control select2">
-
-                                                    <option value="active" selected>Active Students</option>
-                                                    <option value="completed">Completed Students</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <!-- ------------------------------------------------- -->
-                                        <div class="col-md-3">
                                             <label for="module">Module</label>
                                         </div>
                                         <div class="col-md-9">
@@ -233,7 +219,6 @@ $assessment = null;
                 let semester_id = $('#semester').val();
                 let main_component_id = $('#mainComponent').val();
                 let sub_component_id = $('#subComponent').val();
-                let student_status = $('#studentStatus').val();
 
                 // Check if required fields are empty
                 if (!programme_id || !batch_id || !module_id || !year_id ||
@@ -255,8 +240,7 @@ $assessment = null;
                     year_id: year_id,
                     semester_id: semester_id,
                     main_component_id: main_component_id,
-                    sub_component_id: sub_component_id || null,
-                    student_status: student_status
+                    sub_component_id: sub_component_id || null
                 };
 
                 // Make AJAX call to search assessments
@@ -288,10 +272,10 @@ $assessment = null;
                                     assessment.assessment_date,
                                     // assessment.description,
                                     `${assessment.programme_name === 'Bachelor of Business Management (Hons)' ? 
-                                        `<a href="view_BBM_details_of_exams_add_result.php?id=${assessment.id}&student_status=${student_status}" class="btn btn-sm btn-success" style="font-size: 11px;">
+                                        `<a href="view_BBM_details_of_exams_add_result.php?id=${assessment.id}" class="btn btn-sm btn-success" style="font-size: 11px;">
                                             <i class="fas fa-plus"></i> &nbsp; BBMResult
                                         </a>` :
-                                        `<a href="view_details_of_exams_add_result.php?id=${assessment.id}&student_status=${student_status}" class="btn btn-sm btn-success" style="font-size: 11px;">
+                                        `<a href="view_details_of_exams_add_result.php?id=${assessment.id}" class="btn btn-sm btn-success" style="font-size: 11px;">
                                             <i class="fas fa-plus"></i> &nbsp; Result
                                         </a>`}`,
 

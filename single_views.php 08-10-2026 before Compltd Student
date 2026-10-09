@@ -17,60 +17,6 @@ if (!isset($_SESSION['username'])) {
 }
 
 // Capture query parameters
-// ---------- LATEST FILLED ATTEMPT helpers (NULL / '' / whitespace = nothing; "0" is a real value) ----------
-function has_value($v)
-{
-    return $v !== null && trim((string)$v) !== '';
-}
-// ECM: ecm_r4 -> r3 -> r2 -> r1 -> original (marks OR grade filled; both taken from the SAME attempt)
-function ecm_latest_attempt(array $row)
-{
-    $attempts = [
-        'Resit 4'  => ['ecm_r4_converted_marks', 'ecm_r4_converted_marks_grade'],
-        'Resit 3'  => ['ecm_r3_converted_marks', 'ecm_r3_converted_marks_grade'],
-        'Resit 2'  => ['ecm_r2_converted_marks', 'ecm_r2_converted_marks_grade'],
-        'Resit 1'  => ['ecm_r1_converted_marks', 'ecm_r1_converted_marks_grade'],
-        'Original' => ['converted_marks', 'converted_marks_grade'],
-    ];
-    foreach ($attempts as $label => [$mCol, $gCol]) {
-        $mark  = isset($row[$mCol]) ? trim((string)$row[$mCol]) : '';
-        $grade = isset($row[$gCol]) ? trim((string)$row[$gCol]) : '';
-        if ($mark !== '' || $grade !== '') {
-            return ['attempt' => $label, 'mark' => $mark, 'grade' => $grade];
-        }
-    }
-    return ['attempt' => '', 'mark' => '', 'grade' => ''];
-}
-// Higher Diploma family: hd_resit3 -> 2 -> 1 -> original
-function hd_latest_attempt(array $row)
-{
-    $attempts = [
-        'Resit 3'  => ['hd_resit3_converted_marks', 'hd_resit3_grade'],
-        'Resit 2'  => ['hd_resit2_converted_marks', 'hd_resit2_grade'],
-        'Resit 1'  => ['hd_resit1_converted_marks', 'hd_resit1_grade'],
-        'Original' => ['hd_converted_marks', 'hd_grade'],
-    ];
-    foreach ($attempts as $label => [$mCol, $gCol]) {
-        $mark  = isset($row[$mCol]) ? trim((string)$row[$mCol]) : '';
-        $grade = isset($row[$gCol]) ? trim((string)$row[$gCol]) : '';
-        if ($mark !== '' || $grade !== '') {
-            return ['attempt' => $label, 'mark' => $mark, 'grade' => $grade];
-        }
-    }
-    return ['attempt' => '', 'mark' => '', 'grade' => ''];
-}
-// Everything else (GDM, BTEC, IFD, ...): resit_result_4 -> 3 -> 2 -> 1 -> result
-function latest_resit_text(array $row)
-{
-    foreach (['resit_result_4', 'resit_result_3', 'resit_result_2', 'resit_result_1', 'result'] as $col) {
-        if (isset($row[$col]) && has_value($row[$col])) {
-            return trim((string)$row[$col]);
-        }
-    }
-    return '';
-}
-// -----------------------------------------------------------------------------------------------------
-
 $studentId = $_GET['student_id'] ?? null;
 $finalResultId = $_GET['id'] ?? null;
 $programName = $_GET['program'] ?? null;
@@ -165,18 +111,10 @@ $isFinalResult = !empty($finalResultId) && !empty($studentId) && !empty($program
                                     LEFT JOIN sub_assign_components sac ON ac.sub_component_id = sac.id
                                      LEFT JOIN payment_withheld_table pw ON s.student_code = pw.student_code
                                     WHERE sr.student_id = ?  $statusSql
-                                  AND ap.programme_code = ? 
-                                  AND ap.batch_id = ? 
+                                  AND sr.program_id = ? 
+                                  AND sr.batch_id = ? 
                                   AND sr.module_id = ? 
-                                  AND (sr.main_component_id = ? OR sr.sub_component_id = ?)
-                                  AND sr.id = (
-                                        SELECT sr2.id FROM student_results sr2
-                                        WHERE sr2.student_id = sr.student_id
-                                          AND sr2.module_id = sr.module_id
-                                          AND sr2.main_component_id = sr.main_component_id
-                                          AND sr2.sub_component_id <=> sr.sub_component_id
-                                        ORDER BY sr2.created_at DESC, sr2.id DESC
-                                        LIMIT 1)";
+                                  AND (sr.main_component_id = ? OR sr.sub_component_id = ?)";
 
                                 $stmt = $conn->prepare($query);
                                 $bindTypes = "i" . str_repeat("s", count($statusValues)) . "iiiii";
@@ -187,10 +125,11 @@ $isFinalResult = !empty($finalResultId) && !empty($studentId) && !empty($program
 
                                 if ($row = $result->fetch_assoc()) {
 
-                                    if ($programName == 'Executive Certificate in Management') {
-                                        // ECM: latest filled attempt (resit 4 -> 3 -> 2 -> 1 -> original)
-                                        $ecmL = ecm_latest_attempt($row);
-                                        $displayResult = $ecmL['mark'] !== '' ? $ecmL['mark'] : ($ecmL['grade'] !== '' ? $ecmL['grade'] : 'No Marks Available');
+                                    if (
+                                        $programName == 'Executive Certificate in Management'
+                                        // $programName == 'BSc (Hons) in Software Engineering'
+                                    ) {
+                                        $displayResult = $row['converted_marks'] ?? 'No Marks Available';
                                     } else if (
                                         $programName == 'Higher Diploma in Biomedical Science' ||
                                         $programName == 'Higher Diploma in Biotechnology' ||
@@ -198,12 +137,12 @@ $isFinalResult = !empty($finalResultId) && !empty($studentId) && !empty($program
                                         $programName == 'Higher Diploma in Food Science and Nutrition' ||
                                         $programName == 'Higher Diploma in Medical Biotechnology'
                                     ) {
-                                        // HD family: latest filled attempt (hd_resit3 -> 2 -> 1 -> original)
-                                        $hdL = hd_latest_attempt($row);
-                                        $displayResult = $hdL['grade'] !== '' ? $hdL['grade'] : $hdL['mark'];
+                                        // Check for resit grades and assign the appropriate result
+                                        $displayResult = !empty($row['hd_resit3_grade']) ? $row['hd_resit3_grade'] : (!empty($row['hd_resit2_grade']) ? $row['hd_resit2_grade'] : (!empty($row['hd_resit1_grade']) ? $row['hd_resit1_grade'] :
+                                            $row['hd_grade']));  // Last fallback to hd_grade
                                     } else {
-                                        // Everything else: resit_result_4 -> 3 -> 2 -> 1 -> result
-                                        $displayResult = latest_resit_text($row);
+                                        $displayResult = !empty($row['resit_result_4']) ? $row['resit_result_4'] : (!empty($row['resit_result_3']) ? $row['resit_result_3'] : (!empty($row['resit_result_2']) ? $row['resit_result_2'] : (!empty($row['resit_result_1']) ? $row['resit_result_1'] :
+                                            $row['result'])));
                                     }
 
                                     // Fetch the main component name using the mainComponentId
@@ -398,18 +337,11 @@ $isFinalResult = !empty($finalResultId) && !empty($studentId) && !empty($program
                                 LEFT JOIN payment_withheld_table pw ON s.student_code = pw.student_code
                                 LEFT JOIN student_results sr ON sr.student_id = fsr.student_id 
                                     AND sr.module_id = fsr.module_id
-                                WHERE fsr.id = (
-                                        -- LATEST final result of this student + module (a retake in a later batch wins)
-                                        SELECT f2.id FROM final_student_results f2
-                                        WHERE f2.student_id = (SELECT f0.student_id FROM final_student_results f0 WHERE f0.id = ?)
-                                          AND f2.module_id  = (SELECT f1.module_id  FROM final_student_results f1 WHERE f1.id = ?)
-                                        ORDER BY f2.created_at DESC, f2.id DESC
-                                        LIMIT 1
-                                    ) $statusSql";
+                                WHERE fsr.id = ? $statusSql";
 
                                 $stmt = $conn->prepare($query);
-                                $bindTypes = "ii" . str_repeat("s", count($statusValues));
-                                $bindParams = array_merge([$finalResultId, $finalResultId], $statusValues);
+                                $bindTypes = "i" . str_repeat("s", count($statusValues));
+                                $bindParams = array_merge([$finalResultId], $statusValues);
                                 $stmt->bind_param($bindTypes, ...$bindParams);
                                 $stmt->execute();
                                 $result = $stmt->get_result();
@@ -645,14 +577,6 @@ $isFinalResult = !empty($finalResultId) && !empty($studentId) && !empty($program
                                                                     LEFT JOIN assignment_components ac ON sr.main_component_id = ac.id
                                                                     LEFT JOIN sub_assign_components sc ON sr.sub_component_id = sc.id
                                                                     WHERE sr.student_id = '$studentId' AND sr.module_id = '$moduleId'
-                                                                    AND sr.id = (
-                                                                        SELECT sr2.id FROM student_results sr2
-                                                                        WHERE sr2.student_id = sr.student_id
-                                                                          AND sr2.module_id = sr.module_id
-                                                                          AND sr2.main_component_id = sr.main_component_id
-                                                                          AND sr2.sub_component_id <=> sr.sub_component_id
-                                                                        ORDER BY sr2.created_at DESC, sr2.id DESC
-                                                                        LIMIT 1)
                                                                 ";
 
                                                         $componentsResult = $conn->query($componentsQuery);
@@ -661,9 +585,15 @@ $isFinalResult = !empty($finalResultId) && !empty($studentId) && !empty($program
 
                                                         if ($componentsResult && $componentsResult->num_rows > 0) {
                                                             while ($compRow = $componentsResult->fetch_assoc()) {
-                                                                $hdAtt = hd_latest_attempt($compRow);
-                                                                $convertedMarks = $hdAtt['mark'] !== '' ? $hdAtt['mark'] : null;
-                                                                $compGrade = $hdAtt['grade'];
+                                                                $convertedMarks = $compRow['hd_resit3_converted_marks'] ??
+                                                                    $compRow['hd_resit2_converted_marks'] ??
+                                                                    $compRow['hd_resit1_converted_marks'] ??
+                                                                    $compRow['hd_converted_marks'];
+
+                                                                $compGrade = $compRow['hd_resit3_grade'] ??
+                                                                    $compRow['hd_resit2_grade'] ??
+                                                                    $compRow['hd_resit1_grade'] ??
+                                                                    $compRow['hd_grade'];
 
                                                                 if ($compGrade) $componentGrades[] = $compGrade;
                                                                 if ($convertedMarks !== null) $componentMarks[] = floatval($convertedMarks);
@@ -1135,20 +1065,12 @@ if (isset($_POST['send_email'])) {
                     LEFT JOIN assignment_components ac ON sr.main_component_id = ac.id
                     LEFT JOIN sub_assign_components sc ON sr.sub_component_id = sc.id
                     WHERE sr.student_id = '$studentId' AND sr.module_id = '$moduleId'
-                      AND sr.id = (
-                            SELECT sr2.id FROM student_results sr2
-                            WHERE sr2.student_id = sr.student_id
-                              AND sr2.module_id = sr.module_id
-                              AND sr2.main_component_id = sr.main_component_id
-                              AND sr2.sub_component_id <=> sr.sub_component_id
-                            ORDER BY sr2.created_at DESC, sr2.id DESC
-                            LIMIT 1)
                 ";
 
                 $componentsResult = $conn->query($componentsQuery);
                 if ($componentsResult && $componentsResult->num_rows > 0) {
                     while ($r = $componentsResult->fetch_assoc()) {
-                        $compRes = latest_resit_text($r);
+                        $compRes = $r['resit_result_4'] ?: ($r['resit_result_3'] ?: ($r['resit_result_2'] ?: ($r['resit_result_1'] ?: $r['result'])));
                         // Capitalize first letters
                         $main = htmlspecialchars(ucfirst(strtolower($r['as_main_component_name'] ?? '')));
                         $sub = htmlspecialchars(ucfirst(strtolower($r['sub_component_name'] ?? '')));

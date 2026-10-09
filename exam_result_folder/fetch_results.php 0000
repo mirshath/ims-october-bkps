@@ -9,34 +9,6 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ob_start();
 
-// Latest FILLED attempt helpers (NULL / '' / whitespace ignored, "0" counts as a value)
-function fr_has_value($v)
-{
-    return $v !== null && trim((string)$v) !== '';
-}
-function fr_latest_resit_text(array $row)
-{
-    foreach (['resit_result_4', 'resit_result_3', 'resit_result_2', 'resit_result_1', 'result'] as $c) {
-        if (isset($row[$c]) && fr_has_value($row[$c])) return trim((string)$row[$c]);
-    }
-    return '';
-}
-function fr_hd_latest_attempt(array $row)
-{
-    $att = [
-        'resit_3' => ['hd_resit3_converted_marks', 'hd_resit3_grade'],
-        'resit_2' => ['hd_resit2_converted_marks', 'hd_resit2_grade'],
-        'resit_1' => ['hd_resit1_converted_marks', 'hd_resit1_grade'],
-        'original' => ['hd_converted_marks', 'hd_grade']
-    ];
-    foreach ($att as $label => [$m, $g]) {
-        $mk = isset($row[$m]) ? trim((string)$row[$m]) : '';
-        $gr = isset($row[$g]) ? trim((string)$row[$g]) : '';
-        if ($mk !== '' || $gr !== '') return ['attempt' => $label, 'mark' => $mk, 'grade' => $gr];
-    }
-    return ['attempt' => '', 'mark' => '', 'grade' => ''];
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
 
@@ -50,6 +22,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sub_component_id = isset($_POST['sub_component_id']) ? $_POST['sub_component_id'] : null;
         $student_status = isset($_POST['student_status']) ? $_POST['student_status'] : '';
 
+        // Map the UI's simplified status choice to the actual value(s) stored in
+        // allocate_programme.status. Comparisons are done case-insensitively (LOWER/TRIM)
+        // to match how all_results.php already treats this column.
+        //   - '' (no filter posted) / 'active' -> Active students only (preserves original default)
+        //   - 'completed'                      -> Completed students, which ALSO includes
+        //                                          students whose status is 'progressionTo'
         switch (strtolower(trim($student_status))) {
             case 'completed':
                 $statusValues = ['completed', 'progressionto'];
@@ -581,17 +559,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             FROM allocate_programme ap
             JOIN students s ON ap.student_code = s.student_code
 
-            -- LATEST ATTEMPT per student + module + main/sub component, from any batch (retake safe)
             LEFT JOIN student_results sr ON (sr.student_id = ap.student_code 
-                AND sr.module_id = ?
-                AND sr.id = (
-                    SELECT sr2.id FROM student_results sr2
-                    WHERE sr2.student_id = sr.student_id
-                      AND sr2.module_id = sr.module_id
-                      AND sr2.main_component_id = sr.main_component_id
-                      AND sr2.sub_component_id <=> sr.sub_component_id
-                    ORDER BY sr2.created_at DESC, sr2.id DESC
-                    LIMIT 1))
+                AND sr.program_id = ? 
+                AND sr.batch_id = ? 
+                AND sr.module_id = ?)
             LEFT JOIN assignment_components mc ON sr.main_component_id = mc.id
             WHERE ap.programme_code = ? 
                 AND ap.batch_id = ? 
@@ -620,7 +591,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $params = [];
             $types  = '';
 
-            // LEFT JOIN student_results placeholder: module_id only (latest attempt, any batch)
+            // LEFT JOIN student_results placeholders: program_id, batch_id, module_id
+            $params[] = $programme_id;
+            $types .= 'i';
+            $params[] = $batch_id;
+            $types .= 'i';
             $params[] = $module_id;
             $types .= 'i';
 
@@ -693,7 +668,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Loop through all ECM resits dynamically
                     for ($i = 1; $i <= 4; $i++) {
                         $markKey = "ecm_r{$i}_converted_marks";
-                        $gradeKey = "ecm_r{$i}_converted_marks_grade"; // real column name
+                        $gradeKey = "ecm_r{$i}_grade"; // assuming you have grades for ECM resits
 
                         if (isset($row[$markKey]) && $row[$markKey] !== null && $row[$markKey] !== '') {
                             $resultData["resit_$i"] = $row[$markKey];
@@ -706,30 +681,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $componentResits[$componentId]["resit_$i"] = true;
                         }
                     }
-
-                    // LATEST FILLED ATTEMPT: check resit 4 -> 3 -> 2 -> 1 -> original; first non-empty wins
-                    $latestMark = null;
-                    $latestGrade = null;
-                    $latestAttempt = 'original';
-                    $markCols  = [4 => 'ecm_r4_converted_marks', 3 => 'ecm_r3_converted_marks', 2 => 'ecm_r2_converted_marks', 1 => 'ecm_r1_converted_marks'];
-                    $gradeCols = [4 => 'ecm_r4_converted_marks_grade', 3 => 'ecm_r3_converted_marks_grade', 2 => 'ecm_r2_converted_marks_grade', 1 => 'ecm_r1_converted_marks_grade'];
-                    foreach ($markCols as $i => $mc) {
-                        $m = isset($row[$mc]) ? trim((string)$row[$mc]) : '';
-                        $g = isset($row[$gradeCols[$i]]) ? trim((string)$row[$gradeCols[$i]]) : '';
-                        if ($m !== '' || $g !== '') {
-                            $latestMark = $m;
-                            $latestGrade = $g;
-                            $latestAttempt = "resit_$i";
-                            break;
-                        }
-                    }
-                    if ($latestAttempt === 'original') {
-                        $latestMark  = isset($row['converted_marks']) ? trim((string)$row['converted_marks']) : '';
-                        $latestGrade = isset($row['converted_marks_grade']) ? trim((string)$row['converted_marks_grade']) : '';
-                    }
-                    $resultData['latest_mark']    = $latestMark;
-                    $resultData['latest_grade']   = $latestGrade;
-                    $resultData['latest_attempt'] = $latestAttempt;
 
                     $studentResults[$studentId]['components'][$componentId] = $resultData;
                 }
@@ -824,18 +775,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     }
 
-                    // LATEST FILLED ATTEMPT: hd_resit3 -> 2 -> 1 -> original
-                    $hdL = fr_hd_latest_attempt($row);
-                    $latestMarkDisplay = $hdL['mark'];
-                    if ($latestMarkDisplay === '-1') {
-                        $latestMarkDisplay = 'Not Submitted';
-                    } elseif ($latestMarkDisplay === '-2') {
-                        $latestMarkDisplay = 'Absent';
-                    }
-                    $resultData['latest_mark']    = $latestMarkDisplay;
-                    $resultData['latest_grade']   = $hdL['grade'];
-                    $resultData['latest_attempt'] = $hdL['attempt'];
-
                     // Store results with resit data for the default case
                     $studentResults[$studentId]['components'][$componentId] = $resultData;
                 } else {
@@ -858,9 +797,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $resultData["resit_$i"] = $row["resit_result_$i"];
                         }
                     }
-
-                    // LATEST FILLED ATTEMPT: resit_result_4 -> 3 -> 2 -> 1 -> result
-                    $resultData['latest_result'] = fr_latest_resit_text($row);
 
                     $studentResults[$studentId]['components'][$componentId] = $resultData;
                 }
@@ -933,14 +869,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             // Fetch final results for each student
-            // Oldest -> newest, so the PHP loop below keeps the LATEST final result (retake in any batch)
             $finalResultQuery = "SELECT id, student_id, final_result 
                                 FROM final_student_results 
-                                WHERE module_id = ?
-                                ORDER BY created_at ASC, id ASC";
+                                WHERE program_id = ? 
+                                AND batch_id = ? 
+                                AND module_id = ?";
 
             $finalResultStmt = $conn->prepare($finalResultQuery);
-            $finalResultStmt->bind_param("i", $module_id);
+            $finalResultStmt->bind_param("iii", $programme_id, $batch_id, $module_id);
             $finalResultStmt->execute();
             $finalResultResult = $finalResultStmt->get_result();
 

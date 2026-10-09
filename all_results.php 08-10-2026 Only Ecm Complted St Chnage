@@ -40,49 +40,6 @@ function ecm_latest_attempt(array $row)
     return ['attempt' => '', 'mark' => '', 'grade' => ''];
 }
 
-/** true when a DB value has real content (NULL, '' and whitespace-only are "nothing"; "0" is a real value) */
-function has_value($v)
-{
-    return $v !== null && trim((string)$v) !== '';
-}
-
-/**
- * Generic programmes (GDM, BTEC HND, IFD Business/Applied Science and every other non-ECM / non-HD programme):
- * latest filled result = resit_result_4 -> 3 -> 2 -> 1 -> result.
- */
-function latest_resit_text(array $row)
-{
-    foreach (['resit_result_4', 'resit_result_3', 'resit_result_2', 'resit_result_1', 'result'] as $col) {
-        if (isset($row[$col]) && has_value($row[$col])) {
-            return trim((string)$row[$col]);
-        }
-    }
-    return '';
-}
-
-/**
- * Higher Diploma family (Biomedical, Biotechnology, Food Science & Nutrition, Medical Biotechnology,
- * BSc (Hons) Software Engineering): latest attempt = hd_resit3 -> hd_resit2 -> hd_resit1 -> hd (original).
- * An attempt is used when its converted marks OR its grade has a value; marks + grade come from the SAME attempt.
- */
-function hd_latest_attempt(array $row)
-{
-    $attempts = [
-        'Resit 3'  => ['hd_resit3_converted_marks', 'hd_resit3_grade'],
-        'Resit 2'  => ['hd_resit2_converted_marks', 'hd_resit2_grade'],
-        'Resit 1'  => ['hd_resit1_converted_marks', 'hd_resit1_grade'],
-        'Original' => ['hd_converted_marks', 'hd_grade'],
-    ];
-    foreach ($attempts as $label => [$mCol, $gCol]) {
-        $mark  = isset($row[$mCol]) ? trim((string)$row[$mCol]) : '';
-        $grade = isset($row[$gCol]) ? trim((string)$row[$gCol]) : '';
-        if ($mark !== '' || $grade !== '') {
-            return ['attempt' => $label, 'mark' => $mark, 'grade' => $grade];
-        }
-    }
-    return ['attempt' => '', 'mark' => '', 'grade' => ''];
-}
-
 // Capture query parameters (POST fallback used by the "Send to All" forms on this same page,
 // which POST back to the same URL without GET query-string params).
 $programmeId = isset($_GET['programmeId']) ? $_GET['programmeId'] : (isset($_POST['programmeId']) ? $_POST['programmeId'] : '');
@@ -614,8 +571,7 @@ if ($programmeName === '' && !empty($details['program_name'])) {
                                                     $programmeName == 'Higher Diploma in Medical Biotechnology'
                                                 ) {
 
-                                                    $hdL = hd_latest_attempt($row);
-                                                    $finalResult = htmlspecialchars($hdL['grade'] !== '' ? $hdL['grade'] : $hdL['mark']);
+                                                    $finalResult = !empty($row['hd_resit3_grade']) ? htmlspecialchars($row['hd_resit3_grade']) : (!empty($row['hd_resit2_grade']) ? htmlspecialchars($row['hd_resit2_grade']) : (!empty($row['hd_resit1_grade']) ? htmlspecialchars($row['hd_resit1_grade']) : htmlspecialchars($row['hd_grade'])));
 
                                                     $mail->Body .= '<tr><th>Final Result</th><td>' . ucfirst($finalResult) . '</td></tr>';
                                                     $emailedResult = ucfirst($finalResult);
@@ -623,13 +579,13 @@ if ($programmeName === '' && !empty($details['program_name'])) {
                                                     $programmeName == 'Graduate Diploma in Management (Level 6)'
                                                     // $programmeName == 'BTEC Higher National Diploma in Business'
                                                 ) {
-                                                    $resultValue = latest_resit_text($row);
+                                                    $resultValue = !empty($row['resit_result_4']) ? $row['resit_result_4'] : (!empty($row['resit_result_3']) ? $row['resit_result_3'] : (!empty($row['resit_result_2']) ? $row['resit_result_2'] : (!empty($row['resit_result_1']) ? $row['resit_result_1'] : $row['result'])));
                                                     $status = (stripos($resultValue, 'absent') !== false) ? 'Absent' : ((stripos($resultValue, 'merit') !== false || stripos($resultValue, 'pass') !== false || stripos($resultValue, 'distinction') !== false) ? 'Completed' : 'Not Completed');
                                                     // $mail->Body .= '<tr><th>Status</th><td>' . htmlspecialchars($resultValue) . '</td></tr>';
                                                     $mail->Body .= '<tr><th>Status</th><td>' . ucfirst(htmlspecialchars($resultValue)) . '</td></tr>';
                                                     $emailedResult = ucfirst($resultValue);
                                                 } else if ($programmeName == 'BTEC Higher National Diploma in Business') {
-                                                    $resultValue = latest_resit_text($row);
+                                                    $resultValue = !empty($row['resit_result_4']) ? $row['resit_result_4'] : (!empty($row['resit_result_3']) ? $row['resit_result_3'] : (!empty($row['resit_result_2']) ? $row['resit_result_2'] : (!empty($row['resit_result_1']) ? $row['resit_result_1'] : $row['result'])));
                                                     // $status = (stripos($resultValue, 'absent') !== false) ? 'Absent' : ((stripos($resultValue, 'merit') !== false || stripos($resultValue, 'pass') !== false || stripos($resultValue, 'distinction') !== false) ? 'Completed' : 'Not Completed');
                                                     $status = (stripos($resultValue, 'absent') !== false) ? 'Absent' : ((stripos($resultValue, 'not submitted') !== false) ? 'Not Submitted' : ((stripos($resultValue, 'merit') !== false || stripos($resultValue, 'pass') !== false || stripos($resultValue, 'distinction') !== false) ? 'Completed' : 'Not Completed'));
 
@@ -640,7 +596,7 @@ if ($programmeName === '' && !empty($details['program_name'])) {
                                                     $programmeName == 'International Foundation Diploma (Applied Science) - ATHE Level 3'
                                                 ) {
 
-                                                    // $resultValue = latest_resit_text($row);
+                                                    // $resultValue = !empty($row['resit_result_4']) ? $row['resit_result_4'] : (!empty($row['resit_result_3']) ? $row['resit_result_3'] : (!empty($row['resit_result_2']) ? $row['resit_result_2'] : (!empty($row['resit_result_1']) ? $row['resit_result_1'] : $row['result'])));
                                                     // $status = (stripos($resultValue, 'absent') !== false) ? 'Absent' : ((stripos($resultValue, 'merit') !== false || stripos($resultValue, 'pass') !== false || stripos($resultValue, 'distinction') !== false) ? 'Completed' : 'Not Completed');
                                                     // // $mail->Body .= '<tr><th>Status</th><td>' . htmlspecialchars($resultValue) . '</td></tr>';
                                                     // $mail->Body .= '<tr><th>Status</th><td>' . ucfirst(htmlspecialchars($status)) . '</td></tr>';
@@ -648,7 +604,7 @@ if ($programmeName === '' && !empty($details['program_name'])) {
 
 
                                                     // ------------- new pending added -------------
-                                                    $resultValue = latest_resit_text($row);
+                                                    $resultValue = !empty($row['resit_result_4']) ? $row['resit_result_4'] : (!empty($row['resit_result_3']) ? $row['resit_result_3'] : (!empty($row['resit_result_2']) ? $row['resit_result_2'] : (!empty($row['resit_result_1']) ? $row['resit_result_1'] : $row['result'])));
 
                                                     // Determine the status
                                                     if (stripos($resultValue, 'absent') !== false) {
@@ -669,7 +625,7 @@ if ($programmeName === '' && !empty($details['program_name'])) {
                                                     $mail->Body .= '<tr><th>Status</th><td>' . ucfirst(htmlspecialchars($status)) . '</td></tr>';
                                                     $emailedResult = ucfirst($status);
                                                 } else {
-                                                    $resultValue = latest_resit_text($row);
+                                                    $resultValue = !empty($row['resit_result_4']) ? $row['resit_result_4'] : (!empty($row['resit_result_3']) ? $row['resit_result_3'] : (!empty($row['resit_result_2']) ? $row['resit_result_2'] : (!empty($row['resit_result_1']) ? $row['resit_result_1'] : $row['result'])));
                                                     // $mail->Body .= '<tr><th>Result</th><td>' . htmlspecialchars($resultValue) . '</td></tr>';
                                                     $mail->Body .= '<tr><th>Result</th><td>' . ucfirst(htmlspecialchars($resultValue)) . '</td></tr>';
                                                     $emailedResult = ucfirst($resultValue);
@@ -1072,16 +1028,22 @@ if ($programmeName === '' && !empty($details['program_name'])) {
                                                                 $programmeName == 'Higher Diploma in Food Science and Nutrition' ||
                                                                 $programmeName == 'Higher Diploma in Medical Biotechnology'
                                                             ) {
-                                                                // Latest filled attempt: hd_resit3 -> 2 -> 1 -> original (NULL / empty ignored)
-                                                                $hdL = hd_latest_attempt($row);
-                                                                $hdCell = $hdL['grade'] !== '' ? $hdL['grade'] : $hdL['mark'];
-                                                                echo "<td>" . htmlspecialchars($hdCell) . "</td>";
+                                                                if (!empty($row['hd_resit3_grade'])) {
+                                                                    echo "<td>" . htmlspecialchars($row['hd_resit3_grade']) . "</td>";
+                                                                } elseif (!empty($row['hd_resit2_grade'])) {
+                                                                    echo "<td>" . htmlspecialchars($row['hd_resit2_grade']) . "</td>";
+                                                                } elseif (!empty($row['hd_resit1_grade'])) {
+                                                                    echo "<td>" . htmlspecialchars($row['hd_resit1_grade']) . "</td>";
+                                                                } else {
+                                                                    echo "<td>" . htmlspecialchars($row['hd_grade']) . "</td>"; // Fallback to result if none of the resit results are available
+                                                                }
                                                             } else if (
                                                                 $programmeName == 'Graduate Diploma in Management (Level 6)'
                                                                 // $programmeName == 'BTEC Higher National Diploma in Business'
                                                             ) {
                                                                 // Get the result value using the same logic as other programs
-                                                                $resultValue = latest_resit_text($row);
+                                                                $resultValue = !empty($row['resit_result_4']) ? $row['resit_result_4'] : (!empty($row['resit_result_3']) ? $row['resit_result_3'] : (!empty($row['resit_result_2']) ? $row['resit_result_2'] : (!empty($row['resit_result_1']) ? $row['resit_result_1'] :
+                                                                    $row['result'])));
 
                                                                 // Determine if the program is completed or not
                                                                 $status = (stripos($resultValue, 'absent') !== false) ? 'Absent' : ((stripos($resultValue, 'merit') !== false ||
@@ -1095,7 +1057,8 @@ if ($programmeName === '' && !empty($details['program_name'])) {
                                                                 // echo "<td>" . htmlspecialchars($status) . "</td>";
                                                             } else if ($programmeName == 'BTEC Higher National Diploma in Business') {
                                                                 // Get the result value using the same logic as other programs
-                                                                $resultValue = latest_resit_text($row);
+                                                                $resultValue = !empty($row['resit_result_4']) ? $row['resit_result_4'] : (!empty($row['resit_result_3']) ? $row['resit_result_3'] : (!empty($row['resit_result_2']) ? $row['resit_result_2'] : (!empty($row['resit_result_1']) ? $row['resit_result_1'] :
+                                                                    $row['result'])));
 
                                                                 // Determine if the program is completed or not
                                                                 $status = (stripos($resultValue, 'absent') !== false) ? 'Absent' : (
@@ -1133,7 +1096,8 @@ if ($programmeName === '' && !empty($details['program_name'])) {
 
                                                                 // -------------------------- new pending also included ------------- 
                                                                 // Get the result value using the same logic as other programs
-                                                                $resultValue = latest_resit_text($row);
+                                                                $resultValue = !empty($row['resit_result_4']) ? $row['resit_result_4'] : (!empty($row['resit_result_3']) ? $row['resit_result_3'] : (!empty($row['resit_result_2']) ? $row['resit_result_2'] : (!empty($row['resit_result_1']) ? $row['resit_result_1'] :
+                                                                    $row['result'])));
 
                                                                 // Determine the status
                                                                 if (stripos($resultValue, 'absent') !== false) {
@@ -1157,8 +1121,17 @@ if ($programmeName === '' && !empty($details['program_name'])) {
 
                                                             // ------------------------- 
                                                             else {
-                                                                // Latest filled attempt: resit 4 -> 3 -> 2 -> 1 -> original (NULL / empty ignored)
-                                                                echo "<td>" . htmlspecialchars(latest_resit_text($row)) . "</td>";
+                                                                if (!empty($row['resit_result_4'])) {
+                                                                    echo "<td>" . htmlspecialchars($row['resit_result_4']) . "</td>";
+                                                                } elseif (!empty($row['resit_result_3'])) {
+                                                                    echo "<td>" . htmlspecialchars($row['resit_result_3']) . "</td>";
+                                                                } elseif (!empty($row['resit_result_2'])) {
+                                                                    echo "<td>" . htmlspecialchars($row['resit_result_2']) . "</td>";
+                                                                } elseif (!empty($row['resit_result_1'])) {
+                                                                    echo "<td>" . htmlspecialchars($row['resit_result_1']) . "</td>";
+                                                                } else {
+                                                                    echo "<td>" . htmlspecialchars($row['result']) . "</td>"; // Fallback to result if none of the resit results are available
+                                                                }
                                                             }
 
                                                             // Check if payment_status is 'withheld' or 'cleared'
@@ -1705,9 +1678,25 @@ if ($programmeName === '' && !empty($details['program_name'])) {
                                                                         $subComponentName = htmlspecialchars($compRow['sub_component_name']);
                                                                         $componentResult = htmlspecialchars($compRow['result']);
 
-                                                                        $hdAtt = hd_latest_attempt($compRow);
-                                                                        $convertedMarks = $hdAtt['mark'] !== '' ? $hdAtt['mark'] : null;
-                                                                        $compGrade = $hdAtt['grade'];
+                                                                        if ($compRow['hd_resit3_converted_marks'] !== null && $compRow['hd_resit3_converted_marks'] !== '') {
+                                                                            $convertedMarks = $compRow['hd_resit3_converted_marks'];
+                                                                        } elseif ($compRow['hd_resit2_converted_marks'] !== null && $compRow['hd_resit2_converted_marks'] !== '') {
+                                                                            $convertedMarks = $compRow['hd_resit2_converted_marks'];
+                                                                        } elseif ($compRow['hd_resit1_converted_marks'] !== null && $compRow['hd_resit1_converted_marks'] !== '') {
+                                                                            $convertedMarks = $compRow['hd_resit1_converted_marks'];
+                                                                        } else {
+                                                                            $convertedMarks = $compRow['hd_converted_marks'];
+                                                                        }
+
+                                                                        if ($compRow['hd_resit3_grade'] !== null && $compRow['hd_resit3_grade'] !== '') {
+                                                                            $compGrade = $compRow['hd_resit3_grade'];
+                                                                        } elseif ($compRow['hd_resit2_grade'] !== null && $compRow['hd_resit2_grade'] !== '') {
+                                                                            $compGrade = $compRow['hd_resit2_grade'];
+                                                                        } elseif ($compRow['hd_resit1_grade'] !== null && $compRow['hd_resit1_grade'] !== '') {
+                                                                            $compGrade = $compRow['hd_resit1_grade'];
+                                                                        } else {
+                                                                            $compGrade = $compRow['hd_grade'];
+                                                                        }
 
                                                                         $componentsOutput .= "<div>{$componentName} {$subComponentName}: {$componentResult} (Converted Marks: {$convertedMarks}, Grade: {$compGrade})</div>";
 
@@ -2643,9 +2632,25 @@ if (isset($_POST['send_to_all']) && !empty($programmeId) && !empty($batchId) && 
                 if ($componentsResult && $componentsResult->num_rows > 0) {
                     $componentsResult->data_seek(0);
                     while ($compRow = $componentsResult->fetch_assoc()) {
-                        $hdAtt = hd_latest_attempt($compRow);
-                        $compGrades[] = $hdAtt['grade'];
-                        $m = $hdAtt['mark'] !== '' ? $hdAtt['mark'] : null;
+                        if ($compRow['hd_resit3_grade'] !== null && $compRow['hd_resit3_grade'] !== '') {
+                            $compGrades[] = $compRow['hd_resit3_grade'];
+                        } elseif ($compRow['hd_resit2_grade'] !== null && $compRow['hd_resit2_grade'] !== '') {
+                            $compGrades[] = $compRow['hd_resit2_grade'];
+                        } elseif ($compRow['hd_resit1_grade'] !== null && $compRow['hd_resit1_grade'] !== '') {
+                            $compGrades[] = $compRow['hd_resit1_grade'];
+                        } else {
+                            $compGrades[] = $compRow['hd_grade'];
+                        }
+
+                        if ($compRow['hd_resit3_converted_marks'] !== null && $compRow['hd_resit3_converted_marks'] !== '') {
+                            $m = $compRow['hd_resit3_converted_marks'];
+                        } elseif ($compRow['hd_resit2_converted_marks'] !== null && $compRow['hd_resit2_converted_marks'] !== '') {
+                            $m = $compRow['hd_resit2_converted_marks'];
+                        } elseif ($compRow['hd_resit1_converted_marks'] !== null && $compRow['hd_resit1_converted_marks'] !== '') {
+                            $m = $compRow['hd_resit1_converted_marks'];
+                        } else {
+                            $m = $compRow['hd_converted_marks'];
+                        }
                         $compMarks[] = $m;
                     }
                     $finalHDGrade = calculateFinalHDGrade($compGrades, $compMarks, $componentCount);
@@ -2801,10 +2806,10 @@ if (isset($_POST['send_to_all']) && !empty($programmeId) && !empty($batchId) && 
                         $subComponentName = !empty($compRow['sub_component_name']) ? ' - ' . htmlspecialchars($compRow['sub_component_name']) : '';
 
                         if ($programName == 'Graduate Diploma in Management (Level 6)') {
-                            $componentResult = latest_resit_text($compRow);
+                            $componentResult = !empty($compRow['resit_result_4']) ? $compRow['resit_result_4'] : (!empty($compRow['resit_result_3']) ? $compRow['resit_result_3'] : (!empty($compRow['resit_result_2']) ? $compRow['resit_result_2'] : (!empty($compRow['resit_result_1']) ? $compRow['resit_result_1'] : $compRow['result'])));
                             $componentStatus = htmlspecialchars($componentResult);
                         } else {
-                            $componentResult = latest_resit_text($compRow);
+                            $componentResult = $compRow['result'];
                             $componentStatus = htmlspecialchars($componentResult);
                         }
                         if ($paymentStatus == 'withheld' || empty($paymentStatus)) {

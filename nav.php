@@ -283,7 +283,8 @@ if ($result_for_up) {
             <!-- <i class="fas fa-laugh-wink"></i> -->
         </div>
         <!-- <div class="sidebar-brand-text mx-3">IMS <sup>2</sup></div> -->
-        <div class="sidebar-brand-text mx-3"><img src="https://202.124.164.112:8140/img/logo4.png" class="img-fluid"></div>
+        <!-- <div class="sidebar-brand-text mx-3"><img src="https://202.124.164.112:8140/img/logo4.png" class="img-fluid"></div> -->
+        <div class="sidebar-brand-text mx-3"><img src="assets/bmspnglogo.png" class="img-fluid"></div>
     </a>
     <!-- Divider -->
     <hr class="sidebar-divider my-0">

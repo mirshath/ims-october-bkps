@@ -65,11 +65,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
         $sql = "UPDATE leads SET date=?, type=?, university=?, programme=?, intake=?, first_name=?, last_name=?, contact=?, email=?, details=?, status=?, entered_by=?
                 WHERE id=?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ssssssssssssi", $date, $type, $university, $programme, $intake, $first_name, $last_name, $contact, $email, $details, $status,$Session_username, $id);
+        $stmt->bind_param("ssssssssssssi", $date, $type, $university, $programme, $intake, $first_name, $last_name, $contact, $email, $details, $status, $Session_username, $id);
     }
 
     if ($stmt->execute()) {
-         $_SESSION['message'] = "Lead added/updated successfully!";
+        $_SESSION['message'] = "Lead added/updated successfully!";
         echo '<script>window.location.href = "addLeads";</script>';
         exit();
     } else {
@@ -109,7 +109,7 @@ if (isset($_GET['delete'])) {
     $stmt = $conn->prepare("DELETE FROM leads WHERE id=?");
     $stmt->bind_param("i", $id);
     if ($stmt->execute()) {
-         $_SESSION['message'] = "Lead deleted successfully!";
+        $_SESSION['message'] = "Lead deleted successfully!";
         echo '<script>window.location.href = "addLeads";</script>';
         exit();
     } else {
@@ -350,7 +350,7 @@ if (isset($_GET['delete'])) {
                         </div>
                     </div>
                 </div>
->
+                >
                 <!-- ---------------------------------------  -->
 
                 <div class="card mt-5">

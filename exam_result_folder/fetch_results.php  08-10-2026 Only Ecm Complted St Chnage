@@ -9,34 +9,6 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ob_start();
 
-// Latest FILLED attempt helpers (NULL / '' / whitespace ignored, "0" counts as a value)
-function fr_has_value($v)
-{
-    return $v !== null && trim((string)$v) !== '';
-}
-function fr_latest_resit_text(array $row)
-{
-    foreach (['resit_result_4', 'resit_result_3', 'resit_result_2', 'resit_result_1', 'result'] as $c) {
-        if (isset($row[$c]) && fr_has_value($row[$c])) return trim((string)$row[$c]);
-    }
-    return '';
-}
-function fr_hd_latest_attempt(array $row)
-{
-    $att = [
-        'resit_3' => ['hd_resit3_converted_marks', 'hd_resit3_grade'],
-        'resit_2' => ['hd_resit2_converted_marks', 'hd_resit2_grade'],
-        'resit_1' => ['hd_resit1_converted_marks', 'hd_resit1_grade'],
-        'original' => ['hd_converted_marks', 'hd_grade']
-    ];
-    foreach ($att as $label => [$m, $g]) {
-        $mk = isset($row[$m]) ? trim((string)$row[$m]) : '';
-        $gr = isset($row[$g]) ? trim((string)$row[$g]) : '';
-        if ($mk !== '' || $gr !== '') return ['attempt' => $label, 'mark' => $mk, 'grade' => $gr];
-    }
-    return ['attempt' => '', 'mark' => '', 'grade' => ''];
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
 
@@ -734,45 +706,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $studentResults[$studentId]['components'][$componentId] = $resultData;
                 }
 
-
-
-                // else if (strpos($programme_name, 'Higher Diploma in Biomedical Science') !== false) 
-                // else if (
-                //     strpos($programme_name, 'BSc (Hons) in Software Engineering') !== false ||
-                //     strpos($programme_name, 'Higher Diploma in Biomedical Science') !== false ||
-                //     strpos($programme_name, 'Higher Diploma in Biotechnology') !== false ||
-                //     strpos($programme_name, 'Higher Diploma in Food Science and Nutrition') !== false ||
-                //     strpos($programme_name, 'Higher Diploma in Medical Biotechnology') !== false
-                // ) {
-                //     // Initialize the resultData outside the loop to avoid overwriting
-                //     $resultData = [
-                //         'main_result' => $row['hd_converted_marks'],
-                //         'main_result_Grade' => $row['hd_grade'],
-                //         'component_type' => $row['component_type'],
-                //         'component_name' => $row['component_name']
-                //     ];
-                //     for ($i = 1; $i <= 7; $i++) {
-                //         // Dynamically check if the key exists in the $row array and is not empty
-                //         $key = "hd_resit{$i}_converted_marks";
-                //         $gradeKey = "hd_resit{$i}_grade";
-
-                //         // Check if the key exists in the row and if it's not empty
-                //         if (isset($row[$key]) && !empty($row[$key])) {
-                //             // Mark that the resit data exists for this component
-                //             $componentResits[$componentId]["resit_$i"] = true;
-
-                //             // Correctly add the resit value and grade to the result data (don't overwrite other data)
-                //             $resultData["resit_$i"] = $row[$key];
-                //             $resultData["resit{$i}_Grade"] = $row[$gradeKey];
-                //         }
-                //     }
-
-
-
-                //     // Store results with resit data for the default case
-                //     $studentResults[$studentId]['components'][$componentId] = $resultData;
-                // } 
-
                 // neew on 27.02.2026 added this code 
                 else if (
                     strpos($programme_name, 'BSc (Hons) in Software Engineering') !== false ||
@@ -824,18 +757,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     }
 
-                    // LATEST FILLED ATTEMPT: hd_resit3 -> 2 -> 1 -> original
-                    $hdL = fr_hd_latest_attempt($row);
-                    $latestMarkDisplay = $hdL['mark'];
-                    if ($latestMarkDisplay === '-1') {
-                        $latestMarkDisplay = 'Not Submitted';
-                    } elseif ($latestMarkDisplay === '-2') {
-                        $latestMarkDisplay = 'Absent';
-                    }
-                    $resultData['latest_mark']    = $latestMarkDisplay;
-                    $resultData['latest_grade']   = $hdL['grade'];
-                    $resultData['latest_attempt'] = $hdL['attempt'];
-
                     // Store results with resit data for the default case
                     $studentResults[$studentId]['components'][$componentId] = $resultData;
                 } else {
@@ -858,9 +779,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $resultData["resit_$i"] = $row["resit_result_$i"];
                         }
                     }
-
-                    // LATEST FILLED ATTEMPT: resit_result_4 -> 3 -> 2 -> 1 -> result
-                    $resultData['latest_result'] = fr_latest_resit_text($row);
 
                     $studentResults[$studentId]['components'][$componentId] = $resultData;
                 }
