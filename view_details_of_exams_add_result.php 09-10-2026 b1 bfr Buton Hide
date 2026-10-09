@@ -1610,24 +1610,12 @@ if ($result->num_rows > 0) {
                                                     }
 
                                                     echo "</tbody></table>";
-                                                    // Show the Save Results button only when EVERY student in this list
-                                                    // has a Registration ID. If even one student has no ID, hide it.
-                                                    $hasRegistrationId = !empty($students);
-                                                    foreach ($students as $regCheckStudent) {
-                                                        if (trim((string)($regCheckStudent['student_registration_id'] ?? '')) === '') {
-                                                            $hasRegistrationId = false;
-                                                            break;
-                                                        }
-                                                    }
-
-                                                    if ($hasRegistrationId) {
-                                                        // Add Save Results button
-                                                        echo "<div class='mt-3 text-end'>
-                                                            <button type='button' id='saveResults' class='btn btn-primary'>
-                                                                <i class='fas fa-save'></i> Save Results
-                                                            </button>
-                                                        </div>";
-                                                    }
+                                                    // Add Save Results button
+                                                    echo "<div class='mt-3 text-end'>
+                                                        <button type='button' id='saveResults' class='btn btn-primary'>
+                                                            <i class='fas fa-save'></i> Save Results
+                                                        </button>
+                                                    </div>";
 
                                                     echo "</div>"; // Close table-responsive div
                                                 } else {

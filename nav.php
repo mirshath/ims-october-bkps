@@ -927,6 +927,7 @@ if ($result_for_up) {
     <li class="nav-item top_bottom_line <?= ($current_url == 'allStudentDetails'
                                             || $current_url == 'studentWiseDetails'
                                             || $current_url == 'progressionToReport'
+                                            || $current_url == 'email_sending_log'
                                             || $current_url == 'aluminiReport') ? 'active' : '' ?>" id="navHover">
         <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseSix"
             aria-expanded="true" aria-controls="collapseSix">
@@ -954,6 +955,13 @@ if ($result_for_up) {
                             ? 'style="pointer-events: none; color: gray;"'
                             : '' ?>>
                         Progression Report
+                    </a>
+                    <a class="collapse-item <?= ($current_url == 'email_sending_log') ? 'active' : '' ?>"
+                        href="email_sending_log"
+                        <?= !in_array('Email result Sending Log - email_sending_log', $subListValues)
+                            ? 'style="pointer-events: none; color: gray;"'
+                            : '' ?>>
+                        Email result Sending Log
                     </a>
 
                 <?php } ?>
